@@ -77,6 +77,21 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const transState = computeTransitionState(scenes, currentTime);
   const activeScene = transState.activeScene || currentScene;
 
+  // Proactive image pre-decoding during lookahead preparation window
+  React.useEffect(() => {
+    if (transState.upcomingScene?.photos && transState.upcomingScene.photos.length > 0) {
+      transState.upcomingScene.photos.slice(0, 8).forEach((photo) => {
+        if (photo.url) {
+          const img = new Image();
+          img.src = photo.url;
+          if (typeof img.decode === 'function') {
+            img.decode().catch(() => {});
+          }
+        }
+      });
+    }
+  }, [transState.upcomingScene?.id]);
+
   if (!activeScene) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
@@ -97,6 +112,12 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
     incomingNode = renderSceneContent(transState.incomingScene, transState.incomingSceneProgress, isPlaying);
   }
 
+  // Pre-warm incoming scene during lookahead phase (300-400ms before transition boundary T)
+  const preparedNode =
+    transState.isPrepared && !transState.isTransitioning && transState.upcomingScene
+      ? renderSceneContent(transState.upcomingScene, 0, false)
+      : null;
+
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-[#FFF9F2]">
       {/* 3D Scene Compositor handling seamless transitions */}
@@ -104,10 +125,22 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         isTransitioning={transState.isTransitioning}
         transitionId={transState.transitionId}
         transitionProgress={transState.transitionProgress}
+        outgoingScene={transState.outgoingScene}
         outgoingSceneNode={outgoingNode}
         incomingSceneNode={incomingNode}
         activeSceneNode={activeNode}
       />
+
+      {/* Lookahead Pre-warm Container: warms up incoming DOM tree and images off-stage */}
+      {preparedNode && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-0 overflow-hidden -z-50"
+          style={{ visibility: 'hidden' }}
+          aria-hidden="true"
+        >
+          {preparedNode}
+        </div>
+      )}
 
       {/* Optional Authentic 35mm Film Grain */}
       {enableGrain && <div className="film-grain" />}

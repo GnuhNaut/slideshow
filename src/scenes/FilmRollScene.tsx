@@ -102,6 +102,24 @@ interface VirtualizedFilmTrackProps {
   isSingleLarge?: boolean;
 }
 
+import {
+  getTrackPosition,
+  calculateItemDimensions,
+  calculateCumulativeOffsets,
+  getVisibleItems,
+  getRequiredMediaIds,
+  VisibleFilmItem,
+} from './filmstripMath';
+
+interface VirtualizedFilmTrackProps {
+  photos: PhotoItem[];
+  direction: 'rtl' | 'ltr';
+  speedPxPerSec: number;
+  sceneStartTime: number;
+  rowLabel: string;
+  isSingleLarge?: boolean;
+}
+
 const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   photos,
   direction,
@@ -113,6 +131,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
 
   const [containerWidth, setContainerWidth] = useState(1920);
+  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
 
   // ResizeObserver to accurately measure viewport width
   useEffect(() => {
@@ -134,28 +153,18 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   const gap = 24;
 
   const itemDimensions = useMemo(() => {
-    return photos.map((p) => {
-      let width = Math.round(frameHeight * (p.aspectRatio || 1.33));
-      width = Math.max(200, Math.min(width, 500));
-      return { width, height: frameHeight };
-    });
+    return calculateItemDimensions(photos, frameHeight);
   }, [photos, frameHeight]);
 
   // Compute cumulative offset table for O(1) positioning
   const { offsets, singleLoopWidth } = useMemo(() => {
-    if (itemDimensions.length === 0) return { offsets: [], singleLoopWidth: 1 };
-    const offs: number[] = [];
-    let accum = 0;
-    for (let i = 0; i < itemDimensions.length; i++) {
-      offs.push(accum);
-      accum += itemDimensions[i].width + gap;
-    }
-    return { offsets: offs, singleLoopWidth: accum };
+    return calculateCumulativeOffsets(itemDimensions, gap);
   }, [itemDimensions, gap]);
 
   // State to hold the camera position for virtual DOM window slicing
   const [virtualCameraX, setVirtualCameraX] = useState(0);
   const lastUpdateCameraXRef = useRef(0);
+  const lastTimeRef = useRef(0);
 
   // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
   useEffect(() => {
@@ -163,69 +172,67 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       if (!trackRef.current || singleLoopWidth <= 1) return;
 
       const elapsedInScene = Math.max(0, currentTime - sceneStartTime);
-      const totalPixelsScrolled = elapsedInScene * speedPxPerSec;
-
-      // Monotonic wrap calculation
-      const wrappedOffset = totalPixelsScrolled % singleLoopWidth;
-
-      const translateX =
-        direction === 'rtl' ? -wrappedOffset : wrappedOffset - singleLoopWidth;
+      const { translateX, cameraX } = getTrackPosition(
+        elapsedInScene,
+        speedPxPerSec,
+        singleLoopWidth,
+        direction
+      );
 
       trackRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
 
-      // Unified coordinate invariant: X_screen = X_world + translateX
-      // Therefore, the world coordinate in view is centered at currentCameraX = -translateX
-      const currentCameraX = direction === 'rtl' ? wrappedOffset : (singleLoopWidth - wrappedOffset);
+      // Detect wrap, seek, or continuous scroll beyond threshold
+      const isWrapOrSeek =
+        Math.abs(currentTime - lastTimeRef.current) > 0.25 ||
+        Math.abs(cameraX - lastUpdateCameraXRef.current) > 120;
 
-      // Update virtual window only when camera crosses a 160px threshold or on seek
-      if (Math.abs(currentCameraX - lastUpdateCameraXRef.current) > 160) {
-        lastUpdateCameraXRef.current = currentCameraX;
-        setVirtualCameraX(currentCameraX);
+      lastTimeRef.current = currentTime;
+
+      if (isWrapOrSeek) {
+        lastUpdateCameraXRef.current = cameraX;
+        setVirtualCameraX(cameraX);
       }
     });
 
     return () => unsub();
   }, [sceneStartTime, speedPxPerSec, singleLoopWidth, direction]);
 
-  // Compute the bounded virtual window of items (strictly ~8-14 DOM nodes regardless of photo count!)
-  const visibleItems = useMemo(() => {
-    if (photos.length === 0 || singleLoopWidth <= 1) return [];
+  // Compute the bounded virtual window of items (covers viewport + lookahead buffer)
+  const visibleItems: VisibleFilmItem[] = useMemo(() => {
+    const bufferPx = Math.max(1200, Math.round(containerWidth * 0.7));
+    return getVisibleItems(
+      virtualCameraX,
+      containerWidth,
+      bufferPx,
+      photos,
+      offsets,
+      itemDimensions,
+      singleLoopWidth,
+      direction
+    );
+  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
 
-    // Adaptive buffer proportional to screen size (handles 1366, 1920, and 4K)
-    const buffer = Math.max(900, Math.round(containerWidth * 0.5));
-    const minX = virtualCameraX - buffer;
-    const maxX = virtualCameraX + containerWidth + buffer;
-
-    const minLoop = Math.floor(minX / singleLoopWidth);
-    const maxLoop = Math.ceil(maxX / singleLoopWidth);
-
-    const items: {
-      photo: PhotoItem;
-      width: number;
-      absoluteX: number;
-      key: string;
-      frameIndex: number;
-    }[] = [];
-
-    for (let loop = minLoop; loop <= maxLoop; loop++) {
-      const loopBase = loop * singleLoopWidth;
-      for (let i = 0; i < photos.length; i++) {
-        const itemX = loopBase + (offsets[i] || 0);
-        const itemW = itemDimensions[i]?.width || 320;
-        if (itemX + itemW >= minX && itemX <= maxX) {
-          items.push({
-            photo: photos[i],
-            width: itemW,
-            absoluteX: itemX,
-            key: `vfilm_${direction}_${loop}_${photos[i].id}_${i}`,
-            frameIndex: i + 1,
+  // Proactive image preloading and decoding for visible items + upcoming buffer
+  useEffect(() => {
+    if (visibleItems.length === 0) return;
+    const mediaIds = getRequiredMediaIds(visibleItems);
+    visibleItems.forEach((item) => {
+      const url = item.photo.url;
+      if (url && typeof Image !== 'undefined') {
+        const img = new Image();
+        img.src = url;
+        if (typeof img.decode === 'function') {
+          img.decode().catch(() => {
+            // Non-fatal: browser will render normally on mount
           });
         }
       }
-    }
+    });
+  }, [visibleItems]);
 
-    return items;
-  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
+  const handleImageError = (id: string) => {
+    setFailedImageIds((prev) => new Set(prev).add(id));
+  };
 
   if (!photos || photos.length === 0) {
     return (
@@ -253,32 +260,45 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
           className="absolute inset-y-0 left-0 h-full will-change-transform"
           style={{ width: `${singleLoopWidth * 3}px` }}
         >
-          {visibleItems.map((item) => (
-            <div
-              key={item.key}
-              className="absolute top-2 p-3 bg-white border border-[#C5A16E]/35 rounded-sm luxury-shadow-md flex flex-col justify-between"
-              style={{
-                left: `${item.absoluteX}px`,
-                width: `${item.width}px`,
-                height: `${frameHeight + 24}px`,
-              }}
-            >
-              <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
-                <img
-                  src={item.photo.url}
-                  alt={item.photo.title || 'Wedding Memory'}
-                  className="w-full h-full object-cover pointer-events-none"
-                  loading="lazy"
-                />
-              </div>
+          {visibleItems.map((item) => {
+            const isFailed = failedImageIds.has(item.photo.id);
+            return (
+              <div
+                key={item.key}
+                className="absolute top-2 p-3 bg-white border border-[#C5A16E]/35 rounded-sm luxury-shadow-md flex flex-col justify-between"
+                style={{
+                  left: `${item.absoluteX}px`,
+                  width: `${item.width}px`,
+                  height: `${frameHeight + 24}px`,
+                }}
+              >
+                <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
+                  {!isFailed ? (
+                    <img
+                      src={item.photo.url}
+                      alt={item.photo.title || 'Wedding Memory'}
+                      className="w-full h-full object-cover pointer-events-none"
+                      loading="eager"
+                      decoding="async"
+                      onError={() => handleImageError(item.photo.id)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center p-2 text-[#C5A16E]">
+                      <span className="font-serif text-xs italic">
+                        {item.photo.title || 'Kỷ niệm yêu thương'}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Minimalist 35mm Film Footer Stamp */}
-              <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-[#40322F]/50">
-                <span>35MM • #{item.frameIndex}</span>
-                <span>TUẤN HÙNG &amp; SAO MAI</span>
+                {/* Minimalist 35mm Film Footer Stamp */}
+                <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-[#40322F]/50">
+                  <span>35MM • #{item.frameIndex}</span>
+                  <span>TUẤN HÙNG &amp; SAO MAI</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

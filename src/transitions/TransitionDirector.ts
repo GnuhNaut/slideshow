@@ -1,6 +1,8 @@
 import { TimelineScene } from '../types/timeline';
 import { getTransitionBetween, ChapterTransitionId } from './TransitionRegistry';
 
+export const TRANSITION_LOOKAHEAD_WINDOW = 0.4; // 400ms pre-mount and warm-up window
+
 export interface TransitionState {
   isTransitioning: boolean;
   outgoingScene: TimelineScene | null;
@@ -11,6 +13,8 @@ export interface TransitionState {
   transitionProgress: number; // 0.0 to 1.0
   transitionId: ChapterTransitionId;
   sceneProgress: number; // 0.0 to 1.0 for active scene
+  upcomingScene: TimelineScene | null; // Lookahead pre-mount target
+  isPrepared: boolean; // True when incoming scene is being pre-warmed
 }
 
 export function computeTransitionState(
@@ -28,6 +32,8 @@ export function computeTransitionState(
       transitionProgress: 0,
       transitionId: 'DEFAULT_DISSOLVE',
       sceneProgress: 0,
+      upcomingScene: null,
+      isPrepared: false,
     };
   }
 
@@ -67,7 +73,9 @@ export function computeTransitionState(
 
     const transDuration = Math.min(transitionSpec.duration, currentScene.duration * 0.4);
     const transStartTime = currentScene.endTime - transDuration;
+    const lookaheadStartTime = Math.max(currentScene.startTime, transStartTime - TRANSITION_LOOKAHEAD_WINDOW);
 
+    // 1. In Active Transition Phase
     if (currentTime >= transStartTime) {
       const transElapsed = currentTime - transStartTime;
       const transitionProgress = Math.min(1, Math.max(0, transElapsed / transDuration));
@@ -89,6 +97,25 @@ export function computeTransitionState(
         transitionProgress,
         transitionId: transitionSpec.id,
         sceneProgress,
+        upcomingScene: nextScene,
+        isPrepared: true,
+      };
+    }
+
+    // 2. In Lookahead Preparation Phase (Pre-mount and decode before T)
+    if (currentTime >= lookaheadStartTime) {
+      return {
+        isTransitioning: false,
+        outgoingScene: null,
+        outgoingSceneProgress: 0,
+        incomingScene: null,
+        incomingSceneProgress: 0,
+        activeScene: currentScene,
+        transitionProgress: 0,
+        transitionId: transitionSpec.id,
+        sceneProgress,
+        upcomingScene: nextScene,
+        isPrepared: true,
       };
     }
   }
@@ -103,5 +130,7 @@ export function computeTransitionState(
     transitionProgress: 0,
     transitionId: 'DEFAULT_DISSOLVE',
     sceneProgress,
+    upcomingScene: null,
+    isPrepared: false,
   };
 }

@@ -19,6 +19,8 @@ export interface MotionFrameState {
   outgoingSceneProgress: number; // real scene-local progress of outgoing scene (e.g. 0.85 -> 1.0)
   incomingScene: TimelineScene | null;
   incomingSceneProgress: number; // real scene-local progress of incoming scene (e.g. 0.0 -> 0.15)
+  upcomingScene: TimelineScene | null; // Pre-warmed upcoming scene target
+  isPrepared: boolean;
   isPlaying: boolean;
   isFinalHold: boolean;
   playbackSpeed: number;
@@ -88,6 +90,8 @@ class MotionRuntimeEngine {
         outgoingSceneProgress: 0,
         incomingScene: null,
         incomingSceneProgress: 0,
+        upcomingScene: null,
+        isPrepared: false,
         isPlaying,
         isFinalHold,
         playbackSpeed: speed,
@@ -111,6 +115,8 @@ class MotionRuntimeEngine {
       outgoingSceneProgress: transState.outgoingSceneProgress,
       incomingScene: transState.incomingScene,
       incomingSceneProgress: transState.incomingSceneProgress,
+      upcomingScene: transState.upcomingScene,
+      isPrepared: transState.isPrepared,
       isPlaying,
       isFinalHold,
       playbackSpeed: speed,

@@ -185,15 +185,24 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
 
     replaceProject: async (newProject: WeddingProject) => {
       try {
+        // Pause active playback
+        masterClock.pause();
+
         // 1. Restore media blobs / object URLs
         const restored = await mediaManager.restoreProjectMedia(newProject);
         // 2. Compile fresh timeline
         const newTimeline = compileProjectTimeline(restored);
+        if (!newTimeline || newTimeline.scenes.length === 0 || newTimeline.totalDuration <= 0) {
+          throw new Error('Dữ liệu timeline không hợp lệ sau khi khôi phục');
+        }
+
         // 3. Reset master clock
         masterClock.init(newTimeline.totalDuration, 0);
         masterClock.seek(0);
+
         // 4. Sync motionRuntime
         motionRuntime.setScenes(newTimeline.scenes);
+
         // 5. Update Zustand store state atomically
         set({
           project: restored,
@@ -214,7 +223,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
             currentChapterIndex: 1,
           },
         });
-        // 6. Save to IndexedDB
+
+        // 6. Persist to IndexedDB
         await get().saveProjectToDb();
       } catch (err) {
         console.error('Failed to replace project atomically:', err);

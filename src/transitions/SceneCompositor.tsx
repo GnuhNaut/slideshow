@@ -1,12 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ChapterTransitionId } from './TransitionRegistry';
 import { motionRuntime, MotionFrameState } from '../motion/MotionRuntime';
+import { TimelineScene } from '../types/timeline';
+import { StaticCurtainSurface } from './StaticCurtainSurface';
+import { generateCurtainSnapshot, releaseCurtainSnapshot } from './curtainSnapshot';
 
 interface SceneCompositorProps {
   isTransitioning: boolean;
   transitionId: ChapterTransitionId;
   transitionProgress?: number;
+  outgoingScene?: TimelineScene | null;
   outgoingSceneNode?: React.ReactNode;
   incomingSceneNode?: React.ReactNode;
   activeSceneNode: React.ReactNode;
@@ -15,6 +19,7 @@ interface SceneCompositorProps {
 export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   isTransitioning,
   transitionId,
+  outgoingScene,
   outgoingSceneNode,
   incomingSceneNode,
   activeSceneNode,
@@ -23,6 +28,28 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   const incomingRef = useRef<HTMLDivElement>(null);
   const leftCurtainRef = useRef<HTMLDivElement>(null);
   const rightCurtainRef = useRef<HTMLDivElement>(null);
+
+  const [curtainSnapshot, setCurtainSnapshot] = useState<string | null>(null);
+
+  // Prepare and cache 1080p curtain snapshot texture, release immediately after transition (TC-52, TC-53)
+  useEffect(() => {
+    let active = true;
+    if (isTransitioning && transitionId === 'GRAND_WEDDING_CURTAIN_REVEAL' && outgoingScene) {
+      generateCurtainSnapshot(outgoingScene).then((url) => {
+        if (active && url) {
+          setCurtainSnapshot(url);
+        }
+      });
+    } else {
+      releaseCurtainSnapshot();
+      setCurtainSnapshot(null);
+    }
+    return () => {
+      active = false;
+      releaseCurtainSnapshot();
+      setCurtainSnapshot(null);
+    };
+  }, [isTransitioning, transitionId, outgoingScene?.id]);
 
   // High-performance 60 FPS Motion Loop directly from MotionRuntime
   // Applies GSAP 3D transforms on every single frame without React re-render lag!
@@ -223,9 +250,11 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
           ref={leftCurtainRef}
           className="absolute inset-y-0 left-0 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-r border-[#C5A16E]/40"
         >
-          <div className="absolute inset-y-0 left-0 w-[200%] h-full">
-            {outgoingSceneNode || activeSceneNode}
-          </div>
+          <StaticCurtainSurface
+            scene={outgoingScene}
+            side="left"
+            snapshotUrl={curtainSnapshot}
+          />
         </div>
 
         {/* Right Curtain Half parting to the right */}
@@ -233,9 +262,11 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
           ref={rightCurtainRef}
           className="absolute inset-y-0 left-1/2 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-l border-[#C5A16E]/40"
         >
-          <div className="absolute inset-y-0 -left-full w-[200%] h-full">
-            {outgoingSceneNode || activeSceneNode}
-          </div>
+          <StaticCurtainSurface
+            scene={outgoingScene}
+            side="right"
+            snapshotUrl={curtainSnapshot}
+          />
         </div>
       </div>
     );
