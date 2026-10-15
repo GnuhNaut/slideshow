@@ -1,15 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { PhotoItem } from '../../types/project';
 
-// Testable Virtualization Math Engine
+// Testable Virtualization Math Engine supporting both RTL and LTR
 export function computeVirtualWindow(
   photos: PhotoItem[],
   frameHeight: number,
   gap: number,
   containerWidth: number,
-  currentScrollOffset: number
+  wrappedOffset: number,
+  direction: 'rtl' | 'ltr' = 'rtl'
 ) {
-  if (photos.length === 0) return { singleLoopWidth: 0, visibleItems: [] };
+  if (photos.length === 0) return { singleLoopWidth: 0, visibleItems: [], screenPositions: [] };
 
   const itemDimensions = photos.map((p) => {
     let width = Math.round(frameHeight * (p.aspectRatio || 1.33));
@@ -25,9 +26,13 @@ export function computeVirtualWindow(
   }
   const singleLoopWidth = accum;
 
-  const buffer = 800; // px buffer left and right
-  const minX = currentScrollOffset - buffer;
-  const maxX = currentScrollOffset + containerWidth + buffer;
+  // Unified coordinate invariant: X_screen = X_world + translateX
+  const translateX = direction === 'rtl' ? -wrappedOffset : (wrappedOffset - singleLoopWidth);
+  const currentCameraX = direction === 'rtl' ? wrappedOffset : (singleLoopWidth - wrappedOffset);
+
+  const buffer = Math.max(800, Math.round(containerWidth * 0.45));
+  const minX = currentCameraX - buffer;
+  const maxX = currentCameraX + containerWidth + buffer;
 
   const minLoop = Math.floor(minX / singleLoopWidth);
   const maxLoop = Math.ceil(maxX / singleLoopWidth);
@@ -38,6 +43,7 @@ export function computeVirtualWindow(
     absoluteX: number;
     loop: number;
     width: number;
+    screenX: number;
   }
 
   const visibleItems: VisibleItem[] = [];
@@ -54,12 +60,13 @@ export function computeVirtualWindow(
           absoluteX: itemX,
           loop,
           width: itemW,
+          screenX: itemX + translateX,
         });
       }
     }
   }
 
-  return { singleLoopWidth, visibleItems };
+  return { singleLoopWidth, visibleItems, screenPositions: visibleItems.map((v) => v.screenX) };
 }
 
 describe('Filmstrip True Virtualization Engine', () => {
@@ -121,5 +128,59 @@ describe('Filmstrip True Virtualization Engine', () => {
     // Should include items from both loop 0 and loop 1 seamlessly without any gap!
     const loops = new Set(visibleItems.map((item) => item.loop));
     expect(loops.size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('TC-13: RTL 10 photos covers full screen [0, 1920] without any gap', () => {
+    const photos = createMockPhotos(10);
+    const containerWidth = 1920;
+    const { visibleItems, screenPositions } = computeVirtualWindow(
+      photos,
+      320,
+      24,
+      containerWidth,
+      1500,
+      'rtl'
+    );
+
+    expect(visibleItems.length).toBeGreaterThan(0);
+    // Leftmost item must be at or before left edge
+    const minScreenX = Math.min(...screenPositions);
+    expect(minScreenX).toBeLessThanOrEqual(0);
+    // Rightmost item must extend past right edge
+    const maxScreenRight = Math.max(...visibleItems.map((v) => v.screenX + v.width));
+    expect(maxScreenRight).toBeGreaterThanOrEqual(containerWidth);
+  });
+
+  it('TC-14: LTR 10 photos covers full screen [0, 1920] without any gap', () => {
+    const photos = createMockPhotos(10);
+    const containerWidth = 1920;
+    const { visibleItems, screenPositions } = computeVirtualWindow(
+      photos,
+      320,
+      24,
+      containerWidth,
+      1500,
+      'ltr'
+    );
+
+    expect(visibleItems.length).toBeGreaterThan(0);
+    // Leftmost item must be at or before left edge
+    const minScreenX = Math.min(...screenPositions);
+    expect(minScreenX).toBeLessThanOrEqual(0);
+    // Rightmost item must extend past right edge
+    const maxScreenRight = Math.max(...visibleItems.map((v) => v.screenX + v.width));
+    expect(maxScreenRight).toBeGreaterThanOrEqual(containerWidth);
+  });
+
+  it('TC-15: Dual tracks (RTL & LTR) simultaneously have full screen coverage', () => {
+    const photos = createMockPhotos(12);
+    const containerWidth = 1920;
+    const topTrack = computeVirtualWindow(photos.slice(0, 6), 230, 24, containerWidth, 800, 'rtl');
+    const bottomTrack = computeVirtualWindow(photos.slice(6), 230, 24, containerWidth, 720, 'ltr');
+
+    expect(topTrack.visibleItems.length).toBeGreaterThan(4);
+    expect(bottomTrack.visibleItems.length).toBeGreaterThan(4);
+    expect(Math.min(...topTrack.screenPositions)).toBeLessThanOrEqual(0);
+    expect(Math.min(...bottomTrack.screenPositions)).toBeLessThanOrEqual(0);
   });
 });

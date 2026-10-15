@@ -151,9 +151,19 @@ class MasterPlaybackClock {
     };
   }
 
+  public resume() {
+    this.play();
+  }
+
   private startLoop() {
-    if (this.rafId) cancelAnimationFrame(this.rafId);
-    this.lastTimestamp = performance.now();
+    const cancelFrame = typeof cancelAnimationFrame !== 'undefined' ? cancelAnimationFrame : clearTimeout;
+    const requestFrame =
+      typeof requestAnimationFrame !== 'undefined'
+        ? requestAnimationFrame
+        : (cb: FrameRequestCallback) => setTimeout(() => cb(Date.now()), 16) as unknown as number;
+
+    if (this.rafId) cancelFrame(this.rafId);
+    this.lastTimestamp = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     const loop = (now: number) => {
       if (this.status !== 'PLAYING') return;
@@ -178,15 +188,16 @@ class MasterPlaybackClock {
         this.emitThrottled();
       }
 
-      this.rafId = requestAnimationFrame(loop);
+      this.rafId = requestFrame(loop);
     };
 
-    this.rafId = requestAnimationFrame(loop);
+    this.rafId = requestFrame(loop);
   }
 
   private stopLoop() {
     if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
+      const cancelFrame = typeof cancelAnimationFrame !== 'undefined' ? cancelAnimationFrame : clearTimeout;
+      cancelFrame(this.rafId);
       this.rafId = null;
     }
   }

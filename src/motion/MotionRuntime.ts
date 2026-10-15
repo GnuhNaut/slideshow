@@ -3,7 +3,8 @@
 
 import { masterClock, ClockState } from '../player/PlaybackClock';
 import { TimelineScene } from '../types/timeline';
-import { ChapterTransitionId, getTransitionBetween } from '../transitions/TransitionRegistry';
+import { ChapterTransitionId } from '../transitions/TransitionRegistry';
+import { computeTransitionState } from '../transitions/TransitionDirector';
 
 export interface MotionFrameState {
   currentTime: number;
@@ -93,88 +94,23 @@ class MotionRuntimeEngine {
       };
     }
 
-    // Find current scene index
-    let currentIndex = this.scenes.findIndex(
-      (s) => currentTime >= s.startTime && currentTime < s.endTime
-    );
-
-    if (currentIndex === -1) {
-      if (currentTime >= this.scenes[this.scenes.length - 1].endTime) {
-        currentIndex = this.scenes.length - 1;
-      } else {
-        currentIndex = 0;
-      }
-    }
-
-    const currentScene = this.scenes[currentIndex];
-    const nextScene = currentIndex < this.scenes.length - 1 ? this.scenes[currentIndex + 1] : null;
-
-    // Continuous scene-local progress (not clamped to 1.0 prematurely during transitions!)
-    const activeElapsed = Math.max(0, currentTime - currentScene.startTime);
-    const activeSceneProgress =
-      currentScene.duration > 0 ? Math.min(1, activeElapsed / currentScene.duration) : 0;
-
-    // Check transition window
-    if (nextScene) {
-      const isChapterChange = currentScene.chapterIndex !== nextScene.chapterIndex;
-      const transitionSpec = isChapterChange
-        ? getTransitionBetween(currentScene.chapterIndex, nextScene.chapterIndex)
-        : {
-            id: 'DEFAULT_DISSOLVE' as ChapterTransitionId,
-            duration: 0.8,
-            fromChapter: currentScene.chapterIndex,
-            toChapter: nextScene.chapterIndex,
-          };
-
-      const transDuration = Math.min(transitionSpec.duration, currentScene.duration * 0.4);
-      const transStartTime = currentScene.endTime - transDuration;
-
-      if (currentTime >= transStartTime) {
-        const transElapsed = currentTime - transStartTime;
-        const transitionProgress = Math.min(1, Math.max(0, transElapsed / transDuration));
-
-        // Real continuous local progress for outgoing scene (approaching 1.0)
-        const outElapsed = currentTime - currentScene.startTime;
-        const outgoingSceneProgress = Math.min(1, outElapsed / currentScene.duration);
-
-        // Real continuous local progress for incoming scene (entering from 0.0)
-        const inElapsed = Math.max(0, currentTime - nextScene.startTime);
-        const incomingSceneProgress =
-          nextScene.duration > 0 ? Math.min(1, inElapsed / nextScene.duration) : 0;
-
-        return {
-          currentTime,
-          totalDuration,
-          activeScene: currentScene,
-          activeSceneProgress,
-          activeSceneElapsed: activeElapsed,
-          isTransitioning: true,
-          transitionId: transitionSpec.id,
-          transitionProgress,
-          outgoingScene: currentScene,
-          outgoingSceneProgress,
-          incomingScene: nextScene,
-          incomingSceneProgress,
-          isPlaying,
-          isFinalHold,
-          playbackSpeed: speed,
-        };
-      }
-    }
+    const transState = computeTransitionState(this.scenes, currentTime);
+    const activeScene = transState.activeScene || this.scenes[0];
+    const activeElapsed = Math.max(0, currentTime - activeScene.startTime);
 
     return {
       currentTime,
       totalDuration,
-      activeScene: currentScene,
-      activeSceneProgress,
+      activeScene,
+      activeSceneProgress: transState.sceneProgress,
       activeSceneElapsed: activeElapsed,
-      isTransitioning: false,
-      transitionId: 'DEFAULT_DISSOLVE',
-      transitionProgress: 0,
-      outgoingScene: null,
-      outgoingSceneProgress: 0,
-      incomingScene: null,
-      incomingSceneProgress: 0,
+      isTransitioning: transState.isTransitioning,
+      transitionId: transState.transitionId,
+      transitionProgress: transState.transitionProgress,
+      outgoingScene: transState.outgoingScene,
+      outgoingSceneProgress: transState.outgoingSceneProgress,
+      incomingScene: transState.incomingScene,
+      incomingSceneProgress: transState.incomingSceneProgress,
       isPlaying,
       isFinalHold,
       playbackSpeed: speed,

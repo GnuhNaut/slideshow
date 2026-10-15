@@ -153,9 +153,9 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
     return { offsets: offs, singleLoopWidth: accum };
   }, [itemDimensions, gap]);
 
-  // State to hold the base offset for virtual DOM window slicing
-  const [virtualBaseOffset, setVirtualBaseOffset] = useState(0);
-  const lastUpdateOffsetRef = useRef(0);
+  // State to hold the camera position for virtual DOM window slicing
+  const [virtualCameraX, setVirtualCameraX] = useState(0);
+  const lastUpdateCameraXRef = useRef(0);
 
   // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
   useEffect(() => {
@@ -173,10 +173,14 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
 
       trackRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
 
-      // Update virtual window only when scrolling crosses a 180px threshold or on seek
-      if (Math.abs(wrappedOffset - lastUpdateOffsetRef.current) > 180) {
-        lastUpdateOffsetRef.current = wrappedOffset;
-        setVirtualBaseOffset(wrappedOffset);
+      // Unified coordinate invariant: X_screen = X_world + translateX
+      // Therefore, the world coordinate in view is centered at currentCameraX = -translateX
+      const currentCameraX = direction === 'rtl' ? wrappedOffset : (singleLoopWidth - wrappedOffset);
+
+      // Update virtual window only when camera crosses a 160px threshold or on seek
+      if (Math.abs(currentCameraX - lastUpdateCameraXRef.current) > 160) {
+        lastUpdateCameraXRef.current = currentCameraX;
+        setVirtualCameraX(currentCameraX);
       }
     });
 
@@ -187,9 +191,10 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   const visibleItems = useMemo(() => {
     if (photos.length === 0 || singleLoopWidth <= 1) return [];
 
-    const buffer = 900; // px buffer left and right
-    const minX = virtualBaseOffset - buffer;
-    const maxX = virtualBaseOffset + containerWidth + buffer;
+    // Adaptive buffer proportional to screen size (handles 1366, 1920, and 4K)
+    const buffer = Math.max(900, Math.round(containerWidth * 0.5));
+    const minX = virtualCameraX - buffer;
+    const maxX = virtualCameraX + containerWidth + buffer;
 
     const minLoop = Math.floor(minX / singleLoopWidth);
     const maxLoop = Math.ceil(maxX / singleLoopWidth);
@@ -212,7 +217,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
             photo: photos[i],
             width: itemW,
             absoluteX: itemX,
-            key: `vfilm_${loop}_${photos[i].id}_${i}`,
+            key: `vfilm_${direction}_${loop}_${photos[i].id}_${i}`,
             frameIndex: i + 1,
           });
         }
@@ -220,7 +225,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
     }
 
     return items;
-  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualBaseOffset, containerWidth]);
+  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
 
   if (!photos || photos.length === 0) {
     return (

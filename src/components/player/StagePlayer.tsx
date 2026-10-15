@@ -124,32 +124,31 @@ export const StagePlayer: React.FC = () => {
     }
   };
 
-  const handleStartPresentation = async () => {
+  const isStartingRef = useRef(false);
+
+  const handleStartPresentation = () => {
+    // Double-click protection: prevent starting multiple times
+    if (isStarted || isStartingRef.current) return;
+    isStartingRef.current = true;
     setIsStarted(true);
 
-    // 1. Direct user gesture request for Fullscreen
+    // 1. Direct user gesture request for Fullscreen (non-blocking)
     if (containerRef.current?.requestFullscreen) {
-      try {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } catch (err) {
-        console.info('Theater window fallback:', err);
-      }
+      containerRef.current
+        .requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch((err) => console.info('Theater window fallback:', err));
     }
 
-    // 2. Direct user gesture unlock for Web Audio
-    try {
-      await audioEngine.unlock();
-    } catch (err) {
-      console.warn('Audio unlock warning:', err);
-    }
+    // 2. Direct user gesture unlock for Web Audio (non-blocking in same tick!)
+    audioEngine
+      .unlock()
+      .catch((err) => console.warn('Audio unlock warning:', err));
 
     // 3. Request Screen Wake Lock so display never sleeps during the wedding
-    try {
-      await presentationWakeLock.request();
-    } catch (err) {
-      console.warn('Wake Lock request warning:', err);
-    }
+    presentationWakeLock
+      .request()
+      .catch((err) => console.warn('Wake Lock request warning:', err));
 
     // 4. Reset clock to 0 and begin master playback
     seek(0);

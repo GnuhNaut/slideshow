@@ -6,6 +6,7 @@ import { compileProjectTimeline } from '../timeline/compiler';
 import { db } from '../storage/db';
 import { masterClock } from '../player/PlaybackClock';
 import { mediaManager } from '../media/mediaManager';
+import { motionRuntime } from '../motion/MotionRuntime';
 
 export type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved';
 
@@ -28,6 +29,7 @@ interface WeddingStore {
   // Actions
   initStore: () => Promise<void>;
   saveProjectToDb: () => Promise<void>;
+  replaceProject: (newProject: WeddingProject) => Promise<void>;
   updateProjectMeta: (updates: Partial<WeddingProject>) => void;
   updateChapter: (chapterId: string, updates: Partial<ChapterConfig>) => void;
   setActiveChapter: (chapterId: string) => void;
@@ -178,6 +180,45 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       } catch (err) {
         console.error('Failed to save to IndexedDB:', err);
         set({ saveStatus: 'error' });
+      }
+    },
+
+    replaceProject: async (newProject: WeddingProject) => {
+      try {
+        // 1. Restore media blobs / object URLs
+        const restored = await mediaManager.restoreProjectMedia(newProject);
+        // 2. Compile fresh timeline
+        const newTimeline = compileProjectTimeline(restored);
+        // 3. Reset master clock
+        masterClock.init(newTimeline.totalDuration, 0);
+        masterClock.seek(0);
+        // 4. Sync motionRuntime
+        motionRuntime.setScenes(newTimeline.scenes);
+        // 5. Update Zustand store state atomically
+        set({
+          project: restored,
+          timeline: newTimeline,
+          activeChapterId: restored.chapters[0]?.id || 'ch1_intro',
+          selectedPhotoId: restored.chapters[0]?.photos[0]?.id || null,
+          saveStatus: 'saved',
+          undoStack: [],
+          redoStack: [],
+          playback: {
+            ...get().playback,
+            isPlaying: false,
+            isFinished: false,
+            currentTime: 0,
+            totalDuration: newTimeline.totalDuration,
+            currentScene: newTimeline.scenes[0] || null,
+            currentChapter: newTimeline.chaptersMeta[0] || null,
+            currentChapterIndex: 1,
+          },
+        });
+        // 6. Save to IndexedDB
+        await get().saveProjectToDb();
+      } catch (err) {
+        console.error('Failed to replace project atomically:', err);
+        throw err;
       }
     },
 

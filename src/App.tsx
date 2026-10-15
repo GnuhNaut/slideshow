@@ -83,13 +83,8 @@ export const App: React.FC = () => {
     try {
       showToast('Đang giải nén và kiểm tra file dự án...');
       const importedProject = await importProjectZip(file);
-      // Put in Dexie and update Zustand store
-      useWeddingStore.setState({
-        project: importedProject,
-        activeChapterId: importedProject.chapters[0]?.id || 'ch1_intro',
-        selectedPhotoId: importedProject.chapters[0]?.photos[0]?.id || null,
-      });
-      await useWeddingStore.getState().saveProjectToDb();
+      // Atomic replace: restores media, recompiles timeline, resets clock, updates store & IndexedDB
+      await useWeddingStore.getState().replaceProject(importedProject);
       showToast(`Đã khôi phục thành công dự án: ${importedProject.title}`);
     } catch (err: unknown) {
       console.error('Import failed:', err);

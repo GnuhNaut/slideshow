@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { motionRuntime } from '../motion/MotionRuntime';
 
 interface FX12Props {
   photos: PhotoItem[];
@@ -24,10 +25,10 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
   const rightPhotoRef = useRef<HTMLDivElement>(null);
   const centerTextRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const applyTransforms = (prog: number) => {
     // 0.0 -> 0.35: Grand 3D curtain opening
-    if (progress < 0.35) {
-      const p = progress / 0.35;
+    if (prog < 0.35) {
+      const p = prog / 0.35;
       const ease = gsap.parseEase('power2.out')(p);
 
       if (leftPhotoRef.current) {
@@ -57,7 +58,7 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
       }
     } else {
       // Steady breathing state
-      const drift = (progress - 0.35) / 0.65;
+      const drift = (prog - 0.35) / 0.65;
       if (leftPhotoRef.current) {
         gsap.set(leftPhotoRef.current, {
           x: drift * -8,
@@ -82,7 +83,29 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
         });
       }
     }
+  };
+
+  // Immediate update on progress prop change (for scrubbing / seek)
+  useEffect(() => {
+    applyTransforms(progress);
   }, [progress]);
+
+  // High-frequency 60 FPS motion loop directly from masterClock via MotionRuntime
+  useEffect(() => {
+    const unsub = motionRuntime.subscribe((state) => {
+      let currentP = progress;
+      if (state.activeScene?.type === 'thank_you') {
+        currentP = state.activeSceneProgress;
+      } else if (state.incomingScene?.type === 'thank_you') {
+        currentP = state.incomingSceneProgress;
+      } else if (state.outgoingScene?.type === 'thank_you') {
+        currentP = state.outgoingSceneProgress;
+      }
+      applyTransforms(currentP);
+    });
+
+    return () => unsub();
+  }, []);
 
   const leftPhoto = photos[0];
   const rightPhoto = photos[1] || photos[0];
