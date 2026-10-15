@@ -29,27 +29,30 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
   }, [photos, isDual]);
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center items-center overflow-hidden bg-[#1C1718]">
-      {/* Cinematic Ambient Atmosphere */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1C1718] via-[#2A1E24]/40 to-[#1C1718] pointer-events-none" />
+    <div className="relative w-full h-full flex flex-col justify-center items-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EC] to-[#F5EDE1] perspective-cinema">
+      {/* Radiant warm background atmosphere */}
+      <div className="absolute inset-0 bg-radial from-[#C5A16E]/12 via-[#FFF9F2]/60 to-[#FFF9F2] pointer-events-none" />
 
       {/* Chapter Kicker Pill */}
       <div className="absolute top-6 left-8 z-20 pointer-events-none">
-        <span className="text-[11px] tracking-[0.3em] uppercase text-[#BFA47D] font-serif font-semibold">
-          {scene.chapterTitle}
-        </span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/90 border border-[#C5A16E]/30 rounded-full shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
+          <span className="text-[11px] tracking-[0.25em] uppercase text-[#40322F] font-serif font-semibold">
+            {scene.chapterTitle}
+          </span>
+        </div>
       </div>
 
       {isDual ? (
-        <div className="relative z-10 w-full h-full flex flex-col justify-around py-4 gap-2">
+        <div className="relative z-10 w-full h-full flex flex-col justify-around py-4 gap-4">
           {/* Top Film Strip (Right to Left) */}
           <div className="relative flex-1 flex items-center overflow-hidden">
             <VirtualizedFilmTrack
               photos={topPhotos}
               direction="rtl"
-              speedPxPerSec={scene.config.speed || 48}
+              speedPxPerSec={scene.config.speed || 55}
               sceneStartTime={scene.startTime}
-              rowLabel="35MM MEMORIES • STRIP A"
+              rowLabel="35MM MEMORIES • REEL A"
             />
           </div>
 
@@ -58,19 +61,19 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
             <VirtualizedFilmTrack
               photos={bottomPhotos.length > 0 ? bottomPhotos : topPhotos}
               direction="ltr"
-              speedPxPerSec={(scene.config.speed || 48) * 0.9}
+              speedPxPerSec={(scene.config.speed || 55) * 0.9}
               sceneStartTime={scene.startTime}
-              rowLabel="35MM MEMORIES • STRIP B"
+              rowLabel="35MM MEMORIES • REEL B"
             />
           </div>
         </div>
       ) : (
-        /* Single Giant Film Strip */
+        /* Single Film Ribbon */
         <div className="relative z-10 w-full h-full flex items-center overflow-hidden py-6">
           <VirtualizedFilmTrack
             photos={photos}
             direction="rtl"
-            speedPxPerSec={scene.config.speed || 48}
+            speedPxPerSec={scene.config.speed || 60}
             sceneStartTime={scene.startTime}
             rowLabel="35MM CONTINUOUS FILM ROLL"
             isSingleLarge={true}
@@ -80,8 +83,8 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
 
       {/* Chapter Editorial Quote */}
       {scene.config.quote && (
-        <div className="absolute bottom-5 z-20 px-6 py-2 rounded-full bg-[#1C1718]/85 border border-[#BFA47D]/30 backdrop-blur-md shadow-xl">
-          <p className="text-xs md:text-sm text-[#F5EDE1] font-serif italic tracking-wide text-center">
+        <div className="absolute bottom-6 z-20 px-8 py-2.5 rounded-full bg-white/85 border border-[#C5A16E]/30 backdrop-blur-md shadow-md">
+          <p className="text-xs md:text-sm text-[#40322F] font-serif italic tracking-wide text-center">
             "{scene.config.quote}"
           </p>
         </div>
@@ -104,7 +107,6 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   direction,
   speedPxPerSec,
   sceneStartTime,
-  rowLabel,
   isSingleLarge = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -128,15 +130,13 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   }, []);
 
   // Compute layout dimensions for each photo based on natural aspect ratio
-  // Landscape: ~340px (or 440px if single large), Portrait: ~230px (or 290px), Square: ~280px
-  const frameHeight = isSingleLarge ? 300 : 220;
+  const frameHeight = isSingleLarge ? 320 : 230;
   const gap = 24;
 
   const itemDimensions = useMemo(() => {
     return photos.map((p) => {
       let width = Math.round(frameHeight * (p.aspectRatio || 1.33));
-      // Clamp reasonable widths to prevent extreme horizontal stretching
-      width = Math.max(180, Math.min(width, 480));
+      width = Math.max(200, Math.min(width, 500));
       return { width, height: frameHeight };
     });
   }, [photos, frameHeight]);
@@ -150,7 +150,6 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   // Number of repeats needed to fill screen plus buffer for seamless continuous scrolling
   const repeatCount = useMemo(() => {
     if (singleLoopWidth <= 1) return 1;
-    // We need at least (containerWidth + singleLoopWidth * 2) width of items
     return Math.max(3, Math.ceil((containerWidth * 2.5) / singleLoopWidth) + 1);
   }, [containerWidth, singleLoopWidth]);
 
@@ -176,7 +175,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
 
   if (!photos || photos.length === 0) {
     return (
-      <div className="w-full flex items-center justify-center text-xs text-[#BFA47D]/50 italic">
+      <div className="w-full flex items-center justify-center text-xs text-[#C5A16E]/70 italic font-serif">
         Chưa có ảnh trong cuộn phim
       </div>
     );
@@ -196,86 +195,50 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   }
 
   return (
-    <div ref={containerRef} className="relative w-full flex flex-col justify-center select-none overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative w-full flex flex-col justify-center select-none overflow-hidden"
+    >
       {/* 35mm Top Perforation Track */}
-      <div className="w-full h-4 bg-[#140F11] film-sprocket-track border-y border-[#3A2933] flex items-center px-6 justify-between">
-        <span className="text-[8px] tracking-[0.25em] text-[#BFA47D]/60 font-mono">
-          {rowLabel}
-        </span>
-        <span className="text-[8px] tracking-[0.2em] text-[#BFA47D]/40 font-mono">
-          35MM FILM EXP 36 • 400
-        </span>
-      </div>
+      <div className="w-full h-3.5 bg-[#F3E9DD] film-sprocket-track border-y border-[#C5A16E]/30" />
 
-      {/* Film Frames Track Container (Updated directly via style.transform in 60fps frame loop) */}
-      <div
-        ref={trackRef}
-        className="flex items-center py-3 bg-[#181214] shadow-2xl will-change-transform"
-        style={{
-          gap: `${gap}px`,
-          width: 'max-content',
-        }}
-      >
-        {repeatedItems.map((item) => {
-          const { photo, width, key, frameIndex } = item;
-
-          return (
+      {/* Film Strip Track */}
+      <div className="relative py-3 overflow-hidden">
+        <div
+          ref={trackRef}
+          className="flex items-center will-change-transform"
+          style={{ gap: `${gap}px` }}
+        >
+          {repeatedItems.map((item) => (
             <div
-              key={key}
-              className="relative shrink-0 flex flex-col items-center p-2 rounded-sm bg-[#1E1719] border border-[#BFA47D]/35 shadow-[0_12px_24px_rgba(0,0,0,0.7)]"
+              key={item.key}
+              className="relative shrink-0 p-3 bg-white border border-[#C5A16E]/35 rounded-sm luxury-shadow-md flex flex-col justify-between"
               style={{
-                width: `${width}px`,
-                height: `${frameHeight + 36}px`,
+                width: `${item.width}px`,
+                height: `${frameHeight + 24}px`,
               }}
             >
-              {/* Photo Box with Contain/Cover Preserving Ratio */}
-              <div
-                className="relative w-full overflow-hidden rounded-sm bg-[#100B0D] border border-[#F5EDE1]/15"
-                style={{ height: `${frameHeight}px` }}
-              >
+              <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
                 <img
-                  src={photo.url}
-                  alt={photo.title || `Photo ${frameIndex}`}
+                  src={item.photo.url}
+                  alt={item.photo.title || 'Wedding Memory'}
                   className="w-full h-full object-cover"
-                  style={{
-                    objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
-                  }}
                   loading="lazy"
                 />
-
-                {/* Film Frame Vignette */}
-                <div className="absolute inset-0 bg-radial from-transparent to-black/35 pointer-events-none" />
-
-                {/* Hero Badge */}
-                {photo.isHero && (
-                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-[#581E2C] border border-[#BFA47D] text-[9px] text-[#F5EDE1] font-serif tracking-wider shadow">
-                    HERO
-                  </div>
-                )}
               </div>
 
-              {/* Bottom Frame Details */}
-              <div className="w-full mt-1.5 flex items-center justify-between px-1 text-[8px] text-[#BFA47D]/70 font-mono">
-                <span>{`#${frameIndex < 10 ? `0${frameIndex}` : frameIndex}`}</span>
-                <span className="truncate max-w-[140px] text-center font-sans opacity-80">
-                  {photo.title || 'Khoảnh khắc kỷ niệm'}
-                </span>
-                <span>▶ 35MM</span>
+              {/* Minimalist Footer Stamp */}
+              <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-[#40322F]/50">
+                <span>35MM • #{item.frameIndex}</span>
+                <span>TUẤN HÙNG &amp; SAO MAI</span>
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       {/* 35mm Bottom Perforation Track */}
-      <div className="w-full h-4 bg-[#140F11] film-sprocket-track border-y border-[#3A2933] flex items-center px-6 justify-between">
-        <span className="text-[8px] tracking-[0.2em] text-[#BFA47D]/40 font-mono">
-          SAFETY FILM • TUẤN HÙNG &amp; SAO MAI
-        </span>
-        <span className="text-[8px] tracking-[0.25em] text-[#BFA47D]/60 font-serif italic">
-          19.10.2026
-        </span>
-      </div>
+      <div className="w-full h-3.5 bg-[#F3E9DD] film-sprocket-track border-y border-[#C5A16E]/30" />
     </div>
   );
 };

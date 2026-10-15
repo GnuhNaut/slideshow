@@ -69,7 +69,6 @@ export function createInitialWeddingProject(): WeddingProject {
       mode: 'auto',
       effectMode: 'f04_film_to_hero',
       speed: 1,
-      durationOverride: 20,
       transitionType: 'blur_dissolve',
       photos: generateDefaultPhotos('ch3_proposal', 4, 'Cầu Hôn'),
       accentQuote: 'Khoảnh khắc chiếc nhẫn được trao, hai trái tim hòa chung một nhịp đập.',

@@ -106,63 +106,62 @@ function compileChapterScenes(
     }
 
     case 3: {
-      // CHƯƠNG 3 — LỜI CẦU HÔN (Film-to-Hero + Emotional Ken Burns Zoom)
+      // CHƯƠNG 3 — LỜI CẦU HÔN (Hero Frame Morph Sequence)
       const heroPhoto = photos.find((p) => p.isHero) || photos[0];
       const otherPhotos = photos.filter((p) => p.id !== heroPhoto?.id);
 
-      // Part 1: Strip decelerating into hero
-      const filmDuration = 7;
-      scenes.push({
-        id: `${chapter.id}_scene_film_to_hero`,
-        chapterId: chapter.id,
-        chapterIndex: 3,
-        chapterTitle: chapter.vietnameseTitle,
-        type: 'film_to_hero',
-        startTime: cursor,
-        duration: filmDuration,
-        endTime: cursor + filmDuration,
-        photos: photos,
-        heroPhoto,
-        config: {
-          speed: 35,
-          ambientLight: 'rose',
-        },
-        transitionIn: 'soft_light',
-        transitionOut: 'dissolve',
-      });
-      cursor += filmDuration;
+      if (photos.length <= 1) {
+        // NẾU CHỈ CÓ 1 ẢNH: Single 5.5s sequence (0-0.8s entrance, 0.8-1.7s 3D motion, 1.7-4.8s stable view, 4.8-5.5s exit)
+        const duration = (chapter.mode === 'custom' && chapter.durationOverride) ? chapter.durationOverride : 5.5;
+        scenes.push({
+          id: `${chapter.id}_scene_proposal_single_hero`,
+          chapterId: chapter.id,
+          chapterIndex: 3,
+          chapterTitle: chapter.vietnameseTitle,
+          type: 'film_to_hero',
+          startTime: cursor,
+          duration,
+          endTime: cursor + duration,
+          photos: heroPhoto ? [heroPhoto] : [],
+          heroPhoto,
+          config: {
+            textTitle: 'LỜI CẦU HÔN',
+            quote: chapter.accentQuote || 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
+            ambientLight: 'rose',
+          },
+          transitionIn: 'soft_light',
+          transitionOut: 'album_flip',
+        });
+        cursor += duration;
+      } else {
+        // NẾU CÓ NHIỀU ẢNH: Hero photo gets 5.5s, remaining photos sequenced through photo stack / collage
+        const heroDuration = 5.5;
+        scenes.push({
+          id: `${chapter.id}_scene_proposal_hero`,
+          chapterId: chapter.id,
+          chapterIndex: 3,
+          chapterTitle: chapter.vietnameseTitle,
+          type: 'film_to_hero',
+          startTime: cursor,
+          duration: heroDuration,
+          endTime: cursor + heroDuration,
+          photos: heroPhoto ? [heroPhoto] : [],
+          heroPhoto,
+          config: {
+            textTitle: 'LỜI CẦU HÔN',
+            quote: chapter.accentQuote || 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
+            ambientLight: 'rose',
+          },
+          transitionIn: 'soft_light',
+          transitionOut: 'dissolve',
+        });
+        cursor += heroDuration;
 
-      // Part 2: Hero proposal moment
-      const heroDuration = 9;
-      scenes.push({
-        id: `${chapter.id}_scene_proposal_hero`,
-        chapterId: chapter.id,
-        chapterIndex: 3,
-        chapterTitle: chapter.vietnameseTitle,
-        type: 'hero_moment',
-        startTime: cursor,
-        duration: heroDuration,
-        endTime: cursor + heroDuration,
-        photos: heroPhoto ? [heroPhoto] : [],
-        heroPhoto,
-        config: {
-          panDirection: 'zoom_in',
-          ambientLight: 'rose',
-          textTitle: 'LỜI CẦU HÔN',
-          quote: 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
-        },
-        transitionIn: 'dissolve',
-        transitionOut: 'soft_light',
-      });
-      cursor += heroDuration;
-
-      // Part 3: Any additional proposal photos partitioned into sequential scenes so NONE are skipped!
-      if (otherPhotos.length > 0) {
-        // Chunk other proposal photos into groups of max 3
-        const chunkSize = 3;
+        // Partition remaining photos into groups of 2-3 photos (4-6s per scene)
+        const chunkSize = 2;
         for (let i = 0; i < otherPhotos.length; i += chunkSize) {
           const chunk = otherPhotos.slice(i, i + chunkSize);
-          const chunkDuration = Math.max(6, chunk.length * 3.5);
+          const chunkDuration = Math.max(5, chunk.length * 3.0);
 
           scenes.push({
             id: `${chapter.id}_scene_proposal_others_${i}`,
@@ -175,11 +174,11 @@ function compileChapterScenes(
             endTime: cursor + chunkDuration,
             photos: chunk,
             config: {
-              layout: chunk.length === 1 ? 'single' : chunk.length === 2 ? 'split_2' : 'hero_and_2',
+              layout: chunk.length === 1 ? 'single' : 'split_2',
               ambientLight: 'warm',
             },
-            transitionIn: 'soft_light',
-            transitionOut: 'fade',
+            transitionIn: 'dissolve',
+            transitionOut: i + chunkSize >= otherPhotos.length ? 'album_flip' : 'dissolve',
           });
           cursor += chunkDuration;
         }
@@ -273,17 +272,18 @@ function compileChapterScenes(
       while (photoIndex < photos.length) {
         const remainingCount = photos.length - photoIndex;
 
-        // Pattern cycle for variety:
-        // Scene 1: Single Hero (1 photo, 7s)
-        // Scene 2: Living Collage / Duo (2 or 3 photos, 8s)
-        // Scene 3: Editorial Reveal (1 photo, 6s)
-        // Scene 4: Collage (3 or 4 photos, 9s)
-        const cycle = sceneCounter % 4;
+        // Rich 5-scene pattern cycle for high visual diversity:
+        // Cycle 0: Fullscreen Hero (1 photo, 5.5s)
+        // Cycle 1: Editorial Split 60/40 (2 photos, 6.5s)
+        // Cycle 2: Asymmetric Photo Mosaic (3 photos, 7.5s)
+        // Cycle 3: Multi-Depth Floating Gallery (4 photos, 8.5s)
+        // Cycle 4: 3D Arc Carousel (5+ photos, 9.5s)
+        const cycle = sceneCounter % 5;
 
-        if (cycle === 1 || cycle === 3 || remainingCount === 1) {
+        if (cycle === 0 || remainingCount === 1) {
           // Single dramatic photo
           const photo = photos[photoIndex];
-          const duration = 6.5;
+          const duration = 5.5;
 
           scenes.push({
             id: `${chapter.id}_scene_wedding_hero_${sceneCounter}`,
@@ -297,24 +297,24 @@ function compileChapterScenes(
             photos: [photo],
             heroPhoto: photo,
             config: {
-              panDirection: cycle === 1 ? 'zoom_in' : 'zoom_out',
+              panDirection: 'zoom_in',
               ambientLight: 'gold',
               textTitle: 'FOREVER TOGETHER',
               quote: photo.title || chapter.accentQuote || 'Vẻ đẹp tinh khôi của ngày trọng đại nhất.',
             },
-            transitionIn: sceneCounter === 1 ? 'film_wipe' : 'dissolve',
+            transitionIn: sceneCounter === 1 ? 'film_wipe' : 'depth_push',
             transitionOut: 'dissolve',
           });
           cursor += duration;
           photoIndex += 1;
-        } else {
-          // Multi-photo group: 2 or 3 photos
-          const countToTake = Math.min(remainingCount, cycle === 2 ? 2 : 3);
+        } else if (cycle === 1) {
+          // Editorial Split 60/40 (2 photos)
+          const countToTake = Math.min(remainingCount, 2);
           const chunk = photos.slice(photoIndex, photoIndex + countToTake);
-          const duration = Math.max(7, chunk.length * 3.5);
+          const duration = 6.5;
 
           scenes.push({
-            id: `${chapter.id}_scene_wedding_collage_${sceneCounter}`,
+            id: `${chapter.id}_scene_wedding_split_${sceneCounter}`,
             chapterId: chapter.id,
             chapterIndex: 5,
             chapterTitle: chapter.vietnameseTitle,
@@ -324,12 +324,90 @@ function compileChapterScenes(
             endTime: cursor + duration,
             photos: chunk,
             config: {
-              layout: chunk.length === 2 ? 'split_2' : 'hero_and_2',
+              layout: 'split_2',
               ambientLight: 'gold',
               quote: chapter.accentQuote || 'Tay trong tay, bước vào lễ đường của cuộc đời.',
             },
             transitionIn: 'dissolve',
             transitionOut: 'soft_light',
+          });
+          cursor += duration;
+          photoIndex += countToTake;
+        } else if (cycle === 2) {
+          // Photo Mosaic (3 photos)
+          const countToTake = Math.min(remainingCount, 3);
+          const chunk = photos.slice(photoIndex, photoIndex + countToTake);
+          const duration = 7.5;
+
+          scenes.push({
+            id: `${chapter.id}_scene_wedding_mosaic_${sceneCounter}`,
+            chapterId: chapter.id,
+            chapterIndex: 5,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'living_collage',
+            startTime: cursor,
+            duration,
+            endTime: cursor + duration,
+            photos: chunk,
+            config: {
+              layout: 'hero_and_2',
+              ambientLight: 'gold',
+              quote: 'Từng nụ cười, từng ánh mắt hòa quyện vào khúc ca hạnh phúc.',
+            },
+            transitionIn: 'soft_light',
+            transitionOut: 'dissolve',
+          });
+          cursor += duration;
+          photoIndex += countToTake;
+        } else if (cycle === 3) {
+          // Multi-Depth Floating Gallery (4 photos)
+          const countToTake = Math.min(remainingCount, 4);
+          const chunk = photos.slice(photoIndex, photoIndex + countToTake);
+          const duration = 8.5;
+
+          scenes.push({
+            id: `${chapter.id}_scene_wedding_floating_${sceneCounter}`,
+            chapterId: chapter.id,
+            chapterIndex: 5,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'living_collage',
+            startTime: cursor,
+            duration,
+            endTime: cursor + duration,
+            photos: chunk,
+            config: {
+              layout: 'grid_4',
+              ambientLight: 'gold',
+              quote: 'Những khoảnh khắc lãng mạn khắc sâu vào tâm trí.',
+            },
+            transitionIn: 'dissolve',
+            transitionOut: 'depth_push',
+          });
+          cursor += duration;
+          photoIndex += countToTake;
+        } else {
+          // 3D Arc Carousel (up to 5 photos)
+          const countToTake = Math.min(remainingCount, 5);
+          const chunk = photos.slice(photoIndex, photoIndex + countToTake);
+          const duration = 9.5;
+
+          scenes.push({
+            id: `${chapter.id}_scene_wedding_carousel_${sceneCounter}`,
+            chapterId: chapter.id,
+            chapterIndex: 5,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'living_collage',
+            startTime: cursor,
+            duration,
+            endTime: cursor + duration,
+            photos: chunk,
+            config: {
+              layout: 'staggered_3',
+              ambientLight: 'gold',
+              quote: 'Hành trình tình yêu nở hoa rực rỡ.',
+            },
+            transitionIn: 'depth_push',
+            transitionOut: 'dissolve',
           });
           cursor += duration;
           photoIndex += countToTake;

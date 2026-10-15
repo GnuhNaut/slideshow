@@ -2,7 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import {
   Film,
-  Maximize2,
+  Play,
+  Sliders,
   Download,
   Upload,
   Settings,
@@ -27,23 +28,23 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
   const seek = useWeddingStore((s) => s.seek);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
-  const photoCardRef = useRef<HTMLDivElement>(null);
+  const textColRef = useRef<HTMLDivElement>(null);
+  const photoColRef = useRef<HTMLDivElement>(null);
 
   // Entrance motion
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 1.8, ease: 'power3.out' }
+        photoColRef.current,
+        { opacity: 0, scale: 0.95, y: 20 },
+        { opacity: 1, scale: 1, y: 0, duration: 2.0, ease: 'power3.out' }
       );
 
       gsap.fromTo(
-        photoCardRef.current,
-        { opacity: 0, scale: 0.97 },
-        { opacity: 1, scale: 1, duration: 2.2, delay: 0.3, ease: 'power2.out' }
+        textColRef.current,
+        { opacity: 0, x: -30 },
+        { opacity: 1, x: 0, duration: 1.8, delay: 0.2, ease: 'power2.out' }
       );
     }, containerRef);
 
@@ -69,26 +70,26 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen w-full bg-[#1C1718] text-[#F5EDE1] flex flex-col justify-between overflow-hidden select-none"
+      className="relative min-h-screen w-full bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F5EDE1] text-[#40322F] flex flex-col justify-between overflow-hidden select-none"
     >
-      {/* Background Editorial Atmosphere */}
+      {/* Radiant celebratory warm background glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-radial from-[#581E2C]/25 via-[#1C1718]/90 to-[#1C1718]" />
+        <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/75 to-[#FFF9F2]" />
         <div className="film-grain" />
       </div>
 
-      {/* Top Minimalist Navigation */}
-      <header className="relative z-20 h-20 px-8 md:px-16 flex items-center justify-between border-b border-[#BFA47D]/15">
+      {/* Top Elegant Navigation */}
+      <header className="relative z-20 h-20 px-8 md:px-16 flex items-center justify-between border-b border-[#C5A16E]/20 bg-white/40 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-[#581E2C] border border-[#BFA47D]/40 flex items-center justify-center">
-            <Film className="w-4 h-4 text-[#BFA47D]" />
+          <div className="w-9 h-9 rounded bg-[#C93442] flex items-center justify-center shadow-sm">
+            <Film className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-[10px] tracking-[0.3em] uppercase text-[#BFA47D] font-serif font-semibold block">
+            <span className="text-[11px] tracking-[0.3em] uppercase text-[#C93442] font-sans font-semibold block">
               WEDDING FILM STORY
             </span>
-            <span className="text-xs font-serif italic text-[#F5EDE1]/75">
-              Cinematic Experience
+            <span className="text-xs font-serif italic text-[#40322F]/70">
+              Modern 3D Cinematic Experience
             </span>
           </div>
         </div>
@@ -98,135 +99,151 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
           <button
             type="button"
             onClick={onImportZip}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#BFA47D]/25 bg-[#241C1E] hover:bg-[#581E2C]/40 text-xs font-serif text-[#F5EDE1] cursor-pointer transition-colors"
-            title="Nhập dự án ZIP"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-serif text-[#40322F] bg-white border border-[#C5A16E]/30 hover:border-[#C93442] shadow-sm hover:shadow transition-all cursor-pointer"
+            title="Nhập dữ liệu dự án từ tệp ZIP"
           >
-            <Upload className="w-3.5 h-3.5 text-[#BFA47D]" />
-            <span>Nhập Dự Án</span>
+            <Upload className="w-3.5 h-3.5 text-[#C5A16E]" />
+            <span className="hidden sm:inline">Nhập ZIP</span>
           </button>
+
           <button
             type="button"
             onClick={onExportZip}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#BFA47D]/25 bg-[#241C1E] hover:bg-[#581E2C]/40 text-xs font-serif text-[#F5EDE1] cursor-pointer transition-colors"
-            title="Xuất dự án ZIP"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-serif text-[#40322F] bg-white border border-[#C5A16E]/30 hover:border-[#C93442] shadow-sm hover:shadow transition-all cursor-pointer"
+            title="Xuất gói sao lưu ZIP đầy đủ"
           >
-            <Download className="w-3.5 h-3.5 text-[#BFA47D]" />
-            <span>Xuất Gói ZIP</span>
+            <Download className="w-3.5 h-3.5 text-[#C5A16E]" />
+            <span className="hidden sm:inline">Xuất ZIP</span>
           </button>
+
           <button
             type="button"
             onClick={onOpenSettings}
-            className="p-2 rounded border border-[#BFA47D]/20 hover:bg-[#581E2C]/40 text-[#BFA47D] cursor-pointer transition-colors"
-            title="Cài đặt thông tin"
+            className="p-2 rounded-full text-[#40322F] bg-white border border-[#C5A16E]/30 hover:text-[#C93442] hover:border-[#C93442] shadow-sm transition-all cursor-pointer"
+            title="Cài đặt dự án"
           >
             <Settings className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Main Editorial Hero Split Poster */}
-      <main className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between px-8 md:px-16 py-10 max-w-7xl mx-auto w-full gap-12">
-        {/* Left Side: Dramatic Editorial Typography & CTAs */}
-        <div ref={titleRef} className="flex-1 flex flex-col justify-center max-w-xl text-left">
-          {/* Eyebrow */}
-          <div className="flex items-center gap-3 mb-6">
-            <span className="w-8 h-[1px] bg-[#BFA47D]" />
-            <span className="text-[11px] tracking-[0.35em] uppercase text-[#BFA47D] font-serif font-semibold">
+      {/* Main Editorial Hero Poster Split Section */}
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-6 md:px-12 py-8 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-14">
+        {/* Left Side: Typography & Story Hook (35%) */}
+        <div
+          ref={textColRef}
+          className="w-full lg:w-[38%] flex flex-col items-center lg:items-start text-center lg:text-left space-y-6"
+        >
+          {/* Wedding Tag */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F0DFD5]/90 border border-[#C93442]/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
+            <span className="text-[11px] tracking-[0.3em] font-sans font-semibold text-[#C93442] uppercase">
               A LOVE STORY IN MOTION
             </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
           </div>
 
-          {/* Couple Names */}
-          <div className="space-y-1 mb-6">
-            <h1 className="font-serif-sc text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#F5EDE1] leading-[0.95]">
-              TUẤN HÙNG
-            </h1>
-            <div className="flex items-center gap-4 my-2">
-              <span className="font-serif italic font-normal text-3xl sm:text-4xl text-[#BFA47D]">
+          {/* Groom & Bride Big Title */}
+          <div className="space-y-2">
+            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl font-medium tracking-tight text-[#40322F] leading-tight">
+              <span className="block">{project.groomName}</span>
+              <span className="block font-serif italic text-4xl sm:text-5xl text-[#C5A16E] my-1">
                 &amp;
               </span>
-              <span className="w-24 h-[1px] bg-[#BFA47D]/40" />
-            </div>
-            <h1 className="font-serif-sc text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#F5EDE1] leading-[0.95]">
-              SAO MAI
+              <span className="block">{project.brideName}</span>
             </h1>
           </div>
 
-          {/* Wedding Date Display */}
-          <div className="flex items-center gap-4 text-sm sm:text-base tracking-[0.25em] text-[#BFA47D] font-serif mb-10">
-            <span>{project.weddingDate}</span>
-            <span className="text-[#581E2C]">•</span>
-            <span className="text-[#F5EDE1]/70 italic">{project.lunarDate}</span>
+          <div className="w-16 h-[2px] bg-[#C5A16E]" />
+
+          {/* Wedding Date & Lunar Info */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-3 text-lg md:text-xl tracking-[0.25em] text-[#40322F] font-serif font-medium">
+              <span>19</span>
+              <span className="text-[#C93442]">•</span>
+              <span>10</span>
+              <span className="text-[#C93442]">•</span>
+              <span>2026</span>
+            </div>
+            <p className="text-xs md:text-sm tracking-[0.14em] text-[#40322F]/70 italic font-serif">
+              (Nhằm ngày 10 tháng 09 năm Bính Ngọ)
+            </p>
           </div>
 
-          {/* Primary Two Main CTAs (Only 2 Clean Buttons!) */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            {/* CTA 1: MỞ STUDIO */}
-            <button
-              type="button"
-              onClick={handleOpenStudio}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded bg-[#581E2C] border border-[#BFA47D]/50 text-[#F5EDE1] font-serif font-semibold tracking-widest text-sm hover:brightness-110 shadow-lg cursor-pointer transition-all"
-            >
-              <Film className="w-4 h-4 text-[#BFA47D]" />
-              <span>MỞ STUDIO</span>
-            </button>
+          {/* Emotional quote */}
+          <p className="text-sm md:text-base font-serif italic text-[#40322F]/80 max-w-md leading-relaxed">
+            "Mọi khoảnh khắc của tình yêu đều là những thước phim vô giá. Hãy cùng chúng mình bước vào hành trình điện ảnh đáng nhớ."
+          </p>
 
-            {/* CTA 2: BẮT ĐẦU TRÌNH CHIẾU */}
+          {/* Two Clean Main CTAs */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleStartPresentation}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded bg-[#BFA47D] text-[#1C1718] font-serif font-bold tracking-widest text-sm hover:brightness-105 shadow-[0_8px_25px_rgba(191,164,125,0.25)] cursor-pointer transition-all"
+              className="w-full sm:w-auto px-8 py-4 bg-[#C93442] hover:bg-[#9B222E] text-white rounded-full font-serif text-base tracking-[0.2em] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer hover:scale-105"
             >
-              <Maximize2 className="w-4 h-4" />
+              <Play className="w-4 h-4 fill-white" />
               <span>BẮT ĐẦU TRÌNH CHIẾU</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenStudio}
+              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#FFF9F2] text-[#40322F] border border-[#C5A16E]/40 hover:border-[#C5A16E] rounded-full font-serif text-base tracking-[0.2em] shadow-sm hover:shadow transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer hover:scale-105"
+            >
+              <Sliders className="w-4 h-4 text-[#C5A16E]" />
+              <span>MỞ STUDIO</span>
             </button>
           </div>
         </div>
 
-        {/* Right Side: Large Dramatic Wedding Poster Photo Card */}
+        {/* Right Side: Major Hero Poster Photo (62%) */}
         <div
-          ref={photoCardRef}
-          className="flex-1 w-full max-w-lg lg:max-w-xl aspect-[3/4] max-h-[72vh] relative rounded-lg overflow-hidden border border-[#BFA47D]/35 bg-[#241C1E] shadow-[0_30px_70px_rgba(0,0,0,0.85)] flex items-center justify-center p-3"
+          ref={photoColRef}
+          className="w-full lg:w-[62%] h-[58vh] sm:h-[68vh] lg:h-[78vh] relative flex items-center justify-center"
         >
           {posterPhoto ? (
-            <div className="relative w-full h-full rounded overflow-hidden bg-[#100B0D]">
-              <img
-                src={posterPhoto.url}
-                alt="Wedding Hero Poster"
-                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                style={{
-                  objectPosition: `${posterPhoto.focalPoint?.x ?? 50}% ${posterPhoto.focalPoint?.y ?? 50}%`,
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1C1718]/90 via-transparent to-transparent pointer-events-none" />
-
-              {/* Bottom Card Editorial Mark */}
-              <div className="absolute bottom-4 left-5 right-5 flex items-center justify-between pointer-events-none">
-                <span className="text-[11px] font-serif tracking-[0.2em] text-[#BFA47D] uppercase">
-                  HA NOI • 2026
-                </span>
-                <span className="text-[10px] font-mono text-[#F5EDE1]/60">
-                  35MM CINEMATIC HYBRID
+            <div className="relative w-full h-full p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg flex flex-col">
+              <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative">
+                <img
+                  src={posterPhoto.url}
+                  alt="Wedding Poster"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
+              </div>
+              {/* Subtle Poster Caption */}
+              <div className="mt-2 text-right">
+                <span className="text-[10px] font-mono tracking-widest text-[#40322F]/60 uppercase">
+                  TUẤN HÙNG &amp; SAO MAI • OFFICIAL WEDDING CINEMA
                 </span>
               </div>
             </div>
           ) : (
-            <div className="text-center p-8">
-              <Sparkles className="w-8 h-8 text-[#BFA47D] mx-auto mb-3 opacity-60" />
-              <p className="font-serif text-sm text-[#F5EDE1]/80">
-                Chưa có ảnh bìa. Nhấp "Mở Studio" để tải ảnh cưới thật của bạn.
+            <div className="w-full h-full p-12 bg-white/70 border-2 border-dashed border-[#C5A16E]/40 rounded-sm flex flex-col items-center justify-center text-center space-y-4">
+              <Sparkles className="w-12 h-12 text-[#C5A16E]" />
+              <h3 className="font-serif text-2xl text-[#40322F]">
+                Chưa có ảnh cưới
+              </h3>
+              <p className="text-sm font-serif italic text-[#40322F]/70 max-w-sm">
+                Nhấn "Mở Studio" để tải ảnh cưới của bạn vào các chương phim điện ảnh.
               </p>
+              <button
+                type="button"
+                onClick={handleOpenStudio}
+                className="px-6 py-2.5 bg-[#C93442] text-white rounded-full font-serif text-xs tracking-widest uppercase cursor-pointer"
+              >
+                Mở Studio ngay
+              </button>
             </div>
           )}
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 h-16 px-8 md:px-16 flex items-center justify-between border-t border-[#BFA47D]/15 text-xs text-[#BFA47D]/60 font-serif">
-        <div>Tuấn Hùng &amp; Sao Mai — 19.10.2026</div>
-        <div className="font-mono text-[10px] tracking-widest uppercase">
-          MODERN EDITORIAL WEDDING CINEMA
-        </div>
+      {/* Footer Minimalist Info */}
+      <footer className="relative z-10 py-4 px-8 md:px-16 flex items-center justify-between text-xs font-serif text-[#40322F]/60 border-t border-[#C5A16E]/20 bg-white/30">
+        <div>WEDDING CINEMATIC EXPERIENCE V3</div>
+        <div>HÀ NỘI • 19.10.2026</div>
       </footer>
     </div>
   );

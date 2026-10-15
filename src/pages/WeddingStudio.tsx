@@ -23,7 +23,7 @@ export const WeddingStudio: React.FC<WeddingStudioProps> = ({
   usePlaybackController(false);
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-[#151114] text-[#FFF4E4] overflow-hidden select-none">
+    <div className="w-screen h-screen flex flex-col bg-[#FAF5EE] text-[#40322F] overflow-hidden select-none">
       {/* Studio Top Navigation Bar */}
       <StudioHeader
         onOpenSettings={() => setIsSettingsOpen(true)}

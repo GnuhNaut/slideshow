@@ -22,9 +22,9 @@ export const TimelineBar: React.FC = () => {
   const playheadPercent = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
   return (
-    <div className="h-16 bg-[#161213] border-t border-[#BFA47D]/15 flex flex-col justify-between px-4 py-1.5 shrink-0 select-none z-20">
+    <div className="h-16 bg-white border-t border-[#C5A16E]/20 flex flex-col justify-between px-4 py-1.5 shrink-0 select-none z-20">
       {/* Time ruler */}
-      <div className="flex items-center justify-between text-[9px] font-mono text-[#BFA47D]/50 px-1">
+      <div className="flex items-center justify-between text-[10px] font-mono text-[#40322F]/60 px-1 font-medium">
         <span>00:00</span>
         <span>Khởi đầu</span>
         <span>Kỷ niệm</span>
@@ -39,7 +39,7 @@ export const TimelineBar: React.FC = () => {
       <div
         ref={trackRef}
         onClick={handleTrackClick}
-        className="relative h-8 w-full bg-[#1C1718] rounded border border-[#BFA47D]/25 cursor-pointer overflow-hidden flex items-center shadow-inner"
+        className="relative h-8 w-full bg-[#FAF5EE] rounded border border-[#C5A16E]/30 cursor-pointer overflow-hidden flex items-center shadow-inner"
       >
         {/* Chapter Segments */}
         {timeline.chaptersMeta.map((meta, index) => {
@@ -56,18 +56,18 @@ export const TimelineBar: React.FC = () => {
                 seek(meta.startTime);
               }}
               style={{ width: `${widthPercent}%` }}
-              className={`h-full border-r border-[#BFA47D]/15 px-2 flex items-center justify-between transition-colors ${
+              className={`h-full border-r border-[#C5A16E]/20 px-2 flex items-center justify-between transition-colors ${
                 isCurrentActive
-                  ? 'bg-[#581E2C]/70 text-[#F5EDE1]'
+                  ? 'bg-[#F0DFD5] text-[#C93442] font-semibold'
                   : index % 2 === 0
-                  ? 'bg-[#181214]/90 hover:bg-[#581E2C]/30 text-[#BFA47D]/70'
-                  : 'bg-[#221A1D]/90 hover:bg-[#581E2C]/30 text-[#BFA47D]/70'
+                  ? 'bg-white/80 hover:bg-[#FFF9F2] text-[#40322F]/75'
+                  : 'bg-[#FAF3EB]/80 hover:bg-[#FFF9F2] text-[#40322F]/75'
               }`}
             >
               <span className="text-[10px] font-mono font-bold truncate">
                 {`0${meta.chapterIndex}`}
               </span>
-              <span className="text-[9px] font-serif truncate hidden md:inline">
+              <span className="text-[10px] font-serif truncate hidden md:inline">
                 {meta.title.split(':')[1] || meta.title}
               </span>
             </div>
@@ -76,10 +76,10 @@ export const TimelineBar: React.FC = () => {
 
         {/* Playhead Scrubber */}
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-[#BFA47D] shadow-[0_0_8px_#BFA47D] pointer-events-none z-30"
+          className="absolute top-0 bottom-0 w-0.5 bg-[#C93442] shadow-[0_0_8px_#C93442] pointer-events-none z-30"
           style={{ left: `${playheadPercent}%` }}
         >
-          <div className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-[#BFA47D] border border-[#1C1718] shadow" />
+          <div className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-[#C93442] border border-white shadow" />
         </div>
       </div>
     </div>

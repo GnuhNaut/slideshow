@@ -11,29 +11,32 @@ interface IntroSceneProps {
 export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const heroCardRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 35 },
-        { opacity: 1, y: 0, duration: 2.4, ease: 'power3.out' }
-      );
+      // Intro entrance GSAP timeline
+      const tl = gsap.timeline();
 
-      gsap.fromTo(
-        subtitleRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 1.8, delay: 0.8, ease: 'power2.out' }
-      );
-
-      gsap.fromTo(
-        heroRef.current,
-        { opacity: 0, scale: 0.96 },
-        { opacity: 0.45, scale: 1.03, duration: 3.2, delay: 0.4, ease: 'power2.out' }
-      );
+      tl.fromTo(
+        heroCardRef.current,
+        { opacity: 0, scale: 0.9, y: 30, rotationY: -8 },
+        { opacity: 1, scale: 1, y: 0, rotationY: 0, duration: 2.0, ease: 'power3.out' }
+      )
+        .fromTo(
+          titleRef.current,
+          { opacity: 0, y: 25 },
+          { opacity: 1, y: 0, duration: 1.6, ease: 'power2.out' },
+          '-=1.2'
+        )
+        .fromTo(
+          subtitleRef.current,
+          { opacity: 0, y: 15 },
+          { opacity: 1, y: 0, duration: 1.4, ease: 'power2.out' },
+          '-=0.8'
+        );
     }, containerRef);
 
     return () => ctx.revert();
@@ -44,82 +47,91 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#1C1718] select-none"
+      className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F5EDE1] select-none perspective-cinema"
     >
-      {/* Background Atmosphere */}
-      <div className="absolute inset-0 bg-radial from-[#581E2C]/30 via-[#1C1718]/85 to-[#1C1718] pointer-events-none" />
+      {/* Radiant celebratory warm backdrop */}
+      <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/70 to-[#FFF9F2] pointer-events-none" />
 
-      {/* Hero photo background with gentle scale */}
-      {heroPhoto && (
-        <div
-          ref={heroRef}
-          className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none transition-transform duration-1000 ease-out"
-          style={{ transform: `scale(${1 + progress * 0.05})` }}
-        >
-          <img
-            src={heroPhoto.url}
-            alt={heroPhoto.title || 'Opening'}
-            className="w-full h-full object-cover filter blur-[1px] brightness-75 contrast-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1C1718] via-transparent to-[#1C1718]/90" />
-        </div>
-      )}
-
-      {/* Subtle Editorial Inner Frame */}
-      <div className="absolute inset-8 border border-[#BFA47D]/20 pointer-events-none rounded-sm">
-        <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-[#BFA47D]" />
-        <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-[#BFA47D]" />
-        <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-[#BFA47D]" />
-        <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#BFA47D]" />
+      {/* Decorative Golden Corner Accents */}
+      <div className="absolute inset-8 border border-[#C5A16E]/25 pointer-events-none rounded-sm">
+        <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#C5A16E]" />
+        <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#C5A16E]" />
+        <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#C5A16E]" />
+        <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#C5A16E]" />
       </div>
 
-      {/* Central Editorial Typography Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl">
-        {/* Subtle Eyebrow */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-[1px] bg-[#BFA47D]/60" />
-          <p className="text-[11px] tracking-[0.35em] text-[#BFA47D] uppercase font-serif font-medium">
-            THE WEDDING OF
-          </p>
-          <div className="w-8 h-[1px] bg-[#BFA47D]/60" />
-        </div>
-
-        {/* Groom & Bride Names */}
-        <div ref={titleRef} className="space-y-3 mb-6">
-          <h1 className="font-serif-sc text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider text-[#F5EDE1] drop-shadow-[0_4px_20px_rgba(0,0,0,0.85)]">
-            <span className="text-[#F5EDE1]">TUẤN HÙNG</span>
-            <span className="font-serif italic font-normal text-3xl sm:text-5xl text-[#BFA47D] mx-4 md:mx-6">
-              &amp;
-            </span>
-            <span className="text-[#F5EDE1]">SAO MAI</span>
-          </h1>
-        </div>
-
-        {/* Wedding Date & Lunar Calendar */}
-        <div ref={subtitleRef} className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-3 text-sm md:text-base tracking-[0.25em] text-[#BFA47D] font-serif">
-            <span>19</span>
-            <span className="text-[#581E2C]">•</span>
-            <span>10</span>
-            <span className="text-[#581E2C]">•</span>
-            <span>2026</span>
+      {/* Main Split / Hero Composition */}
+      <div className="relative z-10 w-full max-w-[1300px] h-[78vh] flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-14 px-8 preserve-3d">
+        {/* Left Side: Floating 3D Wedding Hero Frame */}
+        {heroPhoto && (
+          <div
+            ref={heroCardRef}
+            className="w-full md:w-[48%] h-[55vh] md:h-[72vh] p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
+            style={{
+              transform: `scale(${1 + progress * 0.03}) rotateY(${Math.sin(progress * Math.PI) * 3}deg)`,
+            }}
+          >
+            <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative">
+              <img
+                src={heroPhoto.url}
+                alt={heroPhoto.title || 'Wedding Hero'}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
+            </div>
           </div>
-          <p className="text-xs tracking-[0.16em] text-[#F5EDE1]/70 italic font-serif">
-            (Nhằm ngày 10 tháng 09 năm Bính Ngọ)
-          </p>
-        </div>
-
-        {/* Editorial Subtitle Quote */}
-        {scene.config.quote && (
-          <p className="mt-8 text-xs md:text-sm tracking-wide text-[#F5EDE1]/85 font-serif max-w-md italic border-t border-[#BFA47D]/20 pt-4">
-            "{scene.config.quote}"
-          </p>
         )}
+
+        {/* Right Side: Editorial Typography */}
+        <div className="w-full md:w-[52%] flex flex-col items-center md:items-start text-center md:text-left z-20">
+          {/* Wedding Red Tag */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 mb-5 bg-[#F0DFD5]/90 border border-[#C93442]/30 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
+            <span className="text-[11px] tracking-[0.3em] font-sans font-semibold text-[#C93442] uppercase">
+              THE WEDDING OF
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
+          </div>
+
+          {/* Couple Names */}
+          <div ref={titleRef} className="space-y-2 mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-[#40322F] tracking-wide leading-tight">
+              <span className="block font-medium">TUẤN HÙNG</span>
+              <span className="block font-serif italic text-3xl sm:text-4xl text-[#C5A16E] my-1">
+                &amp;
+              </span>
+              <span className="block font-medium">SAO MAI</span>
+            </h1>
+          </div>
+
+          <div className="w-16 h-[2px] bg-[#C5A16E] mb-6" />
+
+          {/* Wedding Date */}
+          <div ref={subtitleRef} className="space-y-2">
+            <div className="flex items-center gap-3 text-base lg:text-lg tracking-[0.25em] text-[#40322F] font-serif font-medium">
+              <span>19</span>
+              <span className="text-[#C93442]">•</span>
+              <span>10</span>
+              <span className="text-[#C93442]">•</span>
+              <span>2026</span>
+            </div>
+            <p className="text-xs lg:text-sm tracking-[0.12em] text-[#40322F]/75 italic font-serif">
+              (Nhằm ngày 10 tháng 09 năm Bính Ngọ)
+            </p>
+          </div>
+
+          {/* Accent quote */}
+          {scene.config.quote && (
+            <p className="mt-8 text-sm lg:text-base tracking-wide text-[#40322F]/85 font-serif italic max-w-lg border-l-2 border-[#C5A16E]/40 pl-4">
+              "{scene.config.quote}"
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* 35mm Minimal Perforations */}
-      <div className="absolute top-0 left-0 right-0 h-3.5 bg-[#140F11] film-sprocket-track border-b border-[#3A2933]" />
-      <div className="absolute bottom-0 left-0 right-0 h-3.5 bg-[#140F11] film-sprocket-track border-t border-[#3A2933]" />
+      {/* Top & Bottom Champagne Perforation Ribbons */}
+      <div className="absolute top-0 left-0 right-0 h-3 bg-[#F3E9DD] film-sprocket-track opacity-40 border-b border-[#C5A16E]/30" />
+      <div className="absolute bottom-0 left-0 right-0 h-3 bg-[#F3E9DD] film-sprocket-track opacity-40 border-t border-[#C5A16E]/30" />
     </div>
   );
 };

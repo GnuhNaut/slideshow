@@ -32,9 +32,9 @@ export const PreviewCanvas: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 bg-[#140F11] overflow-hidden select-none">
+    <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-5 bg-[#FAF5EE] overflow-hidden select-none border-x border-[#C5A16E]/20">
       {/* 16:9 Letterbox Presentation Monitor */}
-      <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden bg-[#1C1718] border border-[#BFA47D]/30 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex items-center justify-center">
+      <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden bg-white border border-[#C5A16E]/30 luxury-shadow-lg flex items-center justify-center">
         {/* Render Scene */}
         <SceneRenderer
           currentScene={playback.currentScene}
@@ -44,9 +44,9 @@ export const PreviewCanvas: React.FC = () => {
         />
 
         {/* Current Chapter Pill on Top Right */}
-        <div className="absolute top-3 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C1718]/80 border border-[#BFA47D]/30 backdrop-blur-md">
-          <Film className="w-3.5 h-3.5 text-[#BFA47D]" />
-          <span className="text-[11px] font-serif text-[#F5EDE1] tracking-wide">
+        <div className="absolute top-3 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 border border-[#C5A16E]/30 backdrop-blur-md shadow-sm">
+          <Film className="w-3.5 h-3.5 text-[#C93442]" />
+          <span className="text-[11px] font-serif text-[#40322F] tracking-wide font-medium">
             {playback.currentChapter?.title || 'Đang chuẩn bị'}
           </span>
         </div>
@@ -56,21 +56,21 @@ export const PreviewCanvas: React.FC = () => {
           <button
             type="button"
             onClick={togglePlay}
-            className="absolute z-20 w-14 h-14 rounded-full bg-[#581E2C]/90 border border-[#BFA47D] text-[#F5EDE1] flex items-center justify-center shadow-2xl backdrop-blur-sm hover:scale-105 cursor-pointer transition-transform"
+            className="absolute z-20 w-14 h-14 rounded-full bg-[#C93442]/90 border border-white text-white flex items-center justify-center shadow-xl backdrop-blur-sm hover:scale-105 cursor-pointer transition-transform"
           >
-            <Play className="w-6 h-6 text-[#BFA47D] ml-0.5" />
+            <Play className="w-6 h-6 fill-white ml-0.5" />
           </button>
         )}
       </div>
 
       {/* Transport Control Bar Below Canvas */}
-      <div className="w-full max-w-5xl mt-2.5 px-4 py-2 rounded-lg bg-[#1C1718] border border-[#BFA47D]/20 flex items-center justify-between shadow">
+      <div className="w-full max-w-5xl mt-3 px-4 py-2 rounded-lg bg-white border border-[#C5A16E]/30 flex items-center justify-between shadow-sm">
         {/* Playback Buttons */}
         <div className="flex items-center gap-1 sm:gap-2">
           <button
             type="button"
             onClick={restart}
-            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
+            className="p-1.5 rounded text-[#40322F] hover:bg-[#FAF3EB] cursor-pointer transition-colors"
             title="Phát lại từ đầu"
           >
             <RotateCcw className="w-4 h-4" />
@@ -78,7 +78,7 @@ export const PreviewCanvas: React.FC = () => {
           <button
             type="button"
             onClick={prevChapter}
-            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
+            className="p-1.5 rounded text-[#40322F] hover:bg-[#FAF3EB] cursor-pointer transition-colors"
             title="Chương trước"
           >
             <SkipBack className="w-4 h-4" />
@@ -86,29 +86,29 @@ export const PreviewCanvas: React.FC = () => {
           <button
             type="button"
             onClick={togglePlay}
-            className="w-8 h-8 rounded bg-[#581E2C] border border-[#BFA47D]/50 text-[#F5EDE1] flex items-center justify-center hover:scale-105 cursor-pointer transition-transform"
+            className="w-8 h-8 rounded bg-[#C93442] text-white flex items-center justify-center hover:scale-105 cursor-pointer transition-transform shadow-sm"
             title={playback.isPlaying ? 'Tạm dừng (Space)' : 'Phát (Space)'}
           >
             {playback.isPlaying ? (
-              <Pause className="w-4 h-4 text-[#BFA47D]" />
+              <Pause className="w-4 h-4" />
             ) : (
-              <Play className="w-4 h-4 text-[#BFA47D] ml-0.5" />
+              <Play className="w-4 h-4 fill-white ml-0.5" />
             )}
           </button>
           <button
             type="button"
             onClick={nextChapter}
-            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
+            className="p-1.5 rounded text-[#40322F] hover:bg-[#FAF3EB] cursor-pointer transition-colors"
             title="Chương tiếp theo"
           >
             <SkipForward className="w-4 h-4" />
           </button>
 
           {/* Timecode */}
-          <div className="ml-2 px-2.5 py-0.5 rounded bg-[#100B0D] border border-[#BFA47D]/20 font-mono text-xs text-[#BFA47D]">
+          <div className="ml-2 px-2.5 py-0.5 rounded bg-[#FAF3EC] border border-[#C5A16E]/30 font-mono text-xs text-[#40322F]">
             <span>{formatTime(playback.currentTime)}</span>
-            <span className="text-[#BFA47D]/40 mx-1">/</span>
-            <span className="text-[#F5EDE1]/60">{formatTime(playback.totalDuration)}</span>
+            <span className="text-[#C5A16E] mx-1">/</span>
+            <span className="text-[#40322F]/60">{formatTime(playback.totalDuration)}</span>
           </div>
         </div>
 
@@ -123,8 +123,8 @@ export const PreviewCanvas: React.FC = () => {
                 onClick={() => setPlaybackSpeed(speed)}
                 className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                   playback.playbackSpeed === speed
-                    ? 'bg-[#BFA47D] text-[#1C1718] font-bold'
-                    : 'text-[#BFA47D]/60 hover:text-[#BFA47D]'
+                    ? 'bg-[#C5A16E] text-white font-bold'
+                    : 'text-[#40322F]/70 hover:text-[#C93442]'
                 }`}
               >
                 {speed}x
@@ -137,11 +137,11 @@ export const PreviewCanvas: React.FC = () => {
             <button
               type="button"
               onClick={toggleMute}
-              className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
-              title={playback.isMuted ? 'Bật tiếng (M)' : 'Tắt tiếng (M)'}
+              className="p-1.5 rounded text-[#40322F] hover:bg-[#FAF3EB] cursor-pointer transition-colors"
+              title={playback.isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
             >
               {playback.isMuted ? (
-                <VolumeX className="w-4 h-4 text-rose-400" />
+                <VolumeX className="w-4 h-4 text-red-500" />
               ) : (
                 <Volume2 className="w-4 h-4" />
               )}
@@ -153,18 +153,19 @@ export const PreviewCanvas: React.FC = () => {
               step="0.05"
               value={playback.isMuted ? 0 : playback.volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-14 h-1 accent-[#BFA47D] bg-[#33242A] rounded cursor-pointer"
+              className="w-14 sm:w-20 h-1 bg-[#FAF3EC] rounded-lg appearance-none cursor-pointer accent-[#C93442]"
             />
           </div>
 
-          {/* Fullscreen button */}
+          {/* Stage Mode Button */}
           <button
             type="button"
             onClick={() => setViewMode('player')}
-            className="p-1.5 rounded border border-[#BFA47D]/25 text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
-            title="Mở toàn màn hình trình chiếu (F)"
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#C93442] text-white text-xs font-serif hover:bg-[#9B222E] cursor-pointer transition-colors shadow-sm"
+            title="Mở chế độ trình chiếu (Stage Mode)"
           >
-            <Maximize2 className="w-4 h-4" />
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Trình Chiếu</span>
           </button>
         </div>
       </div>

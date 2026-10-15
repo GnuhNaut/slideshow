@@ -11,7 +11,12 @@ export type SceneType =
   | 'living_collage'
   | 'climax_wipe'
   | 'thank_you'
-  | 'final_freeze';
+  | 'final_freeze'
+  | 'arc_carousel_3d'
+  | 'floating_gallery'
+  | 'editorial_split'
+  | 'photo_mosaic'
+  | 'album_page_turn';
 
 export interface TimelineScene {
   id: string;
@@ -33,10 +38,10 @@ export interface TimelineScene {
     quote?: string;
     reversed?: boolean;
     layerDepth?: number;
-    ambientLight?: 'warm' | 'rose' | 'gold';
+    ambientLight?: 'warm' | 'rose' | 'gold' | 'ivory' | 'red';
   };
-  transitionIn: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve';
-  transitionOut: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve';
+  transitionIn: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';
+  transitionOut: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';
 }
 
 export interface ChapterTimelineMeta {

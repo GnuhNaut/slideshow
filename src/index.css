@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Modern Editorial Wedding Cinema Palette */
+  /* Bright Luxury Wedding Cinema Palette */
+  --warm-ivory: #FFF9F2;
+  --blush-pink: #F0DFD5;
+  --wedding-red: #C93442;
+  --wedding-red-dark: #9B222E;
+  --champagne-gold: #C5A16E;
+  --champagne-light: #F3E9DD;
+  --soft-cocoa: #40322F;
+  --pure-white: #FFFFFF;
   --espresso: #1C1718;
-  --espresso-dark: #100B0D;
-  --espresso-card: #241C1E;
-  --wine-red: #581E2C;
-  --warm-ivory: #F5EDE1;
-  --matte-champagne: #BFA47D;
-  --dusty-rose: #CEB2AB;
+  --espresso-card: #251E20;
 
   /* Typography */
   --font-serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
@@ -18,13 +21,16 @@
 }
 
 @theme {
-  --color-espresso: var(--espresso);
-  --color-espresso-dark: var(--espresso-dark);
-  --color-espresso-card: var(--espresso-card);
-  --color-wine-red: var(--wine-red);
   --color-warm-ivory: var(--warm-ivory);
-  --color-matte-champagne: var(--matte-champagne);
-  --color-dusty-rose: var(--dusty-rose);
+  --color-blush-pink: var(--blush-pink);
+  --color-wedding-red: var(--wedding-red);
+  --color-wedding-red-dark: var(--wedding-red-dark);
+  --color-champagne-gold: var(--champagne-gold);
+  --color-champagne-light: var(--champagne-light);
+  --color-soft-cocoa: var(--soft-cocoa);
+  --color-pure-white: var(--pure-white);
+  --color-espresso: var(--espresso);
+  --color-espresso-card: var(--espresso-card);
 
   --font-serif: var(--font-serif);
   --font-serif-sc: var(--font-serif-sc);
@@ -41,8 +47,8 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--espresso);
-  color: var(--warm-ivory);
+  background-color: var(--warm-ivory);
+  color: var(--soft-cocoa);
   font-family: var(--font-sans);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -55,10 +61,52 @@ html, body {
   flex-direction: column;
 }
 
-/* 35mm Filmstrip Sprockets */
+/* 3D Perspective Utilities */
+.perspective-cinema {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.perspective-wide {
+  perspective: 2000px;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Luxury Album & Card Drop Shadows */
+.luxury-shadow-sm {
+  box-shadow: 0 10px 30px -10px rgba(64, 50, 47, 0.12);
+}
+
+.luxury-shadow-md {
+  box-shadow: 0 20px 40px -15px rgba(64, 50, 47, 0.18);
+}
+
+.luxury-shadow-lg {
+  box-shadow: 0 30px 60px -20px rgba(64, 50, 47, 0.25);
+}
+
+.album-shadow {
+  box-shadow: -8px 0 25px -5px rgba(64, 50, 47, 0.22),
+              0 25px 45px -10px rgba(64, 50, 47, 0.28);
+}
+
+.champagne-glow {
+  box-shadow: 0 0 45px -5px rgba(197, 161, 110, 0.35);
+}
+
+/* 35mm Filmstrip Sprockets - Luxury Champagne & Cocoa edition */
 .film-sprocket-track {
-  background-image: radial-gradient(circle, #0e090b 35%, transparent 40%),
-                    radial-gradient(circle, #0e090b 35%, transparent 40%);
+  background-image: radial-gradient(circle, #40322f 35%, transparent 40%),
+                    radial-gradient(circle, #40322f 35%, transparent 40%);
   background-size: 28px 12px;
   background-position: 0 0, 14px 0;
   background-repeat: repeat-x;
@@ -69,22 +117,22 @@ html, body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 /* Custom Minimalist Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #140F11;
+  background: #F3E9DD;
 }
 ::-webkit-scrollbar-thumb {
-  background: #33242A;
-  border-radius: 3px;
+  background: #C5A16E;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #581E2C;
+  background: #9B222E;
 }

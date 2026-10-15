@@ -101,7 +101,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#151114] text-[#FFF4E4]">
+    <div className="w-full min-h-screen bg-[#FFF9F2] text-[#40322F]">
       {/* Hidden file input for project import */}
       <input
         ref={importInputRef}
@@ -133,16 +133,16 @@ export const App: React.FC = () => {
 
       {/* User Notification Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1e151b] border border-[#ecd28f]/50 shadow-[0_10px_35px_rgba(0,0,0,0.8)] text-xs text-[#FFF4E4] font-serif tracking-wide backdrop-blur-md animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-[#C5A16E]/40 shadow-xl text-xs text-[#40322F] font-serif tracking-wide backdrop-blur-md animate-in fade-in slide-in-from-bottom-3">
           {toast.type === 'success' ? (
-            <Check className="w-4 h-4 text-emerald-400" />
+            <Check className="w-4 h-4 text-emerald-600" />
           ) : (
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
           )}
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
-            className="p-1 text-[#ecd28f]/60 hover:text-[#ecd28f]"
+            className="p-1 text-[#40322F]/50 hover:text-[#40322F] cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
