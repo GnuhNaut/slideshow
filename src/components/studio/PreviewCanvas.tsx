@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   Play,
   Pause,
@@ -25,8 +25,6 @@ export const PreviewCanvas: React.FC = () => {
   const setViewMode = useWeddingStore((s) => s.setViewMode);
   const enableGrain = useWeddingStore((s) => s.project.globalSettings.enableFilmGrain);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const formatTime = (timeInSec: number) => {
     const mins = Math.floor(timeInSec / 60);
     const secs = Math.floor(timeInSec % 60);
@@ -34,9 +32,9 @@ export const PreviewCanvas: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 bg-[#120d11] overflow-hidden select-none">
+    <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 bg-[#140F11] overflow-hidden select-none">
       {/* 16:9 Letterbox Presentation Monitor */}
-      <div className="relative w-full max-w-5xl aspect-video rounded-xl overflow-hidden bg-[#151114] border-2 border-[#ecd28f]/35 shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center justify-center">
+      <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden bg-[#1C1718] border border-[#BFA47D]/30 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex items-center justify-center">
         {/* Render Scene */}
         <SceneRenderer
           currentScene={playback.currentScene}
@@ -45,10 +43,10 @@ export const PreviewCanvas: React.FC = () => {
           enableGrain={enableGrain}
         />
 
-        {/* Current Chapter Tag Pill on Top Right */}
-        <div className="absolute top-3 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-[#151114]/80 border border-[#ecd28f]/30 backdrop-blur-md">
-          <Film className="w-3.5 h-3.5 text-[#ecd28f]" />
-          <span className="text-[11px] font-serif text-[#FFF4E4] tracking-wide">
+        {/* Current Chapter Pill on Top Right */}
+        <div className="absolute top-3 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C1718]/80 border border-[#BFA47D]/30 backdrop-blur-md">
+          <Film className="w-3.5 h-3.5 text-[#BFA47D]" />
+          <span className="text-[11px] font-serif text-[#F5EDE1] tracking-wide">
             {playback.currentChapter?.title || 'Đang chuẩn bị'}
           </span>
         </div>
@@ -56,71 +54,77 @@ export const PreviewCanvas: React.FC = () => {
         {/* Big Center Play Icon overlay when paused */}
         {!playback.isPlaying && (
           <button
+            type="button"
             onClick={togglePlay}
-            className="absolute z-20 w-16 h-16 rounded-full bg-[#81252D]/85 border-2 border-[#ecd28f] text-[#FFF4E4] flex items-center justify-center shadow-2xl backdrop-blur-sm hover:scale-110 transition-transform"
+            className="absolute z-20 w-14 h-14 rounded-full bg-[#581E2C]/90 border border-[#BFA47D] text-[#F5EDE1] flex items-center justify-center shadow-2xl backdrop-blur-sm hover:scale-105 cursor-pointer transition-transform"
           >
-            <Play className="w-7 h-7 text-[#ecd28f] ml-1" />
+            <Play className="w-6 h-6 text-[#BFA47D] ml-0.5" />
           </button>
         )}
       </div>
 
-      {/* Floating Transport Control Bar Below Canvas */}
-      <div className="w-full max-w-5xl mt-3 px-4 py-2.5 rounded-xl bg-[#181216] border border-[#ecd28f]/20 flex items-center justify-between shadow-lg">
+      {/* Transport Control Bar Below Canvas */}
+      <div className="w-full max-w-5xl mt-2.5 px-4 py-2 rounded-lg bg-[#1C1718] border border-[#BFA47D]/20 flex items-center justify-between shadow">
         {/* Playback Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
+            type="button"
             onClick={restart}
-            className="p-2 rounded-lg text-[#ecd28f] hover:bg-[#81252D]/40 transition-colors"
+            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
             title="Phát lại từ đầu"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
+            type="button"
             onClick={prevChapter}
-            className="p-2 rounded-lg text-[#ecd28f] hover:bg-[#81252D]/40 transition-colors"
+            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
             title="Chương trước"
           >
             <SkipBack className="w-4 h-4" />
           </button>
           <button
+            type="button"
             onClick={togglePlay}
-            className="w-9 h-9 rounded-lg bg-gradient-to-r from-[#81252D] to-[#691014] border border-[#ecd28f]/50 text-[#FFF4E4] flex items-center justify-center hover:scale-105 shadow transition-transform"
+            className="w-8 h-8 rounded bg-[#581E2C] border border-[#BFA47D]/50 text-[#F5EDE1] flex items-center justify-center hover:scale-105 cursor-pointer transition-transform"
             title={playback.isPlaying ? 'Tạm dừng (Space)' : 'Phát (Space)'}
           >
             {playback.isPlaying ? (
-              <Pause className="w-4 h-4 text-[#ecd28f]" />
+              <Pause className="w-4 h-4 text-[#BFA47D]" />
             ) : (
-              <Play className="w-4 h-4 text-[#ecd28f] ml-0.5" />
+              <Play className="w-4 h-4 text-[#BFA47D] ml-0.5" />
             )}
           </button>
           <button
+            type="button"
             onClick={nextChapter}
-            className="p-2 rounded-lg text-[#ecd28f] hover:bg-[#81252D]/40 transition-colors"
+            className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
             title="Chương tiếp theo"
           >
             <SkipForward className="w-4 h-4" />
           </button>
 
           {/* Timecode */}
-          <div className="ml-3 px-2.5 py-1 rounded bg-[#120d10] border border-[#ecd28f]/20 font-mono text-xs text-[#ecd28f]">
+          <div className="ml-2 px-2.5 py-0.5 rounded bg-[#100B0D] border border-[#BFA47D]/20 font-mono text-xs text-[#BFA47D]">
             <span>{formatTime(playback.currentTime)}</span>
-            <span className="text-[#ecd28f]/40 mx-1">/</span>
-            <span className="text-[#FFF4E4]/60">{formatTime(playback.totalDuration)}</span>
+            <span className="text-[#BFA47D]/40 mx-1">/</span>
+            <span className="text-[#F5EDE1]/60">{formatTime(playback.totalDuration)}</span>
           </div>
         </div>
 
         {/* Volume & Speed & Fullscreen */}
-        <div className="flex items-center gap-3">
-          {/* Playback Speed selector */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Playback Speed */}
           <div className="flex items-center gap-1">
             {[0.75, 1, 1.25].map((speed) => (
               <button
                 key={speed}
+                type="button"
                 onClick={() => setPlaybackSpeed(speed)}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors ${
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
                   playback.playbackSpeed === speed
-                    ? 'bg-[#ecd28f] text-[#151114] font-bold'
-                    : 'text-[#ecd28f]/60 hover:text-[#ecd28f]'
+                    ? 'bg-[#BFA47D] text-[#1C1718] font-bold'
+                    : 'text-[#BFA47D]/60 hover:text-[#BFA47D]'
                 }`}
               >
                 {speed}x
@@ -131,8 +135,9 @@ export const PreviewCanvas: React.FC = () => {
           {/* Volume Control */}
           <div className="flex items-center gap-1.5">
             <button
+              type="button"
               onClick={toggleMute}
-              className="p-1.5 rounded text-[#ecd28f] hover:bg-[#81252D]/40 transition-colors"
+              className="p-1.5 rounded text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
               title={playback.isMuted ? 'Bật tiếng (M)' : 'Tắt tiếng (M)'}
             >
               {playback.isMuted ? (
@@ -148,14 +153,15 @@ export const PreviewCanvas: React.FC = () => {
               step="0.05"
               value={playback.isMuted ? 0 : playback.volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-16 h-1 accent-[#d4ac59] bg-[#3a2933] rounded cursor-pointer"
+              className="w-14 h-1 accent-[#BFA47D] bg-[#33242A] rounded cursor-pointer"
             />
           </div>
 
           {/* Fullscreen button */}
           <button
+            type="button"
             onClick={() => setViewMode('player')}
-            className="p-2 rounded-lg border border-[#ecd28f]/30 text-[#ecd28f] hover:bg-[#81252D]/40 transition-colors"
+            className="p-1.5 rounded border border-[#BFA47D]/25 text-[#BFA47D] hover:bg-[#241C1E] cursor-pointer transition-colors"
             title="Mở toàn màn hình trình chiếu (F)"
           >
             <Maximize2 className="w-4 h-4" />

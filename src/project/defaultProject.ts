@@ -10,7 +10,7 @@ export function createInitialWeddingProject(): WeddingProject {
       url: createCinematicSvgPhoto(
         'THE WEDDING OF',
         'Tuấn Hùng & Sao Mai',
-        '#81252D',
+        '#581E2C',
         1920,
         1080
       ),
@@ -127,7 +127,7 @@ export function createInitialWeddingProject(): WeddingProject {
           url: createCinematicSvgPhoto(
             'LỜI CẢM ƠN',
             'Tri ân gia đình, người thân và bè bạn',
-            '#691014',
+            '#581E2C',
             1920,
             1080
           ),
@@ -154,7 +154,7 @@ export function createInitialWeddingProject(): WeddingProject {
       mode: 'auto',
       effectMode: 'f08_final_freeze',
       speed: 1,
-      durationOverride: 9999, // infinite hold
+      durationOverride: 12,
       transitionType: 'soft_light',
       photos: [
         {
@@ -164,7 +164,7 @@ export function createInitialWeddingProject(): WeddingProject {
           url: createCinematicSvgPhoto(
             'OUR FOREVER',
             'Tuấn Hùng & Sao Mai • 19.10.2026',
-            '#81252D',
+            '#581E2C',
             1920,
             1080
           ),

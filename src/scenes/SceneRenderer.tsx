@@ -24,7 +24,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
 }) => {
   if (!currentScene) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[#151114] text-[#ecd28f]/60 font-serif">
+      <div className="w-full h-full flex items-center justify-center bg-[#1C1718] text-[#BFA47D]/60 font-serif">
         Đang chuẩn bị thước phim...
       </div>
     );
@@ -35,7 +35,7 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const progress = currentScene.duration > 0 ? Math.min(1, elapsed / currentScene.duration) : 0;
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#151114]">
+    <div className="relative w-full h-full overflow-hidden select-none bg-[#1C1718]">
       {/* Dynamic Scene Component */}
       {(() => {
         switch (currentScene.type) {

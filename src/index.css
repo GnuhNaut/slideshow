@@ -1,53 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  /* Cinematic & Wedding Palette */
-  --cinema-black: #151114;
-  --cinema-dark: #1e171c;
-  --cinema-card: #241b21;
-  --lacquer: #c91d26;
-  --vermilion: #de2630;
-  --warm-red: #b91921;
-  --deep-red: #95161b;
-  --dark-red: #691014;
-  --premium-burgundy: #81252D;
-  --champagne: #d4ac59;
-  --light-champagne: #ecd28f;
-  --champagne-gold: #c6a477;
-  --ivory: #fff4e4;
-  --warm-ivory: #f5eee4;
-  --paper: #f5e2c5;
-  --ink: #25130f;
-  --muted: #8c736a;
-  --muted-rose: #d9b3b5;
+  /* Modern Editorial Wedding Cinema Palette */
+  --espresso: #1C1718;
+  --espresso-dark: #100B0D;
+  --espresso-card: #241C1E;
+  --wine-red: #581E2C;
+  --warm-ivory: #F5EDE1;
+  --matte-champagne: #BFA47D;
+  --dusty-rose: #CEB2AB;
 
   /* Typography */
-  --font-serif: "Cormorant Garamond", "Playfair Display", serif;
+  --font-serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
   --font-serif-sc: "Cormorant SC", "Cormorant Garamond", serif;
   --font-display: "Playfair Display", "Cormorant Garamond", serif;
-  --font-sans: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Easing */
-  --ease-cinematic: cubic-bezier(0.25, 1, 0.5, 1);
-  --ease-film: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-sans: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @theme {
-  --color-cinema-black: var(--cinema-black);
-  --color-cinema-dark: var(--cinema-dark);
-  --color-cinema-card: var(--cinema-card);
-  --color-lacquer: var(--lacquer);
-  --color-vermilion: var(--vermilion);
-  --color-deep-red: var(--deep-red);
-  --color-dark-red: var(--dark-red);
-  --color-burgundy: var(--premium-burgundy);
-  --color-champagne: var(--champagne);
-  --color-light-champagne: var(--light-champagne);
-  --color-champagne-gold: var(--champagne-gold);
-  --color-ivory: var(--ivory);
+  --color-espresso: var(--espresso);
+  --color-espresso-dark: var(--espresso-dark);
+  --color-espresso-card: var(--espresso-card);
+  --color-wine-red: var(--wine-red);
   --color-warm-ivory: var(--warm-ivory);
-  --color-paper: var(--paper);
-  --color-muted-rose: var(--muted-rose);
+  --color-matte-champagne: var(--matte-champagne);
+  --color-dusty-rose: var(--dusty-rose);
 
   --font-serif: var(--font-serif);
   --font-serif-sc: var(--font-serif-sc);
@@ -64,7 +41,7 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--cinema-black);
+  background-color: var(--espresso);
   color: var(--warm-ivory);
   font-family: var(--font-sans);
   overflow-x: hidden;
@@ -78,57 +55,36 @@ html, body {
   flex-direction: column;
 }
 
-/* 35mm Filmstrip Sprocket & Film Frame Effects */
+/* 35mm Filmstrip Sprockets */
 .film-sprocket-track {
-  background-image: radial-gradient(circle, #0e0b0d 35%, transparent 40%),
-                    radial-gradient(circle, #0e0b0d 35%, transparent 40%);
-  background-size: 28px 14px;
+  background-image: radial-gradient(circle, #0e090b 35%, transparent 40%),
+                    radial-gradient(circle, #0e090b 35%, transparent 40%);
+  background-size: 28px 12px;
   background-position: 0 0, 14px 0;
   background-repeat: repeat-x;
 }
 
-.film-border {
-  border: 1px solid rgba(212, 172, 89, 0.25);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 0, 0, 0.5);
-}
-
-.gold-gradient-text {
-  background: linear-gradient(135deg, #ecd28f 0%, #d4ac59 45%, #f7e7be 70%, #b88b36 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.gold-gradient-border {
-  border-image: linear-gradient(135deg, #d4ac59, #ecd28f, #81252d) 1;
-}
-
-.rose-gold-gradient {
-  background: linear-gradient(135deg, #d9b3b5 0%, #ecd28f 50%, #c6a477 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Subtle Film Grain Overlay */
+/* Subtle Film Grain */
 .film-grain {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.04;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Custom Scrollbar for Studio */
+/* Custom Minimalist Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #151114;
+  background: #140F11;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3a2933;
+  background: #33242A;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #81252D;
+  background: #581E2C;
 }

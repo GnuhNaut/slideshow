@@ -1,4 +1,4 @@
-import { WeddingProject, ChapterConfig } from '../types/project';
+import { WeddingProject, ChapterConfig, PhotoItem } from '../types/project';
 import { TimelineScene, CompiledTimeline, ChapterTimelineMeta } from '../types/timeline';
 
 export function compileProjectTimeline(project: WeddingProject): CompiledTimeline {
@@ -47,7 +47,7 @@ function compileChapterScenes(
 
   switch (chapter.chapterIndex) {
     case 1: {
-      // INTRO: THE BEGINNING
+      // CHƯƠNG 1 — INTRO: THE BEGINNING
       const duration = chapter.durationOverride || 14;
       const heroPhoto = photos[0];
       scenes.push({
@@ -64,7 +64,7 @@ function compileChapterScenes(
         config: {
           textTitle: project.title,
           textSubtitle: `${project.groomName} & ${project.brideName}`,
-          quote: chapter.accentQuote,
+          quote: chapter.accentQuote || 'Mọi câu chuyện tình yêu đều đẹp, nhưng câu chuyện của chúng mình là điều tuyệt vời nhất.',
           ambientLight: 'gold',
         },
         transitionIn: 'soft_light',
@@ -75,10 +75,14 @@ function compileChapterScenes(
     }
 
     case 2: {
-      // NHỮNG NGÀY BÊN NHAU (Continuous / Dual Film Roll)
-      const duration = chapter.durationOverride || Math.max(20, photos.length * 3.5);
-      const isDual = chapter.effectMode === 'f02_dual_roll' || photos.length >= 6;
-      
+      // CHƯƠNG 2 — NHỮNG NGÀY BÊN NHAU (Continuous / Dual Film Roll)
+      // Displays ALL photos in the 35mm filmstrip without truncation!
+      // Minimum duration guarantees guests can clearly view the photos
+      const secPerPhoto = 3.5;
+      const calculatedDuration = Math.max(20, photos.length * secPerPhoto);
+      const duration = chapter.durationOverride || calculatedDuration;
+      const isDual = chapter.effectMode === 'f02_dual_roll' || photos.length >= 8;
+
       scenes.push({
         id: `${chapter.id}_scene_filmroll`,
         chapterId: chapter.id,
@@ -88,11 +92,11 @@ function compileChapterScenes(
         startTime: cursor,
         duration,
         endTime: cursor + duration,
-        photos: [...photos],
+        photos: [...photos], // ALL photos included!
         config: {
           speed: chapter.speed || 48,
           ambientLight: 'warm',
-          quote: chapter.accentQuote,
+          quote: chapter.accentQuote || 'Từ những buổi hẹn hò đầu tiên đến những chuyến đi đầy ắp tiếng cười.',
         },
         transitionIn: 'cut',
         transitionOut: 'film_wipe',
@@ -102,12 +106,12 @@ function compileChapterScenes(
     }
 
     case 3: {
-      // LỜI CẦU HÔN (Film-to-Hero + Emotional Zoom)
+      // CHƯƠNG 3 — LỜI CẦU HÔN (Film-to-Hero + Emotional Ken Burns Zoom)
       const heroPhoto = photos.find((p) => p.isHero) || photos[0];
       const otherPhotos = photos.filter((p) => p.id !== heroPhoto?.id);
 
       // Part 1: Strip decelerating into hero
-      const filmDuration = 8;
+      const filmDuration = 7;
       scenes.push({
         id: `${chapter.id}_scene_film_to_hero`,
         chapterId: chapter.id,
@@ -128,8 +132,8 @@ function compileChapterScenes(
       });
       cursor += filmDuration;
 
-      // Part 2: Hero proposal presentation with slow pan/zoom
-      const heroDuration = 10;
+      // Part 2: Hero proposal moment
+      const heroDuration = 9;
       scenes.push({
         id: `${chapter.id}_scene_proposal_hero`,
         chapterId: chapter.id,
@@ -152,163 +156,193 @@ function compileChapterScenes(
       });
       cursor += heroDuration;
 
-      // Part 3: Other proposal moments if present
+      // Part 3: Any additional proposal photos partitioned into sequential scenes so NONE are skipped!
       if (otherPhotos.length > 0) {
-        const othersDuration = Math.min(12, otherPhotos.length * 4);
-        scenes.push({
-          id: `${chapter.id}_scene_proposal_others`,
-          chapterId: chapter.id,
-          chapterIndex: 3,
-          chapterTitle: chapter.vietnameseTitle,
-          type: 'living_collage',
-          startTime: cursor,
-          duration: othersDuration,
-          endTime: cursor + othersDuration,
-          photos: otherPhotos,
-          config: {
-            layout: otherPhotos.length >= 3 ? 'hero_and_2' : 'split_2',
-            ambientLight: 'warm',
-          },
-          transitionIn: 'soft_light',
-          transitionOut: 'fade',
-        });
-        cursor += othersDuration;
+        // Chunk other proposal photos into groups of max 3
+        const chunkSize = 3;
+        for (let i = 0; i < otherPhotos.length; i += chunkSize) {
+          const chunk = otherPhotos.slice(i, i + chunkSize);
+          const chunkDuration = Math.max(6, chunk.length * 3.5);
+
+          scenes.push({
+            id: `${chapter.id}_scene_proposal_others_${i}`,
+            chapterId: chapter.id,
+            chapterIndex: 3,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'living_collage',
+            startTime: cursor,
+            duration: chunkDuration,
+            endTime: cursor + chunkDuration,
+            photos: chunk,
+            config: {
+              layout: chunk.length === 1 ? 'single' : chunk.length === 2 ? 'split_2' : 'hero_and_2',
+              ambientLight: 'warm',
+            },
+            transitionIn: 'soft_light',
+            transitionOut: 'fade',
+          });
+          cursor += chunkDuration;
+        }
       }
       break;
     }
 
     case 4: {
-      // HAI GIA ĐÌNH, MỘT HẠNH PHÚC (Family, Engagement)
-      // Strict aspect ratio protection: ensure no group members are cropped
-      const duration = chapter.durationOverride || Math.max(18, photos.length * 4);
-      
-      // Auto Director creates 2 sub-scenes if > 3 photos
-      if (photos.length > 3) {
-        const half = Math.ceil(photos.length / 2);
-        const p1 = photos.slice(0, half);
-        const p2 = photos.slice(half);
-
+      // CHƯƠNG 4 — HAI GIA ĐÌNH, MỘT HẠNH PHÚC (Family, Engagement)
+      // ALL family photos partitioned into safe contain layout scenes!
+      // Groups of 1 or 2 photos per scene to guarantee faces are never cropped.
+      if (photos.length === 0) {
+        // Fallback placeholder
         scenes.push({
-          id: `${chapter.id}_scene_family_1`,
-          chapterId: chapter.id,
-          chapterIndex: 4,
-          chapterTitle: chapter.vietnameseTitle,
-          type: 'family_split',
-          startTime: cursor,
-          duration: duration / 2,
-          endTime: cursor + duration / 2,
-          photos: p1,
-          config: {
-            layout: p1.length === 2 ? 'split_2' : 'hero_and_2',
-            ambientLight: 'warm',
-            quote: 'Lễ dạm ngõ ấm cúng - Hai gia đình cùng chung vui.',
-          },
-          transitionIn: 'soft_light',
-          transitionOut: 'dissolve',
-        });
-        cursor += duration / 2;
-
-        scenes.push({
-          id: `${chapter.id}_scene_family_2`,
+          id: `${chapter.id}_empty`,
           chapterId: chapter.id,
           chapterIndex: 4,
           chapterTitle: chapter.vietnameseTitle,
           type: 'family_gallery',
           startTime: cursor,
-          duration: duration / 2,
-          endTime: cursor + duration / 2,
-          photos: p2,
-          config: {
-            layout: 'single',
-            ambientLight: 'warm',
-            quote: chapter.accentQuote,
-          },
-          transitionIn: 'dissolve',
-          transitionOut: 'fade',
-        });
-        cursor += duration / 2;
-      } else {
-        scenes.push({
-          id: `${chapter.id}_scene_family_all`,
-          chapterId: chapter.id,
-          chapterIndex: 4,
-          chapterTitle: chapter.vietnameseTitle,
-          type: 'family_gallery',
-          startTime: cursor,
-          duration,
-          endTime: cursor + duration,
-          photos,
-          config: {
-            layout: photos.length === 1 ? 'single' : 'split_2',
-            ambientLight: 'warm',
-            quote: chapter.accentQuote,
-          },
+          duration: 10,
+          endTime: cursor + 10,
+          photos: [],
+          config: { layout: 'single', ambientLight: 'warm' },
           transitionIn: 'soft_light',
           transitionOut: 'fade',
         });
-        cursor += duration;
+        cursor += 10;
+        break;
+      }
+
+      // Chunking: 2 photos per scene for elegance, or 1 photo if portrait/collective
+      const chunkSize = 2;
+      for (let i = 0; i < photos.length; i += chunkSize) {
+        const chunk = photos.slice(i, i + chunkSize);
+        const sceneDuration = Math.max(6, chunk.length * 4);
+
+        scenes.push({
+          id: `${chapter.id}_scene_family_chunk_${i}`,
+          chapterId: chapter.id,
+          chapterIndex: 4,
+          chapterTitle: chapter.vietnameseTitle,
+          type: chunk.length === 1 ? 'family_gallery' : 'family_split',
+          startTime: cursor,
+          duration: sceneDuration,
+          endTime: cursor + sceneDuration,
+          photos: chunk,
+          config: {
+            layout: chunk.length === 1 ? 'single' : 'split_2',
+            ambientLight: 'warm',
+            quote:
+              i === 0
+                ? 'Lễ dạm ngõ ấm cúng — Hai gia đình chung một niềm hạnh phúc.'
+                : chapter.accentQuote || 'Hạnh phúc trọn vẹn trong tình thương yêu của đấng sinh thành.',
+          },
+          transitionIn: i === 0 ? 'soft_light' : 'dissolve',
+          transitionOut: i + chunkSize >= photos.length ? 'fade' : 'dissolve',
+        });
+        cursor += sceneDuration;
       }
       break;
     }
 
     case 5: {
-      // FOREVER TOGETHER (Pre-wedding, Climax visual effects)
-      const duration = chapter.durationOverride || Math.max(26, photos.length * 4);
-      const heroPhotos = photos.filter((p) => p.isHero);
-      const mainHero = heroPhotos[0] || photos[0];
-      const remaining = photos.filter((p) => p.id !== mainHero?.id);
+      // CHƯƠNG 5 — FOREVER TOGETHER (Wedding Climax Montage)
+      // Must present ALL photos without skipping any!
+      // Sequenced through varied montage scenes:
+      // Hero moments (1 photo), Editorial Duos (2 photos), Living Collages (3-4 photos).
+      if (photos.length === 0) {
+        scenes.push({
+          id: `${chapter.id}_empty`,
+          chapterId: chapter.id,
+          chapterIndex: 5,
+          chapterTitle: chapter.vietnameseTitle,
+          type: 'hero_moment',
+          startTime: cursor,
+          duration: 12,
+          endTime: cursor + 12,
+          photos: [],
+          config: { ambientLight: 'gold' },
+          transitionIn: 'film_wipe',
+          transitionOut: 'dissolve',
+        });
+        cursor += 12;
+        break;
+      }
 
-      // Scene 5A: Cinematic reveal
-      const d1 = Math.floor(duration * 0.4);
-      scenes.push({
-        id: `${chapter.id}_scene_climax_reveal`,
-        chapterId: chapter.id,
-        chapterIndex: 5,
-        chapterTitle: chapter.vietnameseTitle,
-        type: 'hero_moment',
-        startTime: cursor,
-        duration: d1,
-        endTime: cursor + d1,
-        photos: mainHero ? [mainHero] : [],
-        heroPhoto: mainHero,
-        config: {
-          panDirection: 'zoom_out',
-          ambientLight: 'gold',
-          textTitle: 'FOREVER TOGETHER',
-          quote: 'Vẻ đẹp tinh khôi của ngày trọng đại nhất.',
-        },
-        transitionIn: 'film_wipe',
-        transitionOut: 'dissolve',
-      });
-      cursor += d1;
+      let photoIndex = 0;
+      let sceneCounter = 1;
 
-      // Scene 5B: Multi-photo living collage or wipe
-      const d2 = duration - d1;
-      scenes.push({
-        id: `${chapter.id}_scene_climax_collage`,
-        chapterId: chapter.id,
-        chapterIndex: 5,
-        chapterTitle: chapter.vietnameseTitle,
-        type: 'living_collage',
-        startTime: cursor,
-        duration: d2,
-        endTime: cursor + d2,
-        photos: remaining.length > 0 ? remaining : photos,
-        config: {
-          layout: remaining.length >= 4 ? 'grid_4' : 'hero_and_2',
-          ambientLight: 'gold',
-          quote: chapter.accentQuote,
-        },
-        transitionIn: 'dissolve',
-        transitionOut: 'soft_light',
-      });
-      cursor += d2;
+      while (photoIndex < photos.length) {
+        const remainingCount = photos.length - photoIndex;
+
+        // Pattern cycle for variety:
+        // Scene 1: Single Hero (1 photo, 7s)
+        // Scene 2: Living Collage / Duo (2 or 3 photos, 8s)
+        // Scene 3: Editorial Reveal (1 photo, 6s)
+        // Scene 4: Collage (3 or 4 photos, 9s)
+        const cycle = sceneCounter % 4;
+
+        if (cycle === 1 || cycle === 3 || remainingCount === 1) {
+          // Single dramatic photo
+          const photo = photos[photoIndex];
+          const duration = 6.5;
+
+          scenes.push({
+            id: `${chapter.id}_scene_wedding_hero_${sceneCounter}`,
+            chapterId: chapter.id,
+            chapterIndex: 5,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'hero_moment',
+            startTime: cursor,
+            duration,
+            endTime: cursor + duration,
+            photos: [photo],
+            heroPhoto: photo,
+            config: {
+              panDirection: cycle === 1 ? 'zoom_in' : 'zoom_out',
+              ambientLight: 'gold',
+              textTitle: 'FOREVER TOGETHER',
+              quote: photo.title || chapter.accentQuote || 'Vẻ đẹp tinh khôi của ngày trọng đại nhất.',
+            },
+            transitionIn: sceneCounter === 1 ? 'film_wipe' : 'dissolve',
+            transitionOut: 'dissolve',
+          });
+          cursor += duration;
+          photoIndex += 1;
+        } else {
+          // Multi-photo group: 2 or 3 photos
+          const countToTake = Math.min(remainingCount, cycle === 2 ? 2 : 3);
+          const chunk = photos.slice(photoIndex, photoIndex + countToTake);
+          const duration = Math.max(7, chunk.length * 3.5);
+
+          scenes.push({
+            id: `${chapter.id}_scene_wedding_collage_${sceneCounter}`,
+            chapterId: chapter.id,
+            chapterIndex: 5,
+            chapterTitle: chapter.vietnameseTitle,
+            type: 'living_collage',
+            startTime: cursor,
+            duration,
+            endTime: cursor + duration,
+            photos: chunk,
+            config: {
+              layout: chunk.length === 2 ? 'split_2' : 'hero_and_2',
+              ambientLight: 'gold',
+              quote: chapter.accentQuote || 'Tay trong tay, bước vào lễ đường của cuộc đời.',
+            },
+            transitionIn: 'dissolve',
+            transitionOut: 'soft_light',
+          });
+          cursor += duration;
+          photoIndex += countToTake;
+        }
+
+        sceneCounter++;
+      }
       break;
     }
 
     case 6: {
-      // LỜI CẢM ƠN (Thank you card)
-      const duration = chapter.durationOverride || 16;
+      // CHƯƠNG 6 — LỜI CẢM ƠN (Thank You Message)
+      const duration = chapter.durationOverride || 14;
       scenes.push({
         id: `${chapter.id}_scene_thank_you`,
         chapterId: chapter.id,
@@ -333,8 +367,9 @@ function compileChapterScenes(
     }
 
     case 7: {
-      // OUR FOREVER (FINAL FREEZE)
-      // The final photo holds indefinitely (e.g. 10 hours = 36000s).
+      // CHƯƠNG 7 — OUR FOREVER (FINAL FREEZE / FINAL HOLD)
+      // Real finite duration (12 seconds) for the entrance reveal.
+      // Once currentTime reaches endTime, the Playback Clock enters FINAL_HOLD and pauses permanently!
       const finalPhoto =
         photos.find((p) => p.id === project.endingPhotoId) ||
         photos[0] || {
@@ -351,7 +386,7 @@ function compileChapterScenes(
           createdAt: Date.now(),
         };
 
-      const duration = 36000; // Indefinite presentation hold!
+      const duration = 12; // Realistic finite entrance duration!
       scenes.push({
         id: `${chapter.id}_scene_final_freeze`,
         chapterId: chapter.id,

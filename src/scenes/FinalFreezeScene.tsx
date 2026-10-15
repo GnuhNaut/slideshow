@@ -11,15 +11,15 @@ export const FinalFreezeScene: React.FC<FinalFreezeSceneProps> = ({ scene }) => 
   const photo = scene.heroPhoto || scene.photos[0];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#151114]">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#1C1718] select-none">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-radial from-[#81252D]/20 via-[#151114]/90 to-[#151114] pointer-events-none" />
+      <div className="absolute inset-0 bg-radial from-[#581E2C]/20 via-[#1C1718]/90 to-[#1C1718] pointer-events-none" />
 
-      {/* Main Frozen Photo: ZERO MOVEMENT, PERFECT STABILITY */}
+      {/* Main Ending Photo: Stable, Pristine, Indefinite Presentation Hold */}
       {photo ? (
-        <div className="relative z-10 max-w-5xl max-h-[82vh] p-4 rounded-xl bg-[#1e151b] border-2 border-[#ecd28f]/60 shadow-[0_25px_70px_rgba(0,0,0,0.95)] flex flex-col items-center">
+        <div className="relative z-10 max-w-5xl max-h-[84vh] p-4 rounded-lg bg-[#241C1E] border border-[#BFA47D]/50 shadow-[0_25px_70px_rgba(0,0,0,0.95)] flex flex-col items-center">
           <div
-            className="relative overflow-hidden rounded shadow-2xl bg-[#0d090b]"
+            className="relative overflow-hidden rounded bg-[#100B0D] shadow-2xl"
             style={{ maxHeight: '72vh' }}
           >
             <img
@@ -30,34 +30,28 @@ export const FinalFreezeScene: React.FC<FinalFreezeSceneProps> = ({ scene }) => 
                 objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
               }}
             />
-
-            {/* Subtle corner golden photo mounts */}
-            <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[#d4ac59]" />
-            <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[#d4ac59]" />
-            <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[#d4ac59]" />
-            <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[#d4ac59]" />
           </div>
 
-          {/* Bottom Permanent Monogram & Date Badge */}
-          <div className="mt-4 w-full flex items-center justify-between px-4">
+          {/* Minimalist Editorial Monogram Footer */}
+          <div className="mt-3.5 w-full flex items-center justify-between px-3">
             <div className="flex items-center gap-3">
-              <span className="font-serif italic font-semibold text-lg text-[#ecd28f]">
+              <span className="font-serif italic font-semibold text-lg text-[#F5EDE1]">
                 Tuấn Hùng &amp; Sao Mai
               </span>
-              <span className="text-[10px] tracking-[0.2em] text-[#FFF4E4]/60 font-mono">
+              <span className="text-[10px] tracking-[0.25em] text-[#BFA47D] uppercase font-mono">
                 • OUR FOREVER
               </span>
             </div>
 
             <div className="text-right">
-              <span className="text-xs tracking-[0.2em] text-[#ecd28f] font-serif">
+              <span className="text-xs tracking-[0.2em] text-[#BFA47D] font-serif">
                 19.10.2026
               </span>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-xs text-[#ecd28f]/50 italic">
+        <div className="text-xs text-[#BFA47D]/50 italic">
           Đang hiển thị ảnh kết thúc (Our Forever)
         </div>
       )}

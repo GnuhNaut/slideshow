@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { WeddingProject, ChapterConfig, PhotoItem, AudioTrack } from '../types/project';
-import { CompiledTimeline, PlaybackState, TimelineScene } from '../types/timeline';
+import { CompiledTimeline, PlaybackState } from '../types/timeline';
 import { createInitialWeddingProject } from '../project/defaultProject';
 import { compileProjectTimeline } from '../timeline/compiler';
 import { db } from '../storage/db';
+import { masterClock } from '../player/PlaybackClock';
+import { mediaManager } from '../media/mediaManager';
 
 export type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved';
 
@@ -70,6 +72,9 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
   const initialProj = createInitialWeddingProject();
   const initialTimeline = compileProjectTimeline(initialProj);
 
+  // Initialize master clock
+  masterClock.init(initialTimeline.totalDuration, 0);
+
   function pushUndo(currentProj: WeddingProject) {
     set((state) => ({
       undoStack: [...state.undoStack.slice(-15), JSON.parse(JSON.stringify(currentProj))],
@@ -114,8 +119,13 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       try {
         const storedProjects = await db.projects.toArray();
         if (storedProjects && storedProjects.length > 0) {
-          const loadedProj = storedProjects[0];
+          const rawProj = storedProjects[0];
+          // Restore media blobs from IndexedDB!
+          const loadedProj = await mediaManager.restoreProjectMedia(rawProj);
           const newTimeline = compileProjectTimeline(loadedProj);
+
+          masterClock.init(newTimeline.totalDuration, 0);
+
           set({
             project: loadedProj,
             timeline: newTimeline,
@@ -130,13 +140,30 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
             },
           });
         } else {
-          // Store default project to Dexie
           await db.projects.put(initialProj);
           set({ saveStatus: 'saved' });
         }
       } catch (err) {
         console.warn('Could not read from IndexedDB, using in-memory defaults:', err);
       }
+
+      // Attach MasterClock status listener
+      masterClock.onStatusChange((status) => {
+        const isPlaying = status === 'PLAYING';
+        const isFinished = status === 'FINAL_HOLD';
+        set((state) => ({
+          playback: {
+            ...state.playback,
+            isPlaying,
+            isFinished,
+          },
+        }));
+      });
+
+      // Attach MasterClock throttled UI listener (10Hz)
+      masterClock.onThrottledTime((time) => {
+        get().updateCurrentTime(time);
+      });
     },
 
     saveProjectToDb: async () => {
@@ -163,6 +190,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
         updatedAt: Date.now(),
       };
       const updatedTimeline = compileProjectTimeline(updatedProj);
+      masterClock.setTotalDuration(updatedTimeline.totalDuration);
+
       set({
         project: updatedProj,
         timeline: updatedTimeline,
@@ -182,6 +211,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       );
       const updatedProj = { ...currentProj, chapters: updatedChapters, updatedAt: Date.now() };
       const updatedTimeline = compileProjectTimeline(updatedProj);
+      masterClock.setTotalDuration(updatedTimeline.totalDuration);
+
       set({
         project: updatedProj,
         timeline: updatedTimeline,
@@ -225,6 +256,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       });
       const updatedProj = { ...currentProj, chapters: updatedChapters, updatedAt: Date.now() };
       const updatedTimeline = compileProjectTimeline(updatedProj);
+      masterClock.setTotalDuration(updatedTimeline.totalDuration);
+
       set({
         project: updatedProj,
         timeline: updatedTimeline,
@@ -248,6 +281,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       });
       const updatedProj = { ...currentProj, chapters: updatedChapters, updatedAt: Date.now() };
       const updatedTimeline = compileProjectTimeline(updatedProj);
+      masterClock.setTotalDuration(updatedTimeline.totalDuration);
+
       set({
         project: updatedProj,
         timeline: updatedTimeline,
@@ -265,7 +300,6 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
             if (p.id === photoId) {
               return { ...p, ...updates };
             }
-            // If marking isHero, ensure others in chapter lose hero flag if needed
             if (updates.isHero && p.id !== photoId) {
               return { ...p, isHero: false };
             }
@@ -277,6 +311,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       });
       const updatedProj = { ...currentProj, chapters: updatedChapters, updatedAt: Date.now() };
       const updatedTimeline = compileProjectTimeline(updatedProj);
+      masterClock.setTotalDuration(updatedTimeline.totalDuration);
+
       set({ project: updatedProj, timeline: updatedTimeline });
       triggerAutosave();
     },
@@ -374,56 +410,27 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       triggerAutosave();
     },
 
-    // Playback controls
+    // Master Clock Integrated Playback Controls
     play: () => {
-      set((state) => ({ playback: { ...state.playback, isPlaying: true, isFinished: false } }));
+      masterClock.play();
     },
 
     pause: () => {
-      set((state) => ({ playback: { ...state.playback, isPlaying: false } }));
+      masterClock.pause();
     },
 
     togglePlay: () => {
-      const isPlaying = get().playback.isPlaying;
-      if (isPlaying) {
-        get().pause();
-      } else {
-        get().play();
-      }
+      masterClock.togglePlay();
     },
 
     seek: (timeSeconds) => {
-      const timeline = get().timeline;
-      const clampedTime = Math.max(0, Math.min(timeSeconds, timeline.totalDuration));
-      const currentScene =
-        timeline.scenes.find((s) => clampedTime >= s.startTime && clampedTime < s.endTime) ||
-        timeline.scenes[timeline.scenes.length - 1] ||
-        null;
-      const currentChapter =
-        timeline.chaptersMeta.find(
-          (c) => clampedTime >= c.startTime && clampedTime < c.endTime
-        ) ||
-        timeline.chaptersMeta[timeline.chaptersMeta.length - 1] ||
-        null;
-
-      const isFinished = currentScene?.type === 'final_freeze' && clampedTime >= currentScene.startTime;
-
-      set((state) => ({
-        playback: {
-          ...state.playback,
-          currentTime: clampedTime,
-          currentScene,
-          currentChapter,
-          currentChapterIndex: currentChapter?.chapterIndex || 1,
-          isFinished,
-        },
-      }));
+      masterClock.seek(timeSeconds);
     },
 
     seekToChapter: (chapterId) => {
       const meta = get().timeline.chaptersMeta.find((c) => c.chapterId === chapterId);
       if (meta) {
-        get().seek(meta.startTime);
+        masterClock.seek(meta.startTime);
         set({ activeChapterId: chapterId });
       }
     },
@@ -432,7 +439,7 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       const currentIdx = get().playback.currentChapterIndex;
       const nextMeta = get().timeline.chaptersMeta.find((c) => c.chapterIndex === currentIdx + 1);
       if (nextMeta) {
-        get().seek(nextMeta.startTime);
+        masterClock.seek(nextMeta.startTime);
       }
     },
 
@@ -440,13 +447,14 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       const currentIdx = get().playback.currentChapterIndex;
       const prevMeta = get().timeline.chaptersMeta.find((c) => c.chapterIndex === currentIdx - 1);
       if (prevMeta) {
-        get().seek(prevMeta.startTime);
+        masterClock.seek(prevMeta.startTime);
       } else {
-        get().seek(0);
+        masterClock.seek(0);
       }
     },
 
     setPlaybackSpeed: (speed) => {
+      masterClock.setSpeed(speed);
       set((state) => ({ playback: { ...state.playback, playbackSpeed: speed } }));
     },
 
@@ -465,8 +473,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
     },
 
     restart: () => {
-      get().seek(0);
-      get().play();
+      masterClock.seek(0);
+      masterClock.play();
     },
 
     updateCurrentTime: (timeSeconds) => {
@@ -483,7 +491,7 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
         timeline.chaptersMeta[timeline.chaptersMeta.length - 1] ||
         null;
 
-      const isFinished = currentScene?.type === 'final_freeze' && clampedTime >= currentScene.startTime;
+      const isFinished = masterClock.isFinalHold();
 
       set((state) => ({
         playback: {
@@ -505,6 +513,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       const currentProj = get().project;
 
       const newTimeline = compileProjectTimeline(previous);
+      masterClock.setTotalDuration(newTimeline.totalDuration);
+
       set({
         project: previous,
         timeline: newTimeline,
@@ -522,6 +532,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       const currentProj = get().project;
 
       const newTimeline = compileProjectTimeline(next);
+      masterClock.setTotalDuration(newTimeline.totalDuration);
+
       set({
         project: next,
         timeline: newTimeline,

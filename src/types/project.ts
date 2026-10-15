@@ -14,8 +14,9 @@ export type CropMode = 'contain' | 'cover' | 'fill';
 export interface PhotoItem {
   id: string;
   chapterId: string;
+  mediaId?: string; // Stable key in Dexie db.media
   title?: string;
-  url: string; // Blob URL or static path
+  url: string; // ObjectURL or data URL
   thumbnail?: string;
   originalWidth: number;
   originalHeight: number;

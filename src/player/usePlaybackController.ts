@@ -1,36 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useWeddingStore } from '../app/store';
 import { audioEngine } from '../audio/AudioEngine';
 import { remoteChannel } from './remoteChannel';
+import { masterClock } from './PlaybackClock';
 
 export function usePlaybackController(isStageMode: boolean = false) {
   const isPlaying = useWeddingStore((s) => s.playback.isPlaying);
   const currentTime = useWeddingStore((s) => s.playback.currentTime);
-  const playbackSpeed = useWeddingStore((s) => s.playback.playbackSpeed);
-  const totalDuration = useWeddingStore((s) => s.playback.totalDuration);
-  const currentScene = useWeddingStore((s) => s.playback.currentScene);
   const isFinished = useWeddingStore((s) => s.playback.isFinished);
-  const updateCurrentTime = useWeddingStore((s) => s.updateCurrentTime);
-  const pause = useWeddingStore((s) => s.pause);
+  const totalDuration = useWeddingStore((s) => s.playback.totalDuration);
   const activeMusicTrack = useWeddingStore(
     (s) => s.project.audioTracks.find((t) => t.isGlobal) || s.project.audioTracks[0]
   );
 
-  const lastTickTime = useRef<number>(performance.now());
-  const rafId = useRef<number | null>(null);
-
-  // Audio synchronization
+  // Synchronize Audio with masterClock
   useEffect(() => {
-    if (isPlaying) {
-      audioEngine.unlock().then(() => {
-        audioEngine.play(activeMusicTrack?.url);
-      });
-    } else {
-      audioEngine.pause();
-    }
-  }, [isPlaying, activeMusicTrack]);
+    const unsub = masterClock.onStatusChange((status) => {
+      if (status === 'PLAYING') {
+        audioEngine.unlock().then(() => {
+          audioEngine.play(activeMusicTrack?.url);
+        });
+      } else if (status === 'PAUSED') {
+        audioEngine.pause();
+      } else if (status === 'FINAL_HOLD') {
+        // Soft audio fade out on final hold
+        audioEngine.pause();
+      }
+    });
 
-  // Handle Remote Messages (Dual screen remote control)
+    return () => unsub();
+  }, [activeMusicTrack]);
+
+  // Handle Dual Screen Remote Messages
   useEffect(() => {
     const unsubscribe = remoteChannel.subscribe((msg) => {
       const store = useWeddingStore.getState();
@@ -74,55 +75,9 @@ export function usePlaybackController(isStageMode: boolean = false) {
     return () => unsubscribe();
   }, []);
 
-  // Main playback tick loop
-  useEffect(() => {
-    if (!isPlaying) {
-      if (rafId.current) cancelAnimationFrame(rafId.current);
-      return;
-    }
-
-    lastTickTime.current = performance.now();
-
-    const loop = (now: number) => {
-      const deltaSec = (now - lastTickTime.current) / 1000;
-      lastTickTime.current = now;
-
-      // Check if scene is final_freeze
-      const scene = useWeddingStore.getState().playback.currentScene;
-      if (scene && scene.type === 'final_freeze') {
-        // Freeze at start of final freeze + 1s, do not increment further, do not loop
-        if (currentTime < scene.startTime) {
-          updateCurrentTime(scene.startTime);
-        }
-        return;
-      }
-
-      if (currentTime >= totalDuration) {
-        pause();
-        return;
-      }
-
-      const nextTime = currentTime + deltaSec * playbackSpeed;
-      updateCurrentTime(nextTime);
-
-      if (isStageMode && Math.floor(nextTime * 2) !== Math.floor(currentTime * 2)) {
-        remoteChannel.send({ type: 'TIME_SYNC', currentTime: nextTime });
-      }
-
-      rafId.current = requestAnimationFrame(loop);
-    };
-
-    rafId.current = requestAnimationFrame(loop);
-
-    return () => {
-      if (rafId.current) cancelAnimationFrame(rafId.current);
-    };
-  }, [isPlaying, currentTime, playbackSpeed, totalDuration, isStageMode, updateCurrentTime, pause]);
-
   return {
     isPlaying,
     currentTime,
-    currentScene,
     isFinished,
     totalDuration,
   };

@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 import { WeddingProject, PhotoItem, AudioTrack } from '../types/project';
+import { db } from '../storage/db';
+import { mediaManager } from '../media/mediaManager';
 
 export interface ProjectManifest {
   manifestVersion: string;
@@ -25,15 +27,15 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
-// Export complete project as ZIP
+// Export complete project as ZIP pulling binaries from IndexedDB
 export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
   const zip = new JSZip();
 
   const totalPhotos = project.chapters.reduce((acc, ch) => acc + ch.photos.length, 0);
 
   const manifest: ProjectManifest = {
-    manifestVersion: '1.0.0',
-    app: 'Wedding Film Story — Tuấn Hùng & Sao Mai',
+    manifestVersion: '2.0.0',
+    app: 'Wedding Film Story — Tuấn Hùng & Sao Mai (V2)',
     exportDate: Date.now(),
     projectTitle: project.title,
     groomName: project.groomName,
@@ -44,30 +46,46 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
 
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
-  // Create media folder
   const mediaFolder = zip.folder('media');
   const projectToExport: WeddingProject = JSON.parse(JSON.stringify(project));
 
-  // Process photos and save binaries
+  // Process photos and write real binary blobs into zip
   for (const chapter of projectToExport.chapters) {
-    for (let i = 0; i < chapter.photos.length; i++) {
-      const photo = chapter.photos[i];
-      if (photo.url.startsWith('data:')) {
-        const blob = dataUrlToBlob(photo.url);
-        const filename = `${photo.id}.png`;
-        mediaFolder?.file(filename, blob);
-        photo.url = `media/${filename}`;
-      } else if (photo.url.startsWith('blob:')) {
+    for (const photo of chapter.photos) {
+      let photoBlob: Blob | null = null;
+      let ext = 'jpg';
+
+      if (photo.mediaId) {
         try {
-          const resp = await fetch(photo.url);
-          const blob = await resp.blob();
-          const ext = blob.type.includes('png') ? 'png' : 'jpg';
-          const filename = `${photo.id}.${ext}`;
-          mediaFolder?.file(filename, blob);
-          photo.url = `media/${filename}`;
-        } catch {
-          // If fetch fails, retain url
+          const stored = await db.media.get(photo.mediaId);
+          if (stored && stored.blob) {
+            photoBlob = stored.blob;
+            ext = stored.mimeType.includes('png') ? 'png' : 'jpg';
+          }
+        } catch (e) {
+          console.warn('Could not read from db.media:', e);
         }
+      }
+
+      if (!photoBlob && photo.url) {
+        if (photo.url.startsWith('data:')) {
+          photoBlob = dataUrlToBlob(photo.url);
+          ext = photoBlob.type.includes('png') ? 'png' : 'jpg';
+        } else if (photo.url.startsWith('blob:')) {
+          try {
+            const resp = await fetch(photo.url);
+            photoBlob = await resp.blob();
+            ext = photoBlob.type.includes('png') ? 'png' : 'jpg';
+          } catch {
+            // Skip if fetch fails
+          }
+        }
+      }
+
+      if (photoBlob) {
+        const filename = `${photo.id}.${ext}`;
+        mediaFolder?.file(filename, photoBlob);
+        photo.url = `media/${filename}`;
       }
     }
   }
@@ -97,7 +115,7 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
   });
 }
 
-// Import project from ZIP
+// Import project from ZIP restoring media directly into IndexedDB
 export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   const zip = await JSZip.loadAsync(zipFile);
 
@@ -122,14 +140,28 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   const projectStr = await projectFile.async('string');
   const project = JSON.parse(projectStr) as WeddingProject;
 
-  // Restore media URLs
+  // Restore media binaries into IndexedDB db.media
   for (const chapter of project.chapters) {
     for (const photo of chapter.photos) {
       if (photo.url.startsWith('media/')) {
         const fileInZip = zip.file(photo.url);
         if (fileInZip) {
           const blob = await fileInZip.async('blob');
-          photo.url = URL.createObjectURL(blob);
+          const newMediaId = `media_import_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+          await db.media.put({
+            id: newMediaId,
+            projectId: project.id,
+            blob,
+            mimeType: blob.type || 'image/jpeg',
+            filename: photo.title || 'imported_photo',
+            originalWidth: photo.originalWidth || 1920,
+            originalHeight: photo.originalHeight || 1080,
+            createdAt: Date.now(),
+          });
+
+          photo.mediaId = newMediaId;
+          photo.url = mediaManager.createTrackedUrl(newMediaId, blob);
         }
       }
     }
@@ -147,10 +179,11 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   }
 
   project.updatedAt = Date.now();
+  await db.projects.put(project);
+
   return project;
 }
 
-// Utility to trigger browser file download
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

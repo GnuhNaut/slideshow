@@ -1,16 +1,12 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import gsap from 'gsap';
 import {
   Film,
-  Play,
   Maximize2,
   Download,
   Upload,
-  Calendar,
-  Image as ImageIcon,
-  Clock,
+  Settings,
   Sparkles,
-  Sliders,
-  Heart,
 } from 'lucide-react';
 import { useWeddingStore } from '../app/store';
 
@@ -26,27 +22,35 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
   onImportZip,
 }) => {
   const project = useWeddingStore((s) => s.project);
-  const timeline = useWeddingStore((s) => s.timeline);
   const setViewMode = useWeddingStore((s) => s.setViewMode);
-  const saveStatus = useWeddingStore((s) => s.saveStatus);
   const play = useWeddingStore((s) => s.play);
   const seek = useWeddingStore((s) => s.seek);
 
-  // Total photos count across all chapters
-  const totalPhotosCount = project.chapters.reduce(
-    (acc, ch) => acc + (ch.enabled ? ch.photos.length : 0),
-    0
-  );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const photoCardRef = useRef<HTMLDivElement>(null);
 
-  const formatDuration = (sec: number) => {
-    const mins = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${mins} phút ${s < 10 ? '0' : ''}${s} giây`;
-  };
+  // Entrance motion
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        titleRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 1.8, ease: 'power3.out' }
+      );
 
-  const handlePreviewMovie = () => {
-    seek(0);
-    play();
+      gsap.fromTo(
+        photoCardRef.current,
+        { opacity: 0, scale: 0.97 },
+        { opacity: 1, scale: 1, duration: 2.2, delay: 0.3, ease: 'power2.out' }
+      );
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  const handleOpenStudio = () => {
     setViewMode('studio');
   };
 
@@ -56,158 +60,172 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
     setViewMode('player');
   };
 
-  // Find opening or hero photo for poster
+  // Main poster photo (first photo of Intro or Wedding chapter)
   const posterPhoto =
     project.chapters[0]?.photos[0] ||
     project.chapters[4]?.photos[0] ||
     null;
 
   return (
-    <div className="relative min-h-screen w-full bg-[#151114] text-[#FFF4E4] flex flex-col justify-between overflow-x-hidden select-none">
-      {/* Background Poster Artwork & Cinematic Radial Glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {posterPhoto && (
-          <div className="absolute inset-0 opacity-20 filter blur-sm scale-105">
-            <img src={posterPhoto.url} alt="Wedding Poster" className="w-full h-full object-cover" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-radial from-[#81252D]/35 via-[#1a1317]/90 to-[#151114]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#151114] via-transparent to-[#151114]/90" />
+    <div
+      ref={containerRef}
+      className="relative min-h-screen w-full bg-[#1C1718] text-[#F5EDE1] flex flex-col justify-between overflow-hidden select-none"
+    >
+      {/* Background Editorial Atmosphere */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-radial from-[#581E2C]/25 via-[#1C1718]/90 to-[#1C1718]" />
         <div className="film-grain" />
       </div>
 
-      {/* Top Navbar */}
-      <header className="relative z-10 h-20 px-6 md:px-12 flex items-center justify-between border-b border-[#ecd28f]/15">
+      {/* Top Minimalist Navigation */}
+      <header className="relative z-20 h-20 px-8 md:px-16 flex items-center justify-between border-b border-[#BFA47D]/15">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#81252D] to-[#4d090d] border border-[#ecd28f]/50 flex items-center justify-center shadow-lg">
-            <Film className="w-5 h-5 text-[#ecd28f]" />
+          <div className="w-8 h-8 rounded bg-[#581E2C] border border-[#BFA47D]/40 flex items-center justify-center">
+            <Film className="w-4 h-4 text-[#BFA47D]" />
           </div>
           <div>
-            <span className="text-xs tracking-[0.28em] text-[#ecd28f] uppercase font-serif-sc font-semibold block">
-              CINEMATIC WEDDING STORY
+            <span className="text-[10px] tracking-[0.3em] uppercase text-[#BFA47D] font-serif font-semibold block">
+              WEDDING FILM STORY
             </span>
-            <span className="text-sm font-serif italic text-[#FFF4E4]/90">
-              35mm Film Experience
+            <span className="text-xs font-serif italic text-[#F5EDE1]/75">
+              Cinematic Experience
             </span>
           </div>
         </div>
 
+        {/* Secondary Utility Controls */}
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={onImportZip}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#ecd28f]/30 bg-[#1e151b] hover:bg-[#81252D]/40 text-xs font-serif text-[#FFF4E4] transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#BFA47D]/25 bg-[#241C1E] hover:bg-[#581E2C]/40 text-xs font-serif text-[#F5EDE1] cursor-pointer transition-colors"
+            title="Nhập dự án ZIP"
           >
-            <Upload className="w-3.5 h-3.5 text-[#ecd28f]" />
+            <Upload className="w-3.5 h-3.5 text-[#BFA47D]" />
             <span>Nhập Dự Án</span>
           </button>
           <button
+            type="button"
             onClick={onExportZip}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#ecd28f]/30 bg-[#1e151b] hover:bg-[#81252D]/40 text-xs font-serif text-[#FFF4E4] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#BFA47D]/25 bg-[#241C1E] hover:bg-[#581E2C]/40 text-xs font-serif text-[#F5EDE1] cursor-pointer transition-colors"
+            title="Xuất dự án ZIP"
           >
-            <Download className="w-3.5 h-3.5 text-[#ecd28f]" />
+            <Download className="w-3.5 h-3.5 text-[#BFA47D]" />
             <span>Xuất Gói ZIP</span>
           </button>
           <button
+            type="button"
             onClick={onOpenSettings}
-            className="p-2 rounded-lg border border-[#ecd28f]/20 hover:bg-[#81252D]/40 text-[#ecd28f] transition-colors"
-            title="Cài đặt dự án"
+            className="p-2 rounded border border-[#BFA47D]/20 hover:bg-[#581E2C]/40 text-[#BFA47D] cursor-pointer transition-colors"
+            title="Cài đặt thông tin"
           >
-            <Sliders className="w-4 h-4" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Hero Center Poster Section */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-5xl mx-auto text-center">
-        {/* Monogram Seal */}
-        <div className="mb-6 w-20 h-20 rounded-full border-2 border-[#ecd28f] bg-[#81252D]/80 flex items-center justify-center shadow-[0_0_30px_rgba(212,172,89,0.35)] backdrop-blur-md">
-          <span className="font-serif italic text-2xl text-[#FFF4E4] font-semibold">H &amp; M</span>
-        </div>
-
-        {/* Small Eyebrow Header */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-[1px] bg-gradient-to-r from-transparent to-[#ecd28f]" />
-          <p className="text-xs tracking-[0.35em] text-[#ecd28f] uppercase font-serif-sc font-medium">
-            WEDDING FILM STORY
-          </p>
-          <div className="w-12 h-[1px] bg-gradient-to-l from-transparent to-[#ecd28f]" />
-        </div>
-
-        {/* Main Title / Couple Names */}
-        <h1 className="font-serif-sc text-4xl sm:text-6xl md:text-7xl font-bold tracking-wider text-[#FFF4E4] mb-4">
-          <span className="gold-gradient-text">{project.groomName}</span>
-          <span className="font-serif italic font-normal text-3xl md:text-5xl text-[#d4ac59] mx-4 md:mx-6">
-            &amp;
-          </span>
-          <span className="gold-gradient-text">{project.brideName}</span>
-        </h1>
-
-        {/* Date Display */}
-        <div className="flex items-center gap-3 text-sm md:text-base tracking-[0.25em] text-[#ecd28f] font-serif mb-8">
-          <span>{project.weddingDate}</span>
-          <span className="text-[#81252D]">•</span>
-          <span>{project.lunarDate}</span>
-        </div>
-
-        {/* Project Statistics Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mb-10 text-xs font-serif text-[#FFF4E4]/80">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1e151b]/80 border border-[#ecd28f]/20">
-            <ImageIcon className="w-4 h-4 text-[#d4ac59]" />
-            <span>Tổng cộng: <b className="text-[#ecd28f]">{totalPhotosCount} bức ảnh</b></span>
+      {/* Main Editorial Hero Split Poster */}
+      <main className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between px-8 md:px-16 py-10 max-w-7xl mx-auto w-full gap-12">
+        {/* Left Side: Dramatic Editorial Typography & CTAs */}
+        <div ref={titleRef} className="flex-1 flex flex-col justify-center max-w-xl text-left">
+          {/* Eyebrow */}
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-8 h-[1px] bg-[#BFA47D]" />
+            <span className="text-[11px] tracking-[0.35em] uppercase text-[#BFA47D] font-serif font-semibold">
+              A LOVE STORY IN MOTION
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1e151b]/80 border border-[#ecd28f]/20">
-            <Clock className="w-4 h-4 text-[#d4ac59]" />
-            <span>Thời lượng: <b className="text-[#ecd28f]">{formatDuration(timeline.totalDuration)}</b></span>
+          {/* Couple Names */}
+          <div className="space-y-1 mb-6">
+            <h1 className="font-serif-sc text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#F5EDE1] leading-[0.95]">
+              TUẤN HÙNG
+            </h1>
+            <div className="flex items-center gap-4 my-2">
+              <span className="font-serif italic font-normal text-3xl sm:text-4xl text-[#BFA47D]">
+                &amp;
+              </span>
+              <span className="w-24 h-[1px] bg-[#BFA47D]/40" />
+            </div>
+            <h1 className="font-serif-sc text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#F5EDE1] leading-[0.95]">
+              SAO MAI
+            </h1>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1e151b]/80 border border-[#ecd28f]/20">
-            <Sparkles className="w-4 h-4 text-[#d4ac59]" />
-            <span>7 Chương điện ảnh</span>
+          {/* Wedding Date Display */}
+          <div className="flex items-center gap-4 text-sm sm:text-base tracking-[0.25em] text-[#BFA47D] font-serif mb-10">
+            <span>{project.weddingDate}</span>
+            <span className="text-[#581E2C]">•</span>
+            <span className="text-[#F5EDE1]/70 italic">{project.lunarDate}</span>
+          </div>
+
+          {/* Primary Two Main CTAs (Only 2 Clean Buttons!) */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            {/* CTA 1: MỞ STUDIO */}
+            <button
+              type="button"
+              onClick={handleOpenStudio}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded bg-[#581E2C] border border-[#BFA47D]/50 text-[#F5EDE1] font-serif font-semibold tracking-widest text-sm hover:brightness-110 shadow-lg cursor-pointer transition-all"
+            >
+              <Film className="w-4 h-4 text-[#BFA47D]" />
+              <span>MỞ STUDIO</span>
+            </button>
+
+            {/* CTA 2: BẮT ĐẦU TRÌNH CHIẾU */}
+            <button
+              type="button"
+              onClick={handleStartPresentation}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded bg-[#BFA47D] text-[#1C1718] font-serif font-bold tracking-widest text-sm hover:brightness-105 shadow-[0_8px_25px_rgba(191,164,125,0.25)] cursor-pointer transition-all"
+            >
+              <Maximize2 className="w-4 h-4" />
+              <span>BẮT ĐẦU TRÌNH CHIẾU</span>
+            </button>
           </div>
         </div>
 
-        {/* Primary Call to Action Buttons */}
-        <div className="relative z-20 flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center">
-          {/* Open Studio */}
-          <button
-            type="button"
-            onClick={() => setViewMode('studio')}
-            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#81252D] to-[#691014] border border-[#ecd28f]/60 text-[#FFF4E4] font-serif font-bold tracking-wider hover:scale-[1.02] shadow-[0_8px_25px_rgba(129,37,45,0.4)] cursor-pointer transition-all"
-          >
-            <Film className="w-4 h-4 text-[#ecd28f]" />
-            <span>MỞ STUDIO BIÊN TẬP</span>
-          </button>
+        {/* Right Side: Large Dramatic Wedding Poster Photo Card */}
+        <div
+          ref={photoCardRef}
+          className="flex-1 w-full max-w-lg lg:max-w-xl aspect-[3/4] max-h-[72vh] relative rounded-lg overflow-hidden border border-[#BFA47D]/35 bg-[#241C1E] shadow-[0_30px_70px_rgba(0,0,0,0.85)] flex items-center justify-center p-3"
+        >
+          {posterPhoto ? (
+            <div className="relative w-full h-full rounded overflow-hidden bg-[#100B0D]">
+              <img
+                src={posterPhoto.url}
+                alt="Wedding Hero Poster"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                style={{
+                  objectPosition: `${posterPhoto.focalPoint?.x ?? 50}% ${posterPhoto.focalPoint?.y ?? 50}%`,
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1C1718]/90 via-transparent to-transparent pointer-events-none" />
 
-          {/* Preview Movie */}
-          <button
-            type="button"
-            onClick={handlePreviewMovie}
-            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-[#ecd28f]/40 bg-[#1e151b]/90 text-[#ecd28f] font-serif font-medium tracking-wide hover:bg-[#81252D]/40 cursor-pointer transition-all"
-          >
-            <Play className="w-4 h-4 fill-[#ecd28f]" />
-            <span>XEM THỬ PHIM</span>
-          </button>
-
-          {/* Start Presentation (Stage Mode) */}
-          <button
-            type="button"
-            onClick={handleStartPresentation}
-            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#d4ac59] via-[#ecd28f] to-[#c6a477] text-[#151114] font-serif font-bold tracking-wider hover:brightness-105 shadow-[0_8px_25px_rgba(212,172,89,0.35)] cursor-pointer transition-all"
-          >
-            <Maximize2 className="w-4 h-4" />
-            <span>TRÌNH CHIẾU</span>
-          </button>
+              {/* Bottom Card Editorial Mark */}
+              <div className="absolute bottom-4 left-5 right-5 flex items-center justify-between pointer-events-none">
+                <span className="text-[11px] font-serif tracking-[0.2em] text-[#BFA47D] uppercase">
+                  HA NOI • 2026
+                </span>
+                <span className="text-[10px] font-mono text-[#F5EDE1]/60">
+                  35MM CINEMATIC HYBRID
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-8">
+              <Sparkles className="w-8 h-8 text-[#BFA47D] mx-auto mb-3 opacity-60" />
+              <p className="font-serif text-sm text-[#F5EDE1]/80">
+                Chưa có ảnh bìa. Nhấp "Mở Studio" để tải ảnh cưới thật của bạn.
+              </p>
+            </div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 h-16 px-6 md:px-12 flex items-center justify-between border-t border-[#ecd28f]/15 text-xs text-[#ecd28f]/60 font-serif">
-        <div className="flex items-center gap-2">
-          <span>Tuấn Hùng &amp; Sao Mai — Hạnh phúc trọn vẹn</span>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span>35MM CINEMATIC HYBRID FILM JOURNEY</span>
+      <footer className="relative z-10 h-16 px-8 md:px-16 flex items-center justify-between border-t border-[#BFA47D]/15 text-xs text-[#BFA47D]/60 font-serif">
+        <div>Tuấn Hùng &amp; Sao Mai — 19.10.2026</div>
+        <div className="font-mono text-[10px] tracking-widest uppercase">
+          MODERN EDITORIAL WEDDING CINEMA
         </div>
       </footer>
     </div>
