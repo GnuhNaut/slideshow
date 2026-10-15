@@ -1,126 +1,120 @@
-# WEDDING FILM STORY — TUẤN HÙNG & SAO MAI
-### Cinematic Hybrid 35mm Film Journey • 19.10.2026
-
-Ứng dụng web cao cấp biến những bức ảnh cưới tĩnh thành một bộ phim điện ảnh sống động để trình chiếu trên màn hình LED, TV hoặc máy chiếu trong ngày trọng đại.
-
----
-
-## 1. Thông Tin Đám Cưới & Thiết Kế
-
-- **Chú rể & Cô dâu:** Tuấn Hùng & Sao Mai
-- **Ngày cưới:** 19.10.2026 (Nhằm ngày 10/09 Âm lịch năm Bính Ngọ)
-- **Phong cách thẩm mỹ:** *Cinematic Hybrid Film Journey*
-  - Phim nhựa 35mm với dải lỗ đục (sprockets/perforations) và viền phim Kodak cổ điển.
-  - Tông màu hoàng gia kết hợp: *Cinematic Black* (`#151114`), *Deep Burgundy* (`#81252D`), *Lacquer Red* (`#C91D26`), *Champagne Gold* (`#D4AC59`), *Warm Ivory* (`#FFF4E4`).
-  - Typography điện ảnh: *Cormorant Garamond*, *Cormorant SC*, *Playfair Display* và *Be Vietnam Pro* (hỗ trợ trọn vẹn dấu tiếng Việt).
-  - Khung hình chuẩn điện ảnh 16:9 với cơ chế letterbox thông minh tự thích ứng mọi độ phân giải.
+# WEDDING FILM STORY V2 — TUẤN HÙNG & SAO MAI
+### Modern Editorial Wedding Cinema • 19.10.2026
+**Production Website:** [https://hungmai.netlify.app/](https://hungmai.netlify.app/)  
+**GitHub Repository:** [https://github.com/GnuhNaut/slideshow](https://github.com/GnuhNaut/slideshow)  
+**Reference Site:** [https://shinxsana.netlify.app/](https://shinxsana.netlify.app/)
 
 ---
 
-## 2. Kiến Trúc 3 Khu Vực Chính
+## 1. Tổng Quan Kiến Trúc V2 & Các Cải Tiến P0
 
-### A. Project Home (Trang Bìa Poster Phim)
-- Thiết kế như poster bộ phim cưới cao cấp.
-- Hiển thị đầy đủ thông tin: Tên cô dâu chú rể, ngày cưới, tổng số ảnh, tổng thời lượng, trạng thái lưu tự động.
-- Các nút hành động chính:
-  - **Mở Studio Biên Tập** (`#studio`)
-  - **Xem Thử Phim** (bắt đầu phát trong monitor 16:9)
-  - **Trình Chiếu** (`#stage`)
-  - **Xuất Trọn Gói Dự Án (ZIP)**
-  - **Nhập Dự Án (ZIP)**
+Phiên bản V2 là một bước nâng cấp toàn diện về **Motion Architecture**, **Performance**, **Lưu Trữ Bền Vững** và **Phong Cách Thẩm Mỹ**:
 
-### B. Wedding Film Studio (Giao Diện Dựng Phim)
-- **Header:** Logo, tên dự án, trạng thái lưu IndexedDB thời gian thực, Undo/Redo, phím tắt, nút xuất/nhập ZIP, cài đặt thông tin, mở cửa sổ trình chiếu thứ hai.
-- **Sidebar Trái (7 Chương):** Danh sách 7 chương điện ảnh kèm số lượng ảnh, thời lượng và nút bật/tắt hoặc phát nhanh từng chương.
-- **Khu Vực Trung Tâm:** Màn hình Preview 16:9 sắc nét, thanh điều khiển phát (Play/Pause, tua lùi/tua tới chương, tốc độ 0.75x–1.25x, âm lượng, toàn màn hình).
-- **Thước Thời Gian (Timeline Scrubber):** Hiển thị phân đoạn từng chương theo tỷ lệ thời gian thực tế, playhead scrubber kéo thả mượt mà.
-- **Thư Viện Ảnh (Media Library):** Hỗ trợ chọn hàng loạt ảnh từ máy tính hoặc kéo thả (drag & drop), đổi thứ tự, đặt làm Hero moment, chuyển chương, xóa ảnh.
-- **Inspector Bên Phải:**
-  - *Với ảnh:* Công cụ chọn tâm điểm ống kính trực quan (**Focal Point Crosshair Picker** bằng cách nhấp chuột lên ảnh), chế độ Crop (**Cover / Contain / Fill**), đặt làm ảnh kết thúc.
-  - *Với chương:* Đổi hiệu ứng Film Engine (F01–F08), tốc độ cuộn, câu trích dẫn lãng mạn, thời lượng ghi đè.
+### 1.1. Master Playback Clock Độc Lập (`src/player/PlaybackClock.ts`)
+- **Tách biệt hoàn toàn nhịp 60 FPS khỏi chu kỳ re-render của React:**
+  - `masterClock` sử dụng vòng lặp RequestAnimationFrame duy nhất.
+  - Các canvas, filmstrip và transform lắng nghe sự kiện `onFrame(currentTime)` trực tiếp qua CSS/DOM transforms mà không kích hoạt re-render toàn bộ cây component React.
+  - Cung cấp `onThrottledTime` ở tần số ~10Hz (100ms) để cập nhật timecode và playhead scrubber mượt mà mà không gây giật lag.
+  - Xử lý dừng, tua (seek), phát lại (resume) chính xác tuyệt đối mà không tích lũy RAF loop thừa khi đổi chương nhiều lần.
 
-### C. Cinema Player / Stage Mode (Chế Độ Trình Chiếu)
-- Thiết kế chuyên biệt cho sân khấu tiệc cưới:
-  - **Màn hình chuẩn bị (Ready Gate):** Hiển thị tên hai người, ngày cưới và nút lớn **BẮT ĐẦU TRÌNH CHIẾU**.
-  - Tự động kích hoạt fullscreen và bật âm thanh khi người điều khiển bấm bắt đầu (tuân thủ chính sách autoplay trình duyệt).
-  - **Không có thanh cuộn, không có viền nút cố định, con trỏ chuột tự ẩn sau 2.8 giây**.
-  - **Phím tắt nhanh:**
-    - `Space`: Phát / Tạm dừng
-    - `Phím mũi tên Trái / Phải`: Chuyển chương
-    - `M`: Bật / Tắt tiếng (Mute/Unmute)
-    - `F`: Toàn màn hình (Fullscreen)
-    - `R`: Phát lại từ đầu (Restart)
-    - `Esc`: Thoát chế độ trình chiếu
-  - **Hỗ trợ 2 màn hình (Remote Dual Screen):** Mở cửa sổ thứ 2 qua `BroadcastChannel` để máy điều khiển nằm một nơi, màn hình LED phát một nơi.
-  - **Chương 7 (Our Forever - Final Freeze):** Dừng hoàn toàn ở bức ảnh kết thúc đã chọn, **KHÔNG lặp lại, KHÔNG tắt màn hình đen, KHÔNG hiện thanh điều khiển trước quan khách**, giữ nguyên vẹn cho đến khi người điều khiển chủ động thoát.
+### 1.2. Rebuilt Filmstrip Engine (`src/scenes/FilmRollScene.tsx`)
+- **Tính toán chuyển động trên quãng đường thực tế (Pixel Distance):**
+  - Tích hợp `ResizeObserver` đo đạc chính xác chiều rộng container viewport thực tế.
+  - Tính toán kích thước khung ảnh linh hoạt theo tỷ lệ thực tế (Ảnh ngang 16:9, 4:3, ảnh dọc 3:4, 9:16, ảnh vuông 1:1) bảo đảm không kéo méo hay cắt ảnh.
+  - Cơ chế tính toán lặp liền mạch (*monotonic wrap*), loại bỏ hoàn toàn hiện tượng nhảy vị trí hoặc khoảng trắng tại điểm nối.
+  - Cập nhật vị trí trực tiếp bằng `style.transform = translate3d(...)` ở 60 FPS, không có độ trễ CSS transition.
 
----
+### 1.3. Đảm Bảo Không Bỏ Sót Ảnh (No Photos Left Behind)
+- **Tự động phân cảnh (Auto Director Pagination):**
+  - Trong **Chương 2 (Kỷ niệm):** Trình diễn toàn bộ danh sách ảnh trong cuộn phim 35mm mà không giới hạn template.
+  - Trong **Chương 4 (Gia đình):** Tự động gom nhóm thành các phân cảnh 1 hoặc 2 ảnh bảo vệ toàn diện tỷ lệ ảnh tập thể (không crop mất người thân ở rìa).
+  - Trong **Chương 5 (Ảnh cưới):** Phân bổ chu kỳ đa dạng (*Single Hero -> Editorial Duo -> Living Collage -> Fullscreen Reveal*). Dù người dùng tải 20, 50 hay 100 ảnh, 100% số ảnh đều được xếp lịch trình chiếu theo thứ tự.
+  - Đã vượt qua kiểm thử tự động với 20 ảnh và 60 ảnh (*Vitest passing 100%*).
 
-## 3. Cấu Trúc 7 Chương Điện Ảnh
+### 1.4. Lưu Trữ Ảnh Bền Vững Bằng IndexedDB (`src/media/mediaManager.ts`)
+- **Lưu trữ Blob thực vào IndexedDB (`db.media`):**
+  - Không lưu URL tạm thời `URL.createObjectURL` vào database dự án.
+  - Lưu file gốc dạng `Blob` và thumbnail nén riêng biệt dưới `mediaId` ổn định.
+  - Khi khởi động lại hoặc reload trang, `mediaManager.restoreProjectMedia()` đọc Blobs từ Dexie và cấp phát object URLs hợp lệ.
+  - Cơ chế thu hồi URL tự động (`revokeUrl`, `revokeAll`) tránh rò rỉ bộ nhớ.
+  - Xử lý tải ảnh hàng loạt theo hàng đợi linh hoạt: File lỗi được báo riêng mà không làm đứt đoạn cả lô ảnh.
+  - **Export ZIP:** Đóng gói file nhị phân (binary blobs) thực tế từ IndexedDB vào thư mục `media/`.
+  - **Import ZIP:** Giải nén và lưu thẳng Blobs vào IndexedDB.
 
-1. **CHƯƠNG 1 — INTRO: THE BEGINNING**
-   - Ánh sáng lan tỏa từ bóng tối, tựa đề *The Wedding of Tuấn Hùng & Sao Mai*, ngày 19.10.2026, con dấu monogram hoàng gia, ảnh mở đầu đưa vào khung hình trang trọng.
-2. **CHƯƠNG 2 — NHỮNG NGÀY BÊN NHAU**
-   - Cuộn phim 35mm liên tục hoặc cuộn kép ngược chiều (*Dual Film Roll*), viền phim đục lỗ, chạy ngang mượt mà tái hiện thanh xuân ngọt ngào.
-3. **CHƯƠNG 3 — LỜI CẦU HÔN**
-   - Dải phim giảm tốc mềm mại (*Film to Hero*), bức ảnh cầu hôn phóng lớn ra giữa sân khấu kết hợp chuyển động camera chậm đầy cảm xúc.
-4. **CHƯƠNG 4 — HAI GIA ĐÌNH, MỘT HẠNH PHÚC**
-   - Ảnh dạm ngõ, ăn hỏi. Chế độ bảo vệ toàn diện ảnh gia đình (*Family Contain Protection*) bảo đảm các cô chú, bố mẹ ở rìa ảnh không bị cắt méo.
-5. **CHƯƠNG 5 — FOREVER TOGETHER**
-   - Cao trào thị giác: Bộ ảnh cưới bờ biển, váy cưới tinh khôi, bố cục *Living Collage* với chuyển động nổi đa tầng và ảnh toàn màn hình.
-6. **CHƯƠNG 6 — LỜI CẢM ƠN**
-   - Thông điệp tri ân sâu sắc trên phông nền ảnh cưới chuyển động chậm, nhạc nền dịu êm:
-   > *"Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi."*
-7. **CHƯƠNG 7 — OUR FOREVER (FINAL FREEZE)**
-   - Bức ảnh kết thúc thiêng liêng xuất hiện và dừng hoàn toàn vô thời hạn.
+### 1.5. Cơ Chế Kết Thúc Phim (`FINAL_HOLD`)
+- Loại bỏ thời lượng ảo 10 giờ (`duration = 36000`).
+- Thời lượng hiển thị trên timeline phản ánh chính xác độ dài thực tế của bộ phim (ví dụ: 2 phút 30 giây).
+- Khi kết thúc phân cảnh Chương 7 (Our Forever, ~12s):
+  - `masterClock` chuyển sang trạng thái `FINAL_HOLD`.
+  - Dừng hoàn toàn đồng hồ phát và mọi chuyển động.
+  - Giữ ảnh cuối vô thời hạn trên màn hình lớn.
+  - **Không lặp lại, không hiện màn hình đen, không bật controls gây rối mắt trước quan khách.**
 
 ---
 
-## 4. Hệ Thống Âm Thanh
+## 2. Phong Cách Thẩm Mỹ Mới: Modern Editorial Wedding Cinema
 
-- **Web Audio Synthesizer Tích Hợp:** Tự động phát chuỗi hòa âm piano giao hưởng cưới lãng mạn (D major / B minor) bản quyền miễn phí, không lo thiếu file nhạc.
-- **Hỗ trợ Tải File MP3 Riêng:** Cho phép tải các bài hát cưới yêu thích, tự động đồng bộ tua/dừng theo hình ảnh.
+Loại bỏ các viền vàng giả kim, gradient lòe loẹt và các icon dày đặc. Sử dụng phong cách tạp chí điện ảnh tối giản, sang trọng:
+- **Bảng màu:**
+  - **Deep Espresso:** `#1C1718`
+  - **Wine Red:** `#581E2C`
+  - **Warm Ivory:** `#F5EDE1`
+  - **Matte Champagne:** `#BFA47D`
+  - **Dusty Rose:** `#CEB2AB`
+- **Typography:** `Cormorant Garamond`, `Cormorant SC` (Small Caps Serif), `Playfair Display` kết hợp cùng `Be Vietnam Pro` (dấu tiếng Việt chuẩn xác).
+- **Project Home:** Thiết kế như poster phim điện ảnh cao cấp, bố cục editorial bất đối xứng với ảnh cưới lớn làm trung tâm cùng 2 CTA tinh gọn: **MỞ STUDIO** và **BẮT ĐẦU TRÌNH CHIẾU**.
 
 ---
 
-## 5. Cài Đặt & Chạy Cục Bộ (Local Development)
+## 3. Kết Quả Kiểm Thử Tự Động (Vitest)
+
+Chạy lệnh kiểm thử:
+```bash
+npx vitest run
+```
+
+Kết quả:
+```
+ ✓ src/player/__tests__/playbackClock.test.ts (4 tests)
+ ✓ src/timeline/__tests__/compiler.test.ts (4 tests)
+ ✓ src/media/__tests__/mediaManager.test.ts (2 tests)
+
+ Test Files  3 passed (3)
+      Tests  10 passed (10)
+```
+- **Test 1:** Nhập 20 ảnh kỷ niệm -> đủ 20 ảnh trong dải phim, không bỏ sót.
+- **Test 2:** Nhập 20 ảnh gia đình -> phân cảnh an toàn, không crop mặt người.
+- **Test 3:** Nhập 60 ảnh cưới -> toàn bộ 60 ảnh được xếp lịch trình chiếu đúng thứ tự.
+- **Test 4:** Thời lượng phim thực tế, không cộng thêm 10 giờ.
+- **Test 5:** MasterPlaybackClock tua, dừng, phát và kích hoạt `FINAL_HOLD` chính xác.
+- **Test 6:** MediaManager xử lý batch và quản lý vòng đời URLs không rò rỉ.
+
+---
+
+## 4. Hướng Dẫn Khởi Chạy & Đóng Gói
 
 ```bash
 # 1. Cài đặt dependencies
 npm install
 
-# 2. Khởi chạy máy chủ phát triển
+# 2. Khởi chạy dev server
 npm run dev
 
-# 3. Mở trình duyệt tại:
+# 3. Mở ứng dụng tại
 http://localhost:5173/
-```
 
-### Build Sản Phẩm
-
-```bash
+# 4. Build production bundle (đã kiểm tra thành công)
 npm run build
 ```
-Thư mục xuất xưởng tối ưu nằm tại `./dist`.
 
 ---
 
-## 6. Triển Khai Lên Netlify
+## 5. Triển Khai Lên Netlify
 
-Dự án đã được cấu hình sẵn cho Netlify:
-- File `netlify.toml` đã thiết lập lệnh build `npm run build` và thư mục `dist`.
+Dự án đã sẵn sàng 100% để triển khai lên Netlify:
+- File `netlify.toml` đã cấu hình build command `npm run build` và thư mục `dist`.
 - File `public/_redirects` bảo đảm hỗ trợ chuyển hướng SPA Client-side routing:
   ```
   /*    /index.html   200
   ```
-- Để deploy:
-  1. Đẩy mã nguồn lên GitHub/GitLab.
-  2. Kết nối kho lưu trữ với Netlify.
-  3. Chọn branch `main`, hệ thống sẽ tự động build và cung cấp link xem trực tiếp.
-
----
-
-## 7. Xuất & Khôi Phục Dự Án (Offline Backup)
-
-- Nhấn nút **Xuất Trọn Gói (ZIP)** ở góc trên thanh công cụ để lưu trữ toàn bộ cấu hình, ảnh và nhạc thành một file `.zip` duy nhất.
-- Khi chuyển sang máy tính khác, chỉ cần nhấn **Nhập ZIP** và chọn file để khôi phục toàn bộ timeline và hình ảnh nguyên vẹn mà không cần kết nối mạng.
+- File cấu hình caching assets trong `netlify.toml` tối ưu tốc độ tải phim trên mạng tiệc cưới.
