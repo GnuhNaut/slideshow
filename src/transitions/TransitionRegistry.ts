@@ -1,12 +1,12 @@
 // Registry of cinematic chapter transitions and their durations
 
 export type ChapterTransitionId =
-  | 'CINEMATIC_FILM_OPENING'    // Ch 1 -> 2 (0.9s - 1.3s)
-  | 'FILM_TO_HERO_3D_MORPH'     // Ch 2 -> 3 (1.0s - 1.3s)
-  | 'ALBUM_PAGE_TURN_3D'        // Ch 3 -> 4 (0.8s - 1.1s)
-  | 'PREMIUM_GALLERY_REVEAL'    // Ch 4 -> 5 (0.9s - 1.4s)
-  | 'GRAND_THANK_YOU_TRANSITION'// Ch 5 -> 6 (1.0s - 1.3s)
-  | 'FINAL_PHOTO_REVEAL'        // Ch 6 -> 7 (0.9s - 1.4s)
+  | 'FILM_PORTAL_OPENING'           // Ch 1 -> 2 (1.2s): Intro typography recedes as 35mm film portal streaks across
+  | 'TRUE_FILM_TO_HERO_MORPH'        // Ch 2 -> 3 (1.3s): Proposal photo detaches from filmstrip and zooms to center
+  | 'PREMIUM_3D_ALBUM_TURN'          // Ch 3 -> 4 (1.1s): True 3D album page flip with hinge at left edge
+  | 'GALLERY_SPACE_TRANSFORMATION'   // Ch 4 -> 5 (1.2s): Family album recedes into 3D Z-space, wedding photos surge forward
+  | 'GRAND_WEDDING_CURTAIN_REVEAL'   // Ch 5 -> 6 (1.3s): Wedding photos part left/right, revealing majestic central Lời Cảm Ơn
+  | 'FOREVER_FINAL_REVEAL'           // Ch 6 -> 7 (1.2s): Typography softens, ending photo occupies full frame into FINAL_HOLD
   | 'DEFAULT_DISSOLVE';
 
 export interface TransitionSpec {
@@ -18,38 +18,38 @@ export interface TransitionSpec {
 
 export const CHAPTER_TRANSITIONS: Record<string, TransitionSpec> = {
   '1_to_2': {
-    id: 'CINEMATIC_FILM_OPENING',
-    duration: 1.1,
+    id: 'FILM_PORTAL_OPENING',
+    duration: 1.2,
     fromChapter: 1,
     toChapter: 2,
   },
   '2_to_3': {
-    id: 'FILM_TO_HERO_3D_MORPH',
-    duration: 1.2,
+    id: 'TRUE_FILM_TO_HERO_MORPH',
+    duration: 1.3,
     fromChapter: 2,
     toChapter: 3,
   },
   '3_to_4': {
-    id: 'ALBUM_PAGE_TURN_3D',
-    duration: 1.0,
+    id: 'PREMIUM_3D_ALBUM_TURN',
+    duration: 1.1,
     fromChapter: 3,
     toChapter: 4,
   },
   '4_to_5': {
-    id: 'PREMIUM_GALLERY_REVEAL',
+    id: 'GALLERY_SPACE_TRANSFORMATION',
     duration: 1.2,
     fromChapter: 4,
     toChapter: 5,
   },
   '5_to_6': {
-    id: 'GRAND_THANK_YOU_TRANSITION',
-    duration: 1.2,
+    id: 'GRAND_WEDDING_CURTAIN_REVEAL',
+    duration: 1.3,
     fromChapter: 5,
     toChapter: 6,
   },
   '6_to_7': {
-    id: 'FINAL_PHOTO_REVEAL',
-    duration: 1.1,
+    id: 'FOREVER_FINAL_REVEAL',
+    duration: 1.2,
     fromChapter: 6,
     toChapter: 7,
   },

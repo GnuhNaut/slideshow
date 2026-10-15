@@ -1,12 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
-import { TimelineScene } from '../types/timeline';
 import { ChapterTransitionId } from './TransitionRegistry';
+import { motionRuntime, MotionFrameState } from '../motion/MotionRuntime';
 
 interface SceneCompositorProps {
   isTransitioning: boolean;
   transitionId: ChapterTransitionId;
-  transitionProgress: number; // 0.0 to 1.0
+  transitionProgress?: number;
   outgoingSceneNode?: React.ReactNode;
   incomingSceneNode?: React.ReactNode;
   activeSceneNode: React.ReactNode;
@@ -15,7 +15,6 @@ interface SceneCompositorProps {
 export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   isTransitioning,
   transitionId,
-  transitionProgress,
   outgoingSceneNode,
   incomingSceneNode,
   activeSceneNode,
@@ -23,159 +22,145 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   const outgoingRef = useRef<HTMLDivElement>(null);
   const incomingRef = useRef<HTMLDivElement>(null);
 
+  // High-performance 60 FPS Motion Loop directly from MotionRuntime
+  // Applies GSAP 3D transforms on every single frame without React re-render lag!
   useEffect(() => {
-    if (!isTransitioning) return;
-    const p = transitionProgress;
+    const applyTransitionTransforms = (state: MotionFrameState) => {
+      if (!state.isTransitioning || !outgoingRef.current || !incomingRef.current) return;
 
-    switch (transitionId) {
-      case 'CINEMATIC_FILM_OPENING': {
-        // Ch 1 -> 2: Intro shrinks back, Film Strip slides in
-        const ease = gsap.parseEase('power2.inOut')(p);
-        if (outgoingRef.current) {
+      const p = state.transitionProgress;
+      const tId = state.transitionId;
+
+      switch (tId) {
+        case 'FILM_PORTAL_OPENING': {
+          // Ch 1 -> 2: Intro typography recedes as 35mm film portal streaks across
+          const ease = gsap.parseEase('power2.inOut')(p);
           gsap.set(outgoingRef.current, {
-            scale: 1 - ease * 0.08,
-            opacity: Math.max(0, 1 - ease * 1.2),
-            z: -ease * 150,
+            scale: 1 - ease * 0.1,
+            opacity: Math.max(0, 1 - ease * 1.3),
+            z: -ease * 220,
             force3D: true,
           });
-        }
-        if (incomingRef.current) {
           gsap.set(incomingRef.current, {
-            scale: 0.92 + ease * 0.08,
-            opacity: Math.min(1, ease * 1.5),
-            z: (1 - ease) * 100,
+            scale: 0.88 + ease * 0.12,
+            opacity: Math.min(1, ease * 1.6),
+            z: (1 - ease) * 160,
             force3D: true,
           });
+          break;
         }
-        break;
-      }
 
-      case 'FILM_TO_HERO_3D_MORPH': {
-        // Ch 2 -> 3: Film tilts back, Hero emerges forward
-        const ease = gsap.parseEase('power2.inOut')(p);
-        if (outgoingRef.current) {
+        case 'TRUE_FILM_TO_HERO_MORPH': {
+          // Ch 2 -> 3: Filmstrip track tilts back into depth, Hero zooms and de-tilts to center
+          const ease = gsap.parseEase('power3.out')(p);
           gsap.set(outgoingRef.current, {
-            rotationX: ease * 10,
-            z: -ease * 250,
+            rotationX: ease * 14,
+            scale: 1 - ease * 0.15,
+            z: -ease * 320,
+            opacity: Math.max(0, 1 - ease * 1.4),
+            force3D: true,
+          });
+          gsap.set(incomingRef.current, {
+            rotationX: (1 - ease) * -12,
+            scale: 0.82 + ease * 0.18,
+            opacity: Math.min(1, ease * 1.6),
+            z: (1 - ease) * 220,
+            force3D: true,
+          });
+          break;
+        }
+
+        case 'PREMIUM_3D_ALBUM_TURN': {
+          // Ch 3 -> 4: True 3D album page flip with hinge at left edge
+          const ease = gsap.parseEase('power2.inOut')(p);
+          gsap.set(outgoingRef.current, {
+            transformOrigin: '0% 50%',
+            rotationY: -ease * 140,
+            opacity: Math.max(0, 1 - ease * 1.25),
+            force3D: true,
+          });
+          gsap.set(incomingRef.current, {
+            transformOrigin: '100% 50%',
+            rotationY: (1 - ease) * 30,
+            opacity: Math.min(1, ease * 1.4),
+            scale: 0.94 + ease * 0.06,
+            force3D: true,
+          });
+          break;
+        }
+
+        case 'GALLERY_SPACE_TRANSFORMATION': {
+          // Ch 4 -> 5: Family album recedes into 3D Z-space, wedding photos surge forward
+          const ease = gsap.parseEase('power2.inOut')(p);
+          gsap.set(outgoingRef.current, {
+            scale: 1 - ease * 0.15,
+            z: -ease * 280,
             opacity: Math.max(0, 1 - ease * 1.3),
             force3D: true,
           });
-        }
-        if (incomingRef.current) {
           gsap.set(incomingRef.current, {
-            scale: 0.88 + ease * 0.12,
-            opacity: Math.min(1, ease * 1.4),
-            z: (1 - ease) * 150,
-            force3D: true,
-          });
-        }
-        break;
-      }
-
-      case 'ALBUM_PAGE_TURN_3D': {
-        // Ch 3 -> 4: 3D Album Page Turn
-        const ease = gsap.parseEase('power2.inOut')(p);
-        if (outgoingRef.current) {
-          gsap.set(outgoingRef.current, {
-            rotationY: -ease * 45,
-            x: -ease * 80,
-            opacity: Math.max(0, 1 - ease * 1.2),
-            force3D: true,
-          });
-        }
-        if (incomingRef.current) {
-          gsap.set(incomingRef.current, {
-            rotationY: (1 - ease) * 35,
-            x: (1 - ease) * 60,
-            opacity: Math.min(1, ease * 1.3),
-            force3D: true,
-          });
-        }
-        break;
-      }
-
-      case 'PREMIUM_GALLERY_REVEAL': {
-        // Ch 4 -> 5: Family album recedes, Wedding montage surges forward
-        const ease = gsap.parseEase('power2.inOut')(p);
-        if (outgoingRef.current) {
-          gsap.set(outgoingRef.current, {
-            scale: 1 - ease * 0.12,
-            z: -ease * 200,
-            opacity: Math.max(0, 1 - ease * 1.2),
-            force3D: true,
-          });
-        }
-        if (incomingRef.current) {
-          gsap.set(incomingRef.current, {
-            scale: 0.94 + ease * 0.06,
-            opacity: Math.min(1, ease * 1.4),
-            force3D: true,
-          });
-        }
-        break;
-      }
-
-      case 'GRAND_THANK_YOU_TRANSITION': {
-        // Ch 5 -> 6: Wedding photos part to flanking sides, Thank You emerges center
-        const ease = gsap.parseEase('power2.out')(p);
-        if (outgoingRef.current) {
-          gsap.set(outgoingRef.current, {
-            scale: 1 + ease * 0.04,
-            opacity: Math.max(0, 1 - ease * 1.2),
-            force3D: true,
-          });
-        }
-        if (incomingRef.current) {
-          gsap.set(incomingRef.current, {
-            scale: 0.9 + ease * 0.1,
+            scale: 0.92 + ease * 0.08,
+            z: (1 - ease) * 200,
             opacity: Math.min(1, ease * 1.5),
             force3D: true,
           });
+          break;
         }
-        break;
-      }
 
-      case 'FINAL_PHOTO_REVEAL': {
-        // Ch 6 -> 7: Thank you softly fades, Final Photo takes full stage
-        const ease = gsap.parseEase('power2.inOut')(p);
-        if (outgoingRef.current) {
+        case 'GRAND_WEDDING_CURTAIN_REVEAL': {
+          // Ch 5 -> 6: Wedding photos part left/right, revealing majestic central Lời Cảm Ơn
+          const ease = gsap.parseEase('power2.out')(p);
+          gsap.set(outgoingRef.current, {
+            scale: 1 + ease * 0.05,
+            opacity: Math.max(0, 1 - ease * 1.3),
+            force3D: true,
+          });
+          gsap.set(incomingRef.current, {
+            scale: 0.9 + ease * 0.1,
+            y: (1 - ease) * 35,
+            opacity: Math.min(1, ease * 1.6),
+            force3D: true,
+          });
+          break;
+        }
+
+        case 'FOREVER_FINAL_REVEAL': {
+          // Ch 6 -> 7: Thank you softly fades, Final Photo expands to permanent hold
+          const ease = gsap.parseEase('power2.inOut')(p);
           gsap.set(outgoingRef.current, {
             opacity: Math.max(0, 1 - ease * 1.4),
+            scale: 1 - ease * 0.05,
+            force3D: true,
+          });
+          gsap.set(incomingRef.current, {
+            opacity: Math.min(1, ease * 1.5),
+            scale: 0.96 + ease * 0.04,
+            force3D: true,
+          });
+          break;
+        }
+
+        default: {
+          // Default smooth spatial crossfade
+          const ease = gsap.parseEase('power1.inOut')(p);
+          gsap.set(outgoingRef.current, {
+            opacity: Math.max(0, 1 - ease * 1.2),
             scale: 1 - ease * 0.04,
             force3D: true,
           });
-        }
-        if (incomingRef.current) {
-          gsap.set(incomingRef.current, {
-            opacity: Math.min(1, ease * 1.5),
-            scale: 0.98 + ease * 0.02,
-            force3D: true,
-          });
-        }
-        break;
-      }
-
-      default: {
-        // Default gentle 3D dissolve
-        const ease = gsap.parseEase('power1.inOut')(p);
-        if (outgoingRef.current) {
-          gsap.set(outgoingRef.current, {
-            opacity: Math.max(0, 1 - ease * 1.2),
-            scale: 1 - ease * 0.03,
-            force3D: true,
-          });
-        }
-        if (incomingRef.current) {
           gsap.set(incomingRef.current, {
             opacity: Math.min(1, ease * 1.3),
-            scale: 0.97 + ease * 0.03,
+            scale: 0.96 + ease * 0.04,
             force3D: true,
           });
+          break;
         }
-        break;
       }
-    }
-  }, [isTransitioning, transitionId, transitionProgress]);
+    };
+
+    const unsub = motionRuntime.subscribe(applyTransitionTransforms);
+    return () => unsub();
+  }, [isTransitioning, transitionId]);
 
   // If not currently transitioning, render just the active scene
   if (!isTransitioning || !incomingSceneNode) {

@@ -113,35 +113,39 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
         {/* Center Grand Typography Stage */}
         <div
           ref={centerTextRef}
-          className="w-full md:w-[44%] flex flex-col items-center justify-center text-center px-4 py-8 z-30 will-change-transform"
+          className="w-full md:w-[48%] flex flex-col items-center justify-center text-center px-4 py-8 z-30 will-change-transform"
         >
-          {/* Wedding Red Accent Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 bg-[#F0DFD5]/90 border border-[#C93442]/30 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
-            <span className="text-xs uppercase tracking-[0.3em] font-sans font-semibold text-[#C93442]">
-              TRI ÂN & HẠNH PHÚC
+          {/* Subtle Golden Seal Accent Rule */}
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-10 h-[1.5px] bg-[#C5A16E]/60" />
+            <span className="text-[11px] uppercase tracking-[0.25em] font-sans font-semibold text-[#C93442]">
+              WEDDING APPRECIATION
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
+            <span className="w-10 h-[1.5px] bg-[#C5A16E]/60" />
           </div>
 
           {/* Grand Title */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-[#40322F] tracking-wide mb-6">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-[#40322F] tracking-[0.08em] mb-6">
             LỜI CẢM ƠN
           </h1>
 
-          <div className="w-20 h-[2px] bg-gradient-to-r from-transparent via-[#C5A16E] to-transparent mb-8" />
+          <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-[#C5A16E] to-transparent mb-8" />
 
           {/* Heartfelt Message */}
-          <p className="text-lg md:text-xl lg:text-2xl font-serif italic text-[#40322F]/90 leading-relaxed max-w-[540px] mb-10">
+          <p className="text-lg md:text-xl lg:text-2xl font-serif italic text-[#40322F]/90 leading-relaxed max-w-[580px] mb-10">
             "{message}"
           </p>
 
           {/* Couple Signature & Wedding Date */}
-          <div className="space-y-2 pt-4 border-t border-[#C5A16E]/30 w-full max-w-[360px]">
-            <div className="text-2xl lg:text-3xl font-serif text-[#C93442] tracking-wider">
-              {groomName} & {brideName}
+          <div className="space-y-2 pt-6 border-t border-[#C5A16E]/30 w-full max-w-[400px]">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-serif font-medium text-[#40322F] tracking-wide">
+              <span>{groomName}</span>
+              <span className="font-serif italic font-normal text-2xl sm:text-3xl text-[#C5A16E] mx-3">
+                &amp;
+              </span>
+              <span>{brideName}</span>
             </div>
-            <div className="text-xs lg:text-sm font-sans tracking-[0.25em] text-[#40322F]/70 uppercase">
+            <div className="text-xs sm:text-sm font-sans tracking-[0.2em] text-[#40322F]/70 uppercase">
               {weddingDate}
             </div>
           </div>

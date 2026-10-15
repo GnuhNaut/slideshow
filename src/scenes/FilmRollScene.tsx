@@ -141,17 +141,21 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
     });
   }, [photos, frameHeight]);
 
-  // Total cumulative width of one complete set of photos + gaps
-  const singleLoopWidth = useMemo(() => {
-    if (itemDimensions.length === 0) return 1;
-    return itemDimensions.reduce((acc, dim) => acc + dim.width + gap, 0);
+  // Compute cumulative offset table for O(1) positioning
+  const { offsets, singleLoopWidth } = useMemo(() => {
+    if (itemDimensions.length === 0) return { offsets: [], singleLoopWidth: 1 };
+    const offs: number[] = [];
+    let accum = 0;
+    for (let i = 0; i < itemDimensions.length; i++) {
+      offs.push(accum);
+      accum += itemDimensions[i].width + gap;
+    }
+    return { offsets: offs, singleLoopWidth: accum };
   }, [itemDimensions, gap]);
 
-  // Number of repeats needed to fill screen plus buffer for seamless continuous scrolling
-  const repeatCount = useMemo(() => {
-    if (singleLoopWidth <= 1) return 1;
-    return Math.max(3, Math.ceil((containerWidth * 2.5) / singleLoopWidth) + 1);
-  }, [containerWidth, singleLoopWidth]);
+  // State to hold the base offset for virtual DOM window slicing
+  const [virtualBaseOffset, setVirtualBaseOffset] = useState(0);
+  const lastUpdateOffsetRef = useRef(0);
 
   // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
   useEffect(() => {
@@ -168,10 +172,55 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
         direction === 'rtl' ? -wrappedOffset : wrappedOffset - singleLoopWidth;
 
       trackRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
+
+      // Update virtual window only when scrolling crosses a 180px threshold or on seek
+      if (Math.abs(wrappedOffset - lastUpdateOffsetRef.current) > 180) {
+        lastUpdateOffsetRef.current = wrappedOffset;
+        setVirtualBaseOffset(wrappedOffset);
+      }
     });
 
     return () => unsub();
   }, [sceneStartTime, speedPxPerSec, singleLoopWidth, direction]);
+
+  // Compute the bounded virtual window of items (strictly ~8-14 DOM nodes regardless of photo count!)
+  const visibleItems = useMemo(() => {
+    if (photos.length === 0 || singleLoopWidth <= 1) return [];
+
+    const buffer = 900; // px buffer left and right
+    const minX = virtualBaseOffset - buffer;
+    const maxX = virtualBaseOffset + containerWidth + buffer;
+
+    const minLoop = Math.floor(minX / singleLoopWidth);
+    const maxLoop = Math.ceil(maxX / singleLoopWidth);
+
+    const items: {
+      photo: PhotoItem;
+      width: number;
+      absoluteX: number;
+      key: string;
+      frameIndex: number;
+    }[] = [];
+
+    for (let loop = minLoop; loop <= maxLoop; loop++) {
+      const loopBase = loop * singleLoopWidth;
+      for (let i = 0; i < photos.length; i++) {
+        const itemX = loopBase + (offsets[i] || 0);
+        const itemW = itemDimensions[i]?.width || 320;
+        if (itemX + itemW >= minX && itemX <= maxX) {
+          items.push({
+            photo: photos[i],
+            width: itemW,
+            absoluteX: itemX,
+            key: `vfilm_${loop}_${photos[i].id}_${i}`,
+            frameIndex: i + 1,
+          });
+        }
+      }
+    }
+
+    return items;
+  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualBaseOffset, containerWidth]);
 
   if (!photos || photos.length === 0) {
     return (
@@ -179,19 +228,6 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
         Chưa có ảnh trong cuộn phim
       </div>
     );
-  }
-
-  // Generate repeated list for continuous seamless window
-  const repeatedItems: { photo: PhotoItem; width: number; key: string; frameIndex: number }[] = [];
-  for (let r = 0; r < repeatCount; r++) {
-    photos.forEach((photo, pIdx) => {
-      repeatedItems.push({
-        photo,
-        width: itemDimensions[pIdx]?.width || 320,
-        key: `strip_${r}_${photo.id}_${pIdx}`,
-        frameIndex: pIdx + 1,
-      });
-    });
   }
 
   return (
@@ -202,18 +238,22 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       {/* 35mm Top Perforation Track */}
       <div className="w-full h-3.5 bg-[#F3E9DD] film-sprocket-track border-y border-[#C5A16E]/30" />
 
-      {/* Film Strip Track */}
-      <div className="relative py-3 overflow-hidden">
+      {/* Film Strip Track with True DOM Windowing */}
+      <div
+        className="relative overflow-hidden"
+        style={{ height: `${frameHeight + 48}px` }}
+      >
         <div
           ref={trackRef}
-          className="flex items-center will-change-transform"
-          style={{ gap: `${gap}px` }}
+          className="absolute inset-y-0 left-0 h-full will-change-transform"
+          style={{ width: `${singleLoopWidth * 3}px` }}
         >
-          {repeatedItems.map((item) => (
+          {visibleItems.map((item) => (
             <div
               key={item.key}
-              className="relative shrink-0 p-3 bg-white border border-[#C5A16E]/35 rounded-sm luxury-shadow-md flex flex-col justify-between"
+              className="absolute top-2 p-3 bg-white border border-[#C5A16E]/35 rounded-sm luxury-shadow-md flex flex-col justify-between"
               style={{
+                left: `${item.absoluteX}px`,
                 width: `${item.width}px`,
                 height: `${frameHeight + 24}px`,
               }}
@@ -222,12 +262,12 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
                 <img
                   src={item.photo.url}
                   alt={item.photo.title || 'Wedding Memory'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                   loading="lazy"
                 />
               </div>
 
-              {/* Minimalist Footer Stamp */}
+              {/* Minimalist 35mm Film Footer Stamp */}
               <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-[#40322F]/50">
                 <span>35MM • #{item.frameIndex}</span>
                 <span>TUẤN HÙNG &amp; SAO MAI</span>

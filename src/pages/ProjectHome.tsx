@@ -56,8 +56,6 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
   };
 
   const handleStartPresentation = () => {
-    seek(0);
-    play();
     setViewMode('player');
   };
 

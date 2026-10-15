@@ -3,6 +3,7 @@ import { TimelineScene } from '../types/timeline';
 import { useWeddingStore } from '../app/store';
 import { computeTransitionState } from '../transitions/TransitionDirector';
 import { SceneCompositor } from '../transitions/SceneCompositor';
+import { motionRuntime } from '../motion/MotionRuntime';
 import { IntroScene } from './IntroScene';
 import { FilmRollScene } from './FilmRollScene';
 import { FilmToHeroScene } from './FilmToHeroScene';
@@ -57,6 +58,13 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const storeScenes = useWeddingStore((s) => s.timeline.scenes);
   const scenes = propsScenes || storeScenes;
 
+  // Sync scenes to motionRuntime for high-speed 60 FPS coordinate calculations
+  React.useEffect(() => {
+    if (scenes && scenes.length > 0) {
+      motionRuntime.setScenes(scenes);
+    }
+  }, [scenes]);
+
   if (!currentScene && (!scenes || scenes.length === 0)) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
@@ -84,8 +92,9 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   let incomingNode: React.ReactNode = undefined;
 
   if (transState.isTransitioning && transState.outgoingScene && transState.incomingScene) {
-    outgoingNode = renderSceneContent(transState.outgoingScene, 1.0, isPlaying);
-    incomingNode = renderSceneContent(transState.incomingScene, 0.0, isPlaying);
+    // Preserve true continuous progress for outgoing and incoming scenes
+    outgoingNode = renderSceneContent(transState.outgoingScene, transState.outgoingSceneProgress, isPlaying);
+    incomingNode = renderSceneContent(transState.incomingScene, transState.incomingSceneProgress, isPlaying);
   }
 
   return (

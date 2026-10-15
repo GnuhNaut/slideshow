@@ -4,7 +4,9 @@ import { getTransitionBetween, ChapterTransitionId } from './TransitionRegistry'
 export interface TransitionState {
   isTransitioning: boolean;
   outgoingScene: TimelineScene | null;
+  outgoingSceneProgress: number; // scene-local progress (not locked to 1.0)
   incomingScene: TimelineScene | null;
+  incomingSceneProgress: number; // scene-local progress (not locked to 0.0)
   activeScene: TimelineScene | null;
   transitionProgress: number; // 0.0 to 1.0
   transitionId: ChapterTransitionId;
@@ -19,7 +21,9 @@ export function computeTransitionState(
     return {
       isTransitioning: false,
       outgoingScene: null,
+      outgoingSceneProgress: 0,
       incomingScene: null,
+      incomingSceneProgress: 0,
       activeScene: null,
       transitionProgress: 0,
       transitionId: 'DEFAULT_DISSOLVE',
@@ -46,14 +50,20 @@ export function computeTransitionState(
 
   // Calculate regular scene progress
   const sceneElapsed = Math.max(0, currentTime - currentScene.startTime);
-  const sceneProgress = currentScene.duration > 0 ? Math.min(1, sceneElapsed / currentScene.duration) : 0;
+  const sceneProgress =
+    currentScene.duration > 0 ? Math.min(1, sceneElapsed / currentScene.duration) : 0;
 
   // Check if we are approaching a transition to nextScene
   if (nextScene) {
     const isChapterChange = currentScene.chapterIndex !== nextScene.chapterIndex;
     const transitionSpec = isChapterChange
       ? getTransitionBetween(currentScene.chapterIndex, nextScene.chapterIndex)
-      : { id: 'DEFAULT_DISSOLVE' as ChapterTransitionId, duration: 0.8, fromChapter: currentScene.chapterIndex, toChapter: nextScene.chapterIndex };
+      : {
+          id: 'DEFAULT_DISSOLVE' as ChapterTransitionId,
+          duration: 0.8,
+          fromChapter: currentScene.chapterIndex,
+          toChapter: nextScene.chapterIndex,
+        };
 
     const transDuration = Math.min(transitionSpec.duration, currentScene.duration * 0.4);
     const transStartTime = currentScene.endTime - transDuration;
@@ -62,10 +72,19 @@ export function computeTransitionState(
       const transElapsed = currentTime - transStartTime;
       const transitionProgress = Math.min(1, Math.max(0, transElapsed / transDuration));
 
+      const outElapsed = currentTime - currentScene.startTime;
+      const outgoingSceneProgress = Math.min(1, outElapsed / currentScene.duration);
+
+      const inElapsed = Math.max(0, currentTime - nextScene.startTime);
+      const incomingSceneProgress =
+        nextScene.duration > 0 ? Math.min(1, inElapsed / nextScene.duration) : 0;
+
       return {
         isTransitioning: true,
         outgoingScene: currentScene,
+        outgoingSceneProgress,
         incomingScene: nextScene,
+        incomingSceneProgress,
         activeScene: currentScene,
         transitionProgress,
         transitionId: transitionSpec.id,
@@ -77,7 +96,9 @@ export function computeTransitionState(
   return {
     isTransitioning: false,
     outgoingScene: null,
+    outgoingSceneProgress: 0,
     incomingScene: null,
+    incomingSceneProgress: 0,
     activeScene: currentScene,
     transitionProgress: 0,
     transitionId: 'DEFAULT_DISSOLVE',

@@ -421,6 +421,16 @@ function compileChapterScenes(
     case 6: {
       // CHƯƠNG 6 — LỜI CẢM ƠN (Thank You Message)
       const duration = chapter.durationOverride || 14;
+      const chapterPhotos = [...photos];
+      if (chapterPhotos.length < 2) {
+        // Fallback to wedding photos from chapter 5 to flank left & right
+        const weddingPhotos = project.chapters.find((c) => c.chapterIndex === 5)?.photos || [];
+        for (const wp of weddingPhotos) {
+          if (chapterPhotos.length >= 2) break;
+          chapterPhotos.push(wp);
+        }
+      }
+
       scenes.push({
         id: `${chapter.id}_scene_thank_you`,
         chapterId: chapter.id,
@@ -430,8 +440,8 @@ function compileChapterScenes(
         startTime: cursor,
         duration,
         endTime: cursor + duration,
-        photos: photos.slice(0, 1),
-        heroPhoto: photos[0],
+        photos: chapterPhotos.slice(0, 2),
+        heroPhoto: chapterPhotos[0],
         config: {
           textTitle: 'LỜI CẢM ƠN',
           quote: project.thankYouMessage,

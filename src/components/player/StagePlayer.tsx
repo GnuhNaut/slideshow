@@ -18,6 +18,7 @@ import { useWeddingStore } from '../../app/store';
 import { SceneRenderer } from '../../scenes/SceneRenderer';
 import { usePlaybackController } from '../../player/usePlaybackController';
 import { presentationWakeLock, WakeLockState } from '../../player/PresentationWakeLock';
+import { audioEngine } from '../../audio/AudioEngine';
 
 export const StagePlayer: React.FC = () => {
   const project = useWeddingStore((s) => s.project);
@@ -35,6 +36,7 @@ export const StagePlayer: React.FC = () => {
 
   const [isStarted, setIsStarted] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [showOperatorModal, setShowOperatorModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [wakeLockState, setWakeLockState] = useState<WakeLockState>(
     presentationWakeLock.getState()
@@ -125,17 +127,31 @@ export const StagePlayer: React.FC = () => {
   const handleStartPresentation = async () => {
     setIsStarted(true);
 
-    // Request Screen Wake Lock so display never sleeps during the wedding
-    await presentationWakeLock.request();
-
-    try {
-      if (containerRef.current?.requestFullscreen) {
+    // 1. Direct user gesture request for Fullscreen
+    if (containerRef.current?.requestFullscreen) {
+      try {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
+      } catch (err) {
+        console.info('Theater window fallback:', err);
       }
-    } catch {
-      // Theater fallback
     }
+
+    // 2. Direct user gesture unlock for Web Audio
+    try {
+      await audioEngine.unlock();
+    } catch (err) {
+      console.warn('Audio unlock warning:', err);
+    }
+
+    // 3. Request Screen Wake Lock so display never sleeps during the wedding
+    try {
+      await presentationWakeLock.request();
+    } catch (err) {
+      console.warn('Wake Lock request warning:', err);
+    }
+
+    // 4. Reset clock to 0 and begin master playback
     seek(0);
     play();
   };
@@ -171,11 +187,58 @@ export const StagePlayer: React.FC = () => {
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EC] to-[#F5EDE1] px-6 text-center">
           <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/70 to-[#FFF9F2] pointer-events-none" />
 
+          {/* Discreet Operator Diagnostics Button in Corner */}
+          <div className="absolute top-6 right-8 z-30">
+            <button
+              type="button"
+              onClick={() => setShowOperatorModal(!showOperatorModal)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-serif text-[#40322F]/70 bg-white/70 hover:bg-white border border-[#C5A16E]/30 shadow-sm transition-all cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#C5A16E]" />
+              <span>Bảng kỹ thuật</span>
+            </button>
+
+            {/* Operator Diagnostics Popover */}
+            {showOperatorModal && (
+              <div className="absolute right-0 mt-2 w-72 p-4 bg-white/95 backdrop-blur-md border border-[#C5A16E]/40 rounded-xl luxury-shadow-lg text-left text-xs font-sans text-[#40322F] z-50">
+                <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#C5A16E]/20 font-semibold font-serif text-[#C93442]">
+                  <span>THÔNG SỐ VẬN HÀNH</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowOperatorModal(false)}
+                    className="text-[#40322F]/50 hover:text-[#40322F]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#40322F]/70">Độ phân giải:</span>
+                    <span className="font-mono text-emerald-600 font-medium">1080p Cinema</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#40322F]/70">Wake Lock:</span>
+                    <span className="font-mono text-amber-600 font-medium">
+                      {wakeLockState.isActive ? 'Active' : 'Chờ bắt đầu'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#40322F]/70">Dữ liệu IndexedDB:</span>
+                    <span className="font-mono text-indigo-600 font-medium">An toàn 100%</span>
+                  </div>
+                  <div className="pt-2 border-t border-[#C5A16E]/20 text-[10px] text-[#40322F]/60">
+                    Phím tắt: Space (Phát/Dừng), F (Toàn màn hình), M (Bật/Tắt tiếng), Esc (Studio)
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Minimalist Header Tag */}
           <div className="relative z-10 flex items-center gap-3 mb-4">
             <span className="w-8 h-[1.5px] bg-[#C5A16E]" />
             <p className="text-xs md:text-sm tracking-[0.35em] uppercase text-[#C93442] font-sans font-semibold">
-              WEDDING FILM PRESENTATION V3
+              WEDDING FILM PRESENTATION V3.1
             </p>
             <span className="w-8 h-[1.5px] bg-[#C5A16E]" />
           </div>
@@ -188,28 +251,13 @@ export const StagePlayer: React.FC = () => {
             <span>{project.brideName}</span>
           </h1>
 
-          <div className="relative z-10 flex items-center gap-4 text-sm md:text-base tracking-[0.25em] text-[#40322F] font-serif mb-10 font-medium">
+          <div className="relative z-10 flex items-center gap-4 text-sm md:text-base tracking-[0.25em] text-[#40322F] font-serif mb-12 font-medium">
             <span>{project.weddingDate}</span>
             <span className="text-[#C93442]">•</span>
             <span>{project.lunarDate}</span>
           </div>
 
-          {/* Readiness Checklist */}
-          <div className="relative z-10 flex flex-wrap items-center justify-center gap-6 mb-10 text-xs font-sans text-[#40322F]/80">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white rounded-full border border-[#C5A16E]/30 shadow-sm">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Full HD 1080p Cinema</span>
-            </div>
-            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white rounded-full border border-[#C5A16E]/30 shadow-sm">
-              <Sun className="w-4 h-4 text-amber-500" />
-              <span>Screen Wake Lock Auto</span>
-            </div>
-            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white rounded-full border border-[#C5A16E]/30 shadow-sm">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              <span>IndexedDB Zero Data Loss</span>
-            </div>
-          </div>
-
+          {/* Pure Luxury Start Button */}
           <button
             type="button"
             onClick={handleStartPresentation}

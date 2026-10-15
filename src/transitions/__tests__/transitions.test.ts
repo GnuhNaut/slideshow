@@ -5,12 +5,12 @@ import { TimelineScene } from '../../types/timeline';
 
 describe('Transition Director & Registry', () => {
   it('should return specific cinematic transitions between consecutive chapters', () => {
-    expect(getTransitionBetween(1, 2).id).toBe('CINEMATIC_FILM_OPENING');
-    expect(getTransitionBetween(2, 3).id).toBe('FILM_TO_HERO_3D_MORPH');
-    expect(getTransitionBetween(3, 4).id).toBe('ALBUM_PAGE_TURN_3D');
-    expect(getTransitionBetween(4, 5).id).toBe('PREMIUM_GALLERY_REVEAL');
-    expect(getTransitionBetween(5, 6).id).toBe('GRAND_THANK_YOU_TRANSITION');
-    expect(getTransitionBetween(6, 7).id).toBe('FINAL_PHOTO_REVEAL');
+    expect(getTransitionBetween(1, 2).id).toBe('FILM_PORTAL_OPENING');
+    expect(getTransitionBetween(2, 3).id).toBe('TRUE_FILM_TO_HERO_MORPH');
+    expect(getTransitionBetween(3, 4).id).toBe('PREMIUM_3D_ALBUM_TURN');
+    expect(getTransitionBetween(4, 5).id).toBe('GALLERY_SPACE_TRANSFORMATION');
+    expect(getTransitionBetween(5, 6).id).toBe('GRAND_WEDDING_CURTAIN_REVEAL');
+    expect(getTransitionBetween(6, 7).id).toBe('FOREVER_FINAL_REVEAL');
   });
 
   it('should compute transition state correctly when in transition window', () => {
@@ -55,7 +55,7 @@ describe('Transition Director & Registry', () => {
     expect(stateTrans.isTransitioning).toBe(true);
     expect(stateTrans.outgoingScene?.id).toBe('s1');
     expect(stateTrans.incomingScene?.id).toBe('s2');
-    expect(stateTrans.transitionId).toBe('CINEMATIC_FILM_OPENING');
+    expect(stateTrans.transitionId).toBe('FILM_PORTAL_OPENING');
     expect(stateTrans.transitionProgress).toBeGreaterThan(0);
     expect(stateTrans.transitionProgress).toBeLessThanOrEqual(1);
   });
