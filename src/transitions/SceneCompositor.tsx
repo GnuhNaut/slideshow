@@ -3,12 +3,14 @@ import gsap from 'gsap';
 import { ChapterTransitionId } from './TransitionRegistry';
 import { motionRuntime, MotionFrameState } from '../motion/MotionRuntime';
 import { TimelineScene } from '../types/timeline';
+import { CurtainSurface } from './CurtainSurface';
 
 interface SceneCompositorProps {
   isTransitioning: boolean;
   transitionId: ChapterTransitionId;
   transitionProgress?: number;
   outgoingScene?: TimelineScene | null;
+  outgoingSceneProgress?: number;
   outgoingSceneNode?: React.ReactNode;
   incomingSceneNode?: React.ReactNode;
   activeSceneNode: React.ReactNode;
@@ -17,6 +19,8 @@ interface SceneCompositorProps {
 export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   isTransitioning,
   transitionId,
+  outgoingScene,
+  outgoingSceneProgress,
   outgoingSceneNode,
   incomingSceneNode,
   activeSceneNode,
@@ -131,12 +135,13 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
         }
 
         case 'GRAND_WEDDING_CURTAIN_REVEAL': {
-          // Ch 5 -> 6: True 3D Split Curtain Reveal: wedding photos part left and right
+          // Ch 5 -> 6: True 3D Grand Wedding Curtain Reveal: parting left and right in 3D
           const ease = gsap.parseEase('power2.inOut')(p);
           if (leftCurtainRef.current) {
             gsap.set(leftCurtainRef.current, {
               xPercent: -ease * 105,
               rotationY: -ease * 18,
+              transformOrigin: 'left center',
               force3D: true,
             });
           }
@@ -144,6 +149,7 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
             gsap.set(rightCurtainRef.current, {
               xPercent: ease * 105,
               rotationY: ease * 18,
+              transformOrigin: 'right center',
               force3D: true,
             });
           }
@@ -208,7 +214,7 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
     return <div className="w-full h-full relative">{activeSceneNode}</div>;
   }
 
-  // Ch 5 -> 6: True 3D Grand Wedding Curtain Reveal
+  // Ch 5 -> 6: True 3D Grand Wedding Curtain Reveal using lightweight CurtainSurface
   if (transitionId === 'GRAND_WEDDING_CURTAIN_REVEAL') {
     return (
       <div className="relative w-full h-full overflow-hidden bg-[#FFF9F2] perspective-cinema">
@@ -225,9 +231,11 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
           ref={leftCurtainRef}
           className="absolute inset-y-0 left-0 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-r border-[#C5A16E]/40"
         >
-          <div className="absolute inset-y-0 left-0 w-[200%] h-full pointer-events-none">
-            {outgoingSceneNode || activeSceneNode}
-          </div>
+          <CurtainSurface
+            scene={outgoingScene}
+            progress={outgoingSceneProgress}
+            side="left"
+          />
         </div>
 
         {/* Right Curtain Half parting to the right */}
@@ -235,9 +243,11 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
           ref={rightCurtainRef}
           className="absolute inset-y-0 left-1/2 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-l border-[#C5A16E]/40"
         >
-          <div className="absolute inset-y-0 -left-full w-[200%] h-full pointer-events-none">
-            {outgoingSceneNode || activeSceneNode}
-          </div>
+          <CurtainSurface
+            scene={outgoingScene}
+            progress={outgoingSceneProgress}
+            side="right"
+          />
         </div>
       </div>
     );

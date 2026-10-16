@@ -156,6 +156,7 @@ export const StagePlayer: React.FC = () => {
   };
 
   const handleExitPresentation = async () => {
+    audioEngine.stop();
     await presentationWakeLock.release();
     if (document.fullscreenElement) {
       try {

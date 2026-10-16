@@ -3,15 +3,27 @@ import { WeddingProject, PhotoItem, AudioTrack } from '../types/project';
 import { db } from '../storage/db';
 import { mediaManager } from '../media/mediaManager';
 
+export interface MediaEntry {
+  id: string;
+  path: string;
+  type: 'image' | 'audio';
+  mimeType: string;
+  size: number;
+}
+
 export interface ProjectManifest {
   manifestVersion: string;
   app: string;
   exportDate: number;
+  projectId: string;
   projectTitle: string;
   groomName: string;
   brideName: string;
   weddingDate: string;
+  totalChapters: number;
   totalPhotos: number;
+  totalAudioTracks: number;
+  mediaEntries: MediaEntry[];
 }
 
 // Converts data URL to Blob
@@ -27,32 +39,26 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
-// Export complete project as ZIP pulling binaries from IndexedDB
+// Export complete project as ZIP with 100% media integrity guarantee (TC-75, TC-76, TC-77, TC-78)
 export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
   const zip = new JSZip();
 
   const totalPhotos = project.chapters.reduce((acc, ch) => acc + ch.photos.length, 0);
-
-  const manifest: ProjectManifest = {
-    manifestVersion: '2.0.0',
-    app: 'Wedding Film Story — Tuấn Hùng & Sao Mai (V2)',
-    exportDate: Date.now(),
-    projectTitle: project.title,
-    groomName: project.groomName,
-    brideName: project.brideName,
-    weddingDate: project.weddingDate,
-    totalPhotos,
-  };
-
-  zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-
-  const mediaFolder = zip.folder('media');
+  const totalAudioTracks = project.audioTracks.length;
   const projectToExport: WeddingProject = JSON.parse(JSON.stringify(project));
+  const mediaEntries: MediaEntry[] = [];
 
-  // Process photos and write real binary blobs into zip
+  // PHASE 1: PRE-SCAN & VERIFY ALL MEDIA BINARIES
+  // ZERO TOLERANCE: If ANY photo or audio is missing or 0 bytes, FAIL IMMEDIATELY!
+
+  // 1.1 Verify and collect all photos
+  const photoBlobs: { filename: string; blob: Blob; mimeType: string; photoId: string }[] = [];
+  const mediaFolder = zip.folder('media');
+
   for (const chapter of projectToExport.chapters) {
     for (const photo of chapter.photos) {
       let photoBlob: Blob | null = null;
+      let mimeType = 'image/jpeg';
       let ext = 'jpg';
 
       if (photo.mediaId) {
@@ -60,40 +66,62 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
           const stored = await db.media.get(photo.mediaId);
           if (stored && stored.blob) {
             photoBlob = stored.blob;
-            ext = stored.mimeType.includes('png') ? 'png' : 'jpg';
+            mimeType = stored.mimeType || 'image/jpeg';
+            ext = mimeType.includes('png') ? 'png' : 'jpg';
           }
         } catch (e) {
-          console.warn('Could not read from db.media:', e);
+          console.warn('Error reading from db.media:', e);
         }
       }
 
       if (!photoBlob && photo.url) {
         if (photo.url.startsWith('data:')) {
           photoBlob = dataUrlToBlob(photo.url);
-          ext = photoBlob.type.includes('png') ? 'png' : 'jpg';
+          mimeType = photoBlob.type || 'image/jpeg';
+          ext = mimeType.includes('png') ? 'png' : 'jpg';
         } else if (photo.url.startsWith('blob:')) {
           try {
             const resp = await fetch(photo.url);
-            photoBlob = await resp.blob();
-            ext = photoBlob.type.includes('png') ? 'png' : 'jpg';
+            if (resp.ok) {
+              photoBlob = await resp.blob();
+              mimeType = photoBlob.type || 'image/jpeg';
+              ext = mimeType.includes('png') ? 'png' : 'jpg';
+            }
           } catch {
-            // Skip if fetch fails
+            // Handled below
           }
         }
       }
 
-      if (photoBlob) {
-        const filename = `${photo.id}.${ext}`;
-        mediaFolder?.file(filename, photoBlob);
-        photo.url = `media/${filename}`;
+      if (!photoBlob || photoBlob.size === 0) {
+        throw new Error(
+          `Không thể xuất ZIP: Thiếu hoặc hỏng file nhị phân ảnh cho "${photo.title || photo.id}" (ID: ${photo.id}, Chương: ${chapter.title}).`
+        );
       }
+
+      const filename = `${photo.id}.${ext}`;
+      photoBlobs.push({ filename, blob: photoBlob, mimeType, photoId: photo.id });
+      photo.url = `media/${filename}`;
+      // Clean up dead blob URLs from thumbnail during export
+      photo.thumbnail = `media/${filename}`;
+
+      mediaEntries.push({
+        id: photo.id,
+        path: `media/${filename}`,
+        type: 'image',
+        mimeType,
+        size: photoBlob.size,
+      });
     }
   }
 
-  // Audio folder
+  // 1.2 Verify and collect all audio tracks
+  const audioBlobs: { filename: string; blob: Blob; mimeType: string; trackId: string }[] = [];
   const audioFolder = zip.folder('audio');
+
   for (const track of projectToExport.audioTracks) {
     let audioBlob: Blob | null = null;
+    let mimeType = 'audio/mpeg';
     let ext = 'mp3';
 
     if (track.mediaId) {
@@ -101,10 +129,11 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
         const storedAudio = await db.audio.get(track.mediaId);
         if (storedAudio && storedAudio.blob) {
           audioBlob = storedAudio.blob;
-          ext = storedAudio.mimeType.includes('wav') ? 'wav' : 'mp3';
+          mimeType = storedAudio.mimeType || 'audio/mpeg';
+          ext = mimeType.includes('wav') ? 'wav' : 'mp3';
         }
       } catch (e) {
-        console.warn('Could not read from db.audio:', e);
+        console.warn('Error reading from db.audio:', e);
       }
     }
 
@@ -112,27 +141,91 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
       if (track.url.startsWith('blob:') || track.url.startsWith('data:')) {
         try {
           const resp = await fetch(track.url);
-          audioBlob = await resp.blob();
+          if (resp.ok) {
+            audioBlob = await resp.blob();
+            mimeType = audioBlob.type || 'audio/mpeg';
+            ext = mimeType.includes('wav') ? 'wav' : 'mp3';
+          }
         } catch {
-          // Continue
+          // Handled below
         }
       }
     }
 
-    if (audioBlob) {
-      const filename = `${track.id}.${ext}`;
-      audioFolder?.file(filename, audioBlob);
-      track.url = `audio/${filename}`;
+    if (!audioBlob || audioBlob.size === 0) {
+      throw new Error(
+        `Không thể xuất ZIP: Thiếu hoặc hỏng file nhị phân âm thanh cho "${track.name || track.id}" (ID: ${track.id}).`
+      );
     }
+
+    const filename = `${track.id}.${ext}`;
+    audioBlobs.push({ filename, blob: audioBlob, mimeType, trackId: track.id });
+    track.url = `audio/${filename}`;
+
+    mediaEntries.push({
+      id: track.id,
+      path: `audio/${filename}`,
+      type: 'audio',
+      mimeType,
+      size: audioBlob.size,
+    });
   }
 
+  // PHASE 2: WRITE FILES INTO ZIP
+  const manifest: ProjectManifest = {
+    manifestVersion: '3.2.2',
+    app: 'Wedding Film Story — Tuấn Hùng & Sao Mai (V3.2.2)',
+    exportDate: Date.now(),
+    projectId: project.id,
+    projectTitle: project.title,
+    groomName: project.groomName,
+    brideName: project.brideName,
+    weddingDate: project.weddingDate,
+    totalChapters: project.chapters.length,
+    totalPhotos,
+    totalAudioTracks,
+    mediaEntries,
+  };
+
+  zip.file('manifest.json', JSON.stringify(manifest, null, 2));
   zip.file('project.json', JSON.stringify(projectToExport, null, 2));
 
-  return await zip.generateAsync({
+  for (const item of photoBlobs) {
+    mediaFolder?.file(item.filename, item.blob);
+  }
+
+  for (const item of audioBlobs) {
+    audioFolder?.file(item.filename, item.blob);
+  }
+
+  // Generate ZIP in memory
+  const zipBlob = await zip.generateAsync({
     type: 'blob',
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   });
+
+  // PHASE 3: SELF-VALIDATION IN MEMORY (TC-77, TC-78)
+  try {
+    const verificationZip = await JSZip.loadAsync(zipBlob);
+    const vManifestFile = verificationZip.file('manifest.json');
+    const vProjectFile = verificationZip.file('project.json');
+
+    if (!vManifestFile || !vProjectFile) {
+      throw new Error('Self-validation failed: Thiếu manifest.json hoặc project.json trong file đã tạo.');
+    }
+
+    for (const entry of mediaEntries) {
+      const fileInZip = verificationZip.file(entry.path);
+      if (!fileInZip) {
+        throw new Error(`Self-validation failed: File ${entry.path} không tồn tại trong ZIP vừa tạo.`);
+      }
+    }
+  } catch (valErr) {
+    throw new Error(`Lỗi xác thực gói ZIP sau khi tạo: ${valErr instanceof Error ? valErr.message : String(valErr)}`);
+  }
+
+  return zipBlob;
 }
 
 import { compileProjectTimeline } from '../timeline/compiler';
@@ -363,7 +456,9 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
     for (const chapter of stagedProject.chapters) {
       for (const photo of chapter.photos) {
         if (photo.mediaId === m.id) {
-          photo.url = mediaManager.createTrackedUrl(m.id, m.blob);
+          const liveUrl = mediaManager.createTrackedUrl(m.id, m.blob);
+          photo.url = liveUrl;
+          photo.thumbnail = liveUrl;
         }
       }
     }

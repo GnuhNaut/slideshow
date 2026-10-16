@@ -126,11 +126,20 @@ class MediaManager {
               try {
                 const stored = await db.media.get(photo.mediaId);
                 if (stored && stored.blob) {
-                  photo.url = this.createTrackedUrl(photo.mediaId, stored.blob);
+                  const liveUrl = this.createTrackedUrl(photo.mediaId, stored.blob);
+                  photo.url = liveUrl;
+                  photo.thumbnail = liveUrl;
+                } else if (photo.thumbnail && photo.thumbnail.startsWith('blob:')) {
+                  photo.thumbnail = photo.url;
                 }
               } catch (err) {
                 console.warn(`Lỗi phục hồi media ID ${photo.mediaId}:`, err);
+                if (photo.thumbnail && photo.thumbnail.startsWith('blob:')) {
+                  photo.thumbnail = photo.url;
+                }
               }
+            } else if (photo.thumbnail && photo.thumbnail.startsWith('blob:') && photo.url) {
+              photo.thumbnail = photo.url;
             }
           }
         }

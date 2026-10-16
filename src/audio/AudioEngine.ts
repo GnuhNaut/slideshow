@@ -62,6 +62,13 @@ class CinematicAudioEngine {
     }
   }
 
+  public stop() {
+    this.pause();
+    if (this.customAudio) {
+      this.customAudio.currentTime = 0;
+    }
+  }
+
   public seek(seconds: number) {
     if (this.customAudio) {
       try {

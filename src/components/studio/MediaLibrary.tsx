@@ -197,6 +197,11 @@ export const MediaLibrary: React.FC = () => {
                 style={{
                   objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
                 }}
+                onError={(e) => {
+                  if (photo.url && e.currentTarget.src !== photo.url) {
+                    e.currentTarget.src = photo.url;
+                  }
+                }}
                 loading="lazy"
               />
 

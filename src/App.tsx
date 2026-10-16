@@ -65,9 +65,10 @@ export const App: React.FC = () => {
       );
       downloadBlob(zipBlob, filename);
       showToast('Xuất dự án ZIP thành công! Bạn có thể lưu trữ hoặc chuyển sang máy khác.');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Export failed:', err);
-      showToast('Lỗi khi xuất gói ZIP. Vui lòng thử lại.', 'error');
+      const msg = err instanceof Error ? err.message : 'Lỗi khi xuất gói ZIP. Vui lòng thử lại.';
+      showToast(`Lỗi xuất ZIP: ${msg}`, 'error');
     }
   };
 

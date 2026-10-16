@@ -107,8 +107,10 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   let incomingNode: React.ReactNode = undefined;
 
   if (transState.isTransitioning && transState.outgoingScene && transState.incomingScene) {
-    // Preserve true continuous progress for outgoing and incoming scenes; freeze outgoing internal motion
-    outgoingNode = renderSceneContent(transState.outgoingScene, transState.outgoingSceneProgress, false);
+    // Only instantiate heavy outgoing React node for non-curtain transitions; curtain uses CurtainSurface
+    if (transState.transitionId !== 'GRAND_WEDDING_CURTAIN_REVEAL') {
+      outgoingNode = renderSceneContent(transState.outgoingScene, transState.outgoingSceneProgress, false);
+    }
     incomingNode = renderSceneContent(transState.incomingScene, transState.incomingSceneProgress, isPlaying);
   }
 
@@ -125,6 +127,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         isTransitioning={transState.isTransitioning}
         transitionId={transState.transitionId}
         transitionProgress={transState.transitionProgress}
+        outgoingScene={transState.outgoingScene}
+        outgoingSceneProgress={transState.outgoingSceneProgress}
         outgoingSceneNode={outgoingNode}
         incomingSceneNode={incomingNode}
         activeSceneNode={activeNode}
