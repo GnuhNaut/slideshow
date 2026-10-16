@@ -1,5 +1,5 @@
 import { db } from '../storage/db';
-import { PhotoItem, WeddingProject } from '../types/project';
+import { PhotoItem, WeddingProject, AudioTrack } from '../types/project';
 
 class MediaManager {
   private activeUrls: Map<string, string> = new Map();
@@ -113,26 +113,106 @@ class MediaManager {
     return { photos, errors };
   }
 
-  // Reloads project media blobs from Dexie on application boot / reload
+  // Reloads project media blobs and audio from Dexie on application boot / reload
   public async restoreProjectMedia(project: WeddingProject): Promise<WeddingProject> {
     const updated = JSON.parse(JSON.stringify(project)) as WeddingProject;
 
-    for (const chapter of updated.chapters) {
-      for (const photo of chapter.photos) {
-        if (photo.mediaId) {
+    // 1. Restore photos from Dexie db.media
+    if (updated.chapters && Array.isArray(updated.chapters)) {
+      for (const chapter of updated.chapters) {
+        if (chapter.photos && Array.isArray(chapter.photos)) {
+          for (const photo of chapter.photos) {
+            if (photo.mediaId) {
+              try {
+                const stored = await db.media.get(photo.mediaId);
+                if (stored && stored.blob) {
+                  photo.url = this.createTrackedUrl(photo.mediaId, stored.blob);
+                }
+              } catch (err) {
+                console.warn(`Lỗi phục hồi media ID ${photo.mediaId}:`, err);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Restore audio tracks from Dexie db.audio
+    if (updated.audioTracks && Array.isArray(updated.audioTracks)) {
+      for (const track of updated.audioTracks) {
+        const audioKey = track.mediaId || track.id;
+        if (audioKey) {
           try {
-            const stored = await db.media.get(photo.mediaId);
-            if (stored && stored.blob) {
-              photo.url = this.createTrackedUrl(photo.mediaId, stored.blob);
+            const storedAudio = await db.audio.get(audioKey);
+            if (storedAudio && storedAudio.blob) {
+              track.url = this.createTrackedUrl(audioKey, storedAudio.blob);
+              track.mediaId = audioKey;
+              if (storedAudio.duration && (!track.duration || track.duration <= 0)) {
+                track.duration = storedAudio.duration;
+              }
             }
           } catch (err) {
-            console.warn(`Lỗi phục hồi media ID ${photo.mediaId}:`, err);
+            console.warn(`Lỗi phục hồi audio ID ${audioKey}:`, err);
           }
         }
       }
     }
 
     return updated;
+  }
+
+  // Save an uploaded audio file into Dexie IndexedDB and return an AudioTrack
+  public async saveAudioFile(
+    file: File,
+    projectId: string,
+    trackName?: string
+  ): Promise<AudioTrack> {
+    const mediaId = `audio_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const duration = await this.detectAudioDuration(file);
+
+    await db.audio.put({
+      id: mediaId,
+      projectId,
+      blob: file,
+      name: trackName || file.name,
+      mimeType: file.type || 'audio/mpeg',
+      duration,
+      createdAt: Date.now(),
+    });
+
+    const liveUrl = this.createTrackedUrl(mediaId, file);
+
+    return {
+      id: `track_${mediaId}`,
+      mediaId,
+      name: trackName || file.name.replace(/\.[^/.]+$/, ''),
+      url: liveUrl,
+      duration,
+      startTime: 0,
+      endTime: duration,
+      volume: 0.85,
+      fadeInDuration: 1.5,
+      fadeOutDuration: 2.0,
+      isGlobal: true,
+    };
+  }
+
+  private detectAudioDuration(file: File): Promise<number> {
+    return new Promise((resolve) => {
+      if (typeof Audio === 'undefined') return resolve(180);
+      const audio = new Audio();
+      const objectUrl = URL.createObjectURL(file);
+      audio.onloadedmetadata = () => {
+        const dur = audio.duration || 180;
+        URL.revokeObjectURL(objectUrl);
+        resolve(dur);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(180);
+      };
+      audio.src = objectUrl;
+    });
   }
 
   // Generate thumbnail and get dimensions

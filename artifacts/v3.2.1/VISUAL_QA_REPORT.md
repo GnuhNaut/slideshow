@@ -1,57 +1,44 @@
-# BÁO CÁO THẨM MỸ VÀ TRẢI NGHIỆM THỊ GIÁC V3.2.1 (VISUAL QA REPORT)
-**Dự án:** WEDDING FILM STORY — TUẤN HÙNG & SAO MAI
-**Phiên bản:** V3.2.1 — Release Candidate
+# BÁO CÁO THẨM MỸ VÀ TRẢI NGHIỆM THỊ GIÁC V3.2.1 (HOTFIX VISUAL QA REPORT)
+**Dự án:** WEDDING FILM STORY — TUẤN HÙNG & SAO MAI  
+**Phiên bản:** V3.2.1 — Release Candidate Critical Hotfix  
+**Ngày thực hiện:** 16/10/2026  
 
 ---
 
-## 1. ĐÁNH GIÁ CHẤT LƯỢNG MỸ THUẬT TỪNG PHÂN CẢNH
+## 1. ĐÁNH GIÁ CHẤT LƯỢNG MỸ THUẬT VÀ TÍNH LIÊN TỤC HÌNH ẢNH (VISUAL CONTINUITY)
 
-### 1.1. Chương 1 — Lời Mở Đầu (Film Intro)
-- **Tông màu:** Nền ngà ấm Warm Ivory `#FFF9F2`, ánh kim Champagne dịu dàng.
-- **Typography:** Tên cô dâu chú rể "Tuấn Hùng & Sao Mai" hiển thị trang trọng bằng font Cormorant Garamond / Playfair Display kết hợp font chân phương, kích thước đủ lớn để khách mời từ khoảng cách 10m trên màn LED đọc rõ.
-- **Chuyển động:** Mở màn nhẹ nhàng, không tối u ám, không chèn chữ kỹ thuật.
+### 1.1. Grand Wedding Curtain Reveal (Chương 5 $\to$ Chương 6)
+- **Tính liên tục tại 0%:**
+  - Khung hình tại thời điểm bắt đầu mở rèm ($p = 0\%$) khớp chính xác $100\%$ với khung hình đang hiển thị của Chương 5 ngay trước đó.
+  - Không còn hiện tượng tự ý sắp xếp lại 4 ảnh, không bị co giãn méo hình dạng ảnh chân dung hay ảnh phong cảnh ngang.
+  - Tỷ lệ khung hình và tâm điểm (focal point) được giữ vững tuyệt đối.
+- **Quá trình mở rèm (25% - 50% - 75%):**
+  - Hai cánh rèm quay 3D êm ả quanh hai trục bản lề ngoài cùng với bóng đổ sâu và viền Champagne Gold `#D4AF37`.
+  - Không có hiện tượng giật hình hoặc flash khi texture sẵn sàng; khung hình được đóng băng sạch sẽ với `isPlaying={false}`.
+- **Tiếp quản Chương 6 (Lời Cảm Ơn):**
+  - Sau khi rèm mở hết, Chương 6 lộ diện trang trọng, tiêu đề tri ân nổi bật và rõ ràng trên mọi màn hình độ phân giải cao.
 
-### 1.2. Chương 2 — Cuộn Phim Kỷ Niệm (35mm Memories)
-- **Cảm giác điện ảnh:** Hai rãnh lỗ răng phim (film sprocket holes) chân thực ở 2 mép trên/dưới.
-- **Tốc độ lướt:** Tốc độ 55–60px/s êm đềm, tạo cảm giác như ngắm nhìn những kỷ vật thời gian.
-- **Ảnh:** Khung ảnh trắng viền vàng champagne luxury, nhãn chân trang tối giản `35MM • TUẤN HÙNG & SAO MAI`. Hoàn toàn không còn hiện tượng chớp trắng nhờ cơ chế eager async decode.
-
-### 1.3. Chương 3 — Khoảnh Khắc Cầu Hôn (Proposal Moment)
-- **Điểm nhấn Hero:** Bức ảnh cầu hôn được phóng to trang trọng giữa không gian 3D.
-- **Thời lượng:** Nếu chỉ có 1 ảnh duy nhất, thời lượng chuẩn xác đúng 5.5 giây, nhịp phim cô đọng, giàu cảm xúc mà không bị kéo dài lê thê.
-
-### 1.4. Chương 4 — Ngày Dạm Ngõ (Family Album)
-- **Bảo toàn gương mặt:** Bố cục đôi hoặc tập thể gia đình hiển thị cân đối, không cắt cụt người thân ở hai bên mép.
-- **Màu sắc:** Phối hợp sắc đỏ cưới Wedding Red `#C93442` điểm xuyết tinh tế, tạo không khí ấm cúng của ngày ăn hỏi truyền thống.
-
-### 1.5. Chương 5 — Album Ảnh Cưới (Wedding Montage)
-- **Đa dạng bố cục:** Không lạm dụng hiệu ứng zoom đơn điệu. Hệ thống luân chuyển nhịp nhàng giữa:
-  - Hero Portrait tôn vinh cô dâu chú rể.
-  - Editorial Duo 60/40 đậm chất tạp chí thời trang cưới.
-  - Mosaic bất đối xứng hiện đại.
-  - Floating Gallery đa lớp chiều sâu.
-  - 3D Arc Carousel hình trụ xoay êm ả.
-
-### 1.6. Chương 6 — Lời Cảm Ơn (Grand Thank You Stage)
-- **Chuyển cảnh Split Curtain:** Hai cánh rèm ảnh cưới tách đôi sang trái và phải trong không gian 3D, hé lộ bức tâm thư tri ân của đôi uyên ương.
-- **Bố cục:** Tiêu đề "CẢM ƠN QUAN KHÁCH" trang trọng, hai bức ảnh cưới lớn hai bên cân đối, nội dung chữ sắc nét trên màn hình LED độ phân giải cao.
-
-### 1.7. Chương 7 — Ảnh Kết Thúc (Final Hold)
-- **Tính ổn định:** Bức ảnh cưới đẹp nhất chiếm lĩnh trung tâm màn hình, đứng yên hoàn toàn. Không có màn hình đen, không còn bất kỳ animation ngầm nào chạy tiêu hao pin hay nóng máy. Màn hình tiếp tục sáng làm phông nền chụp ảnh cùng gia đình.
+### 1.2. Cuộn phim 35mm (Chương 2)
+- Thuật toán `initialCameraX` loại bỏ hoàn toàn độ trễ 1 khung hình lúc bắt đầu.
+- Bộ nhớ đệm giải mã `decodedUrlsRef` (tối đa 200 ảnh) ngăn ngừa tạo mới `Image()` liên tục, bảo đảm không có blank frame dù cuộn nhanh hay tua thời gian.
 
 ---
 
-## 2. MINH CHỨNG THỊ GIÁC (VISUAL ARTIFACTS)
-Các ảnh chụp màn hình kiểm thử thực tế và video clip chuyển động thực:
-- **Video phiên kiểm thử trực tiếp trình duyệt:**
-  `artifacts/v3.2.1/v3_2_1_qa_pass_1792079624522.webp`
-- **Màn hình Trang chủ:**
-  `artifacts/v3.2.1/project_home_1792079636034.png`
-- **Màn hình Pre-show Ready Gate (Trước giờ phát):**
-  `artifacts/v3.2.1/preshow_ready_gate_1792079650258.png`
-- **Màn hình Chuyển cảnh Chương 1 $\to$ Chương 2:**
-  `artifacts/v3.2.1/chapter_transition_1792079672540.png`
-- **Màn hình Cuộn phim 35mm Chương 2:**
-  `artifacts/v3.2.1/chapter_2_filmstrip_1792079689986.png`
-- **Giao diện Studio biên tập phim:**
-  `artifacts/v3.2.1/studio_editor_1792079724943.png`
+## 2. MINH CHỨNG THỊ GIÁC THỰC TẾ (REAL BROWSER ARTIFACTS)
+
+Dưới đây là các ảnh chụp thực tế và video ghi hình phiên chạy trên trình duyệt Chromium thực nghiệm:
+
+- **Video toàn bộ phiên kiểm tra trực tiếp (Visual Continuity & ZIP Export/Import):**  
+  `artifacts/v3.2.1/curtain_and_export_qa.webp`
+- **Màn hình Trang chủ (Home Page):**  
+  `artifacts/v3.2.1/home_page_hotfix.png`
+- **Giao diện Studio Biên tập (Đầy đủ 7 chương & Nút Xuất ZIP):**  
+  `artifacts/v3.2.1/studio_hotfix.png`
+- **Màn hình Chuẩn bị phát (Pre-show Ready Gate):**  
+  `artifacts/v3.2.1/stage_gate_hotfix.png`
+- **Màn hình Chương 5 — Album Ảnh Cưới (Ngay trước ranh giới chuyển rèm):**  
+  `artifacts/v3.2.1/chapter_5_hotfix.png`
+- **Màn hình Grand Wedding Curtain Reveal (Mở rèm 3D bảo toàn hình học):**  
+  `artifacts/v3.2.1/curtain_transition_hotfix.png`
+- **Màn hình Chương 6 — Lời Cảm Ơn (Tri ân quan khách trang trọng):**  
+  `artifacts/v3.2.1/chapter_6_hotfix.png`

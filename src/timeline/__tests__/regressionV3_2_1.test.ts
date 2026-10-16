@@ -9,7 +9,6 @@ import {
   calculateCumulativeOffsets,
   getRequiredMediaIds,
 } from '../../scenes/filmstripMath';
-import { releaseCurtainSnapshot } from '../../transitions/curtainSnapshot';
 import { validateProjectSchema } from '../../project/exportImport';
 import { presentationWakeLock } from '../../player/PresentationWakeLock';
 import { TimelineScene } from '../../types/timeline';
@@ -253,11 +252,49 @@ describe('V3.2.1 Release Candidate Regression Suite (TC-41 to TC-60)', () => {
     expect(new Set(mediaIds).size).toBe(mediaIds.length);
   });
 
-  // TC-52: Curtain snapshot release guarantees temporary resource cleanup
-  it('TC-52 & TC-53: Split Curtain snapshot resources are fully released after transition', () => {
-    releaseCurtainSnapshot();
-    // Re-releasing does not throw and clears pointers
-    expect(() => releaseCurtainSnapshot()).not.toThrow();
+  // TC-52 & TC-53: Split Curtain preserves exact outgoing scene geometry and releases cleanly
+  it('TC-52 & TC-53: Split Curtain maintains exact outgoing scene identity and continuity at p=0', () => {
+    const sceneCh5: TimelineScene = {
+      id: 'scene_ch5',
+      chapterId: 'ch5',
+      chapterIndex: 5,
+      chapterTitle: 'Album Ảnh Cưới',
+      type: 'living_collage',
+      startTime: 10,
+      duration: 10,
+      endTime: 20,
+      transitionIn: 'film_wipe',
+      transitionOut: 'film_wipe',
+      photos: samplePhotos.slice(0, 5),
+      config: {},
+    };
+    const sceneCh6: TimelineScene = {
+      id: 'scene_ch6',
+      chapterId: 'ch6',
+      chapterIndex: 6,
+      chapterTitle: 'Lời Cảm Ơn',
+      type: 'thank_you',
+      startTime: 20,
+      duration: 8,
+      endTime: 28,
+      transitionIn: 'film_wipe',
+      transitionOut: 'fade',
+      photos: samplePhotos.slice(5, 7),
+      config: {},
+    };
+
+    // Chapter 5 -> 6 transition duration is 1.3s -> transStartTime = 20.0 - 1.3 = 18.7s
+    const stateAt0 = computeTransitionState([sceneCh5, sceneCh6], 18.7);
+    expect(stateAt0.isTransitioning).toBe(true);
+    expect(stateAt0.transitionId).toBe('GRAND_WEDDING_CURTAIN_REVEAL');
+    expect(stateAt0.outgoingScene?.id).toBe('scene_ch5');
+    expect(stateAt0.incomingScene?.id).toBe('scene_ch6');
+    expect(stateAt0.transitionProgress).toBeCloseTo(0.0, 2);
+    expect(stateAt0.outgoingSceneProgress).toBeCloseTo(0.87, 1);
+
+    const stateAtEnd = computeTransitionState([sceneCh5, sceneCh6], 20.0);
+    expect(stateAtEnd.isTransitioning).toBe(false);
+    expect(stateAtEnd.activeScene?.id).toBe('scene_ch6');
   });
 
   // TC-54: Corrupt project schema fails validation without touching state

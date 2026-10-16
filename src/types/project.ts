@@ -50,6 +50,7 @@ export interface ChapterConfig {
 
 export interface AudioTrack {
   id: string;
+  mediaId?: string; // Stable key in Dexie db.audio
   name: string;
   artist?: string;
   url: string;

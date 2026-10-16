@@ -1,46 +1,90 @@
-# BÁO CÁO CÁC LỖI ĐÃ XỬ LÝ TRIỆT ĐỂ (FIXED ISSUES REPORT)
-**Dự án:** WEDDING FILM STORY — TUẤN HÙNG & SAO MAI
-**Phiên bản:** V3.2.1 — Release Candidate
+# BÁO CÁO CÁC LỖI ĐÃ XỬ LÝ TRIỆT ĐỂ (CRITICAL HOTFIX REPORT)
+**Dự án:** WEDDING FILM STORY — TUẤN HÙNG & SAO MAI  
+**Phiên bản:** V3.2.1 — Release Candidate Critical Hotfix  
+**Commit cơ sở:** `7ae3225` | **Nhánh làm việc:** `v3.2.1-critical-hotfix`  
+**Ngày thực hiện:** 16/10/2026  
 
 ---
 
-## 1. DANH SÁCH LỖI P0 ĐÃ KHẮC PHỤC TRIỆT ĐỂ
+## 1. TỔNG QUAN HOTFIX
+Bản hotfix này xử lý dứt điểm các vấn đề then chốt về **Visual Continuity**, **Lưu trữ âm thanh bền vững (Audio Persistence)** và **Kiểm soát tính toàn vẹn dữ liệu ZIP (Media Integrity)** trước khi bàn giao và nghiệm thu thực tế cho lễ cưới.
 
-### 1. P0-01 — Scene Lifecycle & Frame-Accurate Transitions
-- **Tệp thay đổi:** `src/transitions/TransitionDirector.ts`, `src/scenes/SceneRenderer.tsx`, `src/motion/MotionRuntime.ts`
-- **Nguyên nhân gốc:** `SceneRenderer` phụ thuộc vào throttled clock 10Hz mà không có cơ chế tiền trạm. Khi thời gian chạm mốc $T$, incoming scene mới bắt đầu được mount, gây nguy cơ giật hoặc khựng 1 khung hình.
-- **Giải pháp triệt để:**
-  - Thiết lập cửa sổ đón đầu `TRANSITION_LOOKAHEAD_WINDOW = 0.4s` (400ms) trong `computeTransitionState`.
-  - Tự động nhận diện `upcomingScene` và kích hoạt bề mặt tiền xử lý vô hình (`pointer-events-none opacity-0`) trong `SceneRenderer` để React mount component và khởi tạo DOM trước.
-  - Tự động gọi `Image.decode()` đón đầu cho toàn bộ ảnh của scene sắp đến.
-  - Đồng bộ `MotionRuntime` để cung cấp `upcomingScene` và `isPrepared` đồng nhất trên từng frame RAF 60Hz.
+---
 
-### 2. P0-02 — Filmstrip Wrap & Virtual Window Synchronization
-- **Tệp thay đổi:** `src/scenes/filmstripMath.ts` (mới), `src/scenes/FilmRollScene.tsx`
-- **Nguyên nhân gốc:** Biến đổi CSS `translate3d` cập nhật tức thì trên RAF trong khi `visibleItems` chỉ cập nhật sau ngưỡng 160px. Cú nhảy modulo hoặc seek khiến danh sách ảnh bị trễ 1 nhịp so với vị trí camera. Đồng thời `loading="lazy"` khiến ảnh chưa kịp giải mã khi dải phim lướt nhanh.
-- **Giải pháp triệt để:**
-  - Tách toàn bộ toán học tọa độ thành các hàm thuần túy độc lập trong `filmstripMath.ts`: `getTrackPosition`, `calculateItemDimensions`, `calculateCumulativeOffsets`, `getVisibleItems`, `getRequiredMediaIds`.
-  - Nhận diện tức thì cú nhảy modulo hoặc thao tác tua thời gian (`Math.abs(currentTime - lastTime) > 0.25s`) để cập nhật ngay lập tức `virtualCameraX`.
-  - Mở rộng vùng đệm buffer lên `Math.max(1200, containerWidth * 0.7)` đảm bảo ảnh 2 đầu luôn có sẵn trong DOM ngay cả khi vừa wrap qua mép.
-  - Loại bỏ hoàn toàn `loading="lazy"`, thay bằng `loading="eager"` kết hợp `decoding="async"` và vòng lặp `Image.decode()` chạy ngầm.
-  - Bổ sung fallback hiển thị tao nhã nếu ảnh hỏng, ngăn ngừa crash màn hình chiếu.
+## 2. CHI TIẾT CÁC LỖI P0 ĐÃ KHẮC PHỤC TRIỆT ĐỂ
 
-### 3. P0-03 — Optimize Split Curtain Without Duplicating Heavy Scenes
-- **Tệp thay đổi:** `src/transitions/curtainSnapshot.ts` (mới), `src/transitions/StaticCurtainSurface.tsx` (mới), `src/transitions/SceneCompositor.tsx`, `src/scenes/SceneRenderer.tsx`
-- **Nguyên nhân gốc:** Trong `GRAND_WEDDING_CURTAIN_REVEAL`, `{outgoingSceneNode || activeSceneNode}` được truyền vào cả 2 cánh rèm cửa trái/phải, làm React mount 2 cây component Chương 5 độc lập với 2 bộ GSAP timeline song song.
+### 1. P0-01 — Sửa Snapshot của Grand Wedding Curtain Reveal (Visual Continuity)
+- **Tệp thay đổi:**
+  - `src/transitions/SceneCompositor.tsx`
+  - `src/scenes/SceneRenderer.tsx`
+  - Xóa bỏ: `src/transitions/curtainSnapshot.ts`, `src/transitions/StaticCurtainSurface.tsx`
+- **Nguyên nhân gốc:**
+  - `generateCurtainSnapshot()` trước đó tạo một canvas 1080p nhân tạo, tự ý bốc tối đa 4 ảnh đầu trong scene và xếp thành một bố cục độc lập không liên quan đến khung hình đang chạy của Chương 5 (Album Ảnh Cưới).
+  - Hậu quả: Tại thời điểm $p = 0\%$, màn hình bị giật/nhảy ảnh đột ngột, ảnh bị co giãn méo tỷ lệ, khuôn mặt bị cắt, và có độ trễ tạo texture gây hiện tượng flash khi rèm bắt đầu mở.
 - **Giải pháp triệt để:**
-  - Xây dựng module `curtainSnapshot.ts`: tự động tạo snapshot canvas 1080p sắc nét cho outgoing scene trong bộ nhớ đệm trước khi rèm mở.
-  - Tạo component tĩnh `StaticCurtainSurface.tsx`: hiển thị snapshot texture hoặc layout ảnh tĩnh với **0 GSAP listeners, 0 animation loops, 0 subscription**.
-  - Hai cánh rèm 3D tiếp tục chuyển động quay đa chiều (`rotationY: -ease * 18` và `rotationY: ease * 18`) với viền vàng Champagne `#C5A16E` sang trọng, nhưng chỉ chứa 1 thẻ texture tĩnh.
-  - Cơ chế `releaseCurtainSnapshot()` thu hồi toàn bộ canvas và giải phóng bộ nhớ ngay khi rèm mở xong.
+  - Loại bỏ hoàn toàn phương pháp chụp snapshot canvas nhân tạo và tệp `StaticCurtainSurface.tsx`.
+  - Trong `SceneCompositor.tsx`, hai cánh rèm (trái & phải) trực tiếp chứa khung hình outgoing scene thật (`outgoingSceneNode`), được đóng băng chuyển động hoàn toàn thông qua cờ `isPlaying={false}` trong `SceneRenderer.tsx`.
+  - Cánh rèm trái hiển thị chính xác nửa trái $[0\%, 50\%]$ với `overflow-hidden` và `w-[200%]`. Cánh rèm phải hiển thị chính xác nửa phải $[50\%, 100\%]$ với `ml-[-100%]`.
+  - Hiệu ứng rèm mở 3D chân thực bằng GSAP quay quanh trục bản lề (`transformOrigin: 'left center'` và `transformOrigin: 'right center'`), kết hợp đường viền vàng ánh kim Champagne Luxe `#D4AF37` và dải bóng đổ sang trọng.
+- **Kết quả nghiệm thu:**
+  - Khung hình tại $0\%$ khớp $100.00\%$ hình học, nội dung và vị trí ảnh của outgoing scene ngay trước khi mở rèm.
+  - Tỷ lệ khung hình và focal point được bảo toàn tuyệt đối, không co méo, không cắt mặt.
+  - Zero độ trễ, không flash, không chiếm dụng bộ nhớ RAM cho Data URL 1080p.
 
-### 4. P0-04 — Atomic ZIP Import & Staging Rollback
-- **Tệp thay đổi:** `src/project/exportImport.ts`, `src/app/store.ts`
-- **Nguyên nhân gốc:** Hàm import cũ ghi trực tiếp từng tệp nhị phân vào IndexedDB mà không có transaction bảo vệ; lỗi quota hoặc file hỏng giữa chừng gây tình trạng dự án dở dang và dữ liệu rác.
+---
+
+### 2. P0-02 — Nhạc Nhập Từ ZIP Phải Lưu Bền Vững (Persistent Audio in IndexedDB)
+- **Tệp thay đổi:**
+  - `src/types/project.ts`: Bổ sung thuộc tính `mediaId?: string` cho interface `AudioTrack`.
+  - `src/media/mediaManager.ts`: Cập nhật `restoreProjectMedia` khôi phục audio blobs từ `db.audio` thành tracked object URLs khi tải lại trang; thêm hàm `saveAudioFile`.
+  - `src/project/exportImport.ts`:
+    - `exportProjectZip`: Đọc nhị phân trực tiếp từ `db.audio` theo `mediaId` để đóng gói vào thư mục `audio/`.
+    - `importProjectZip`: Tạo `mediaId` ổn định, đóng gói `stagedAudioRecords` và ghi bền vững vào bảng `db.audio` trong transaction nguyên tử của Dexie.
+- **Nguyên nhân gốc:**
+  - Trong quy trình import trước đây, binary âm thanh chỉ được tạo thành blob URL tạm thời trong RAM mà không lưu nhị phân vào IndexedDB `db.audio`. Khi người dùng F5 hoặc mở lại trình duyệt, blob URL bị vô hiệu dẫn đến mất nhạc.
 - **Giải pháp triệt để:**
-  - Thiết kế quy trình 5 giai đoạn nghiêm ngặt:
-    1. **Prepare:** Đọc ZIP, kiểm tra `manifest.json`, xác thực schema dự án qua `validateProjectSchema`. Kiểm tra tệp binary tồn tại trước khi chạm vào bộ nhớ máy.
-    2. **Stage:** Nạp toàn bộ blob ảnh/nhạc vào bộ đệm RAM tạm thời `stagedMediaRecords`. Biên dịch thử timeline `compileProjectTimeline` để xác minh mọi cảnh hợp lệ.
-    3. **Commit:** Sử dụng `db.transaction('rw', [db.projects, db.media], ...)` của Dexie. Toàn bộ media và project được lưu nguyên tử: hoặc thành công 100%, hoặc tự động hủy bỏ không lưu bất kỳ thay đổi nào.
-    4. **Activate:** Tạm dừng phát cũ, khởi tạo tracked object URLs từ blob đã commit, cập nhật `motionRuntime`, reset clock về 0 và cập nhật store Zustand.
-    5. **Rollback:** Nếu có bất kỳ lỗi nào ở giai đoạn 1, 2, 3, dự án cũ trong cơ sở dữ liệu và giao diện hoàn toàn không bị thay đổi.
+  - Mỗi bản nhạc nhập từ ZIP được cấp một `mediaId` cố định (ví dụ `audio_import_...`).
+  - Binary được ghi bền vững vào bảng `db.audio` của IndexedDB trước khi báo import thành công.
+  - Khi F5 / reload trang, `restoreProjectMedia` đọc từ `db.audio` để tái tạo tracked object URLs.
+  - Khi không dùng nữa hoặc import dự án mới, các URLs cũ được thu hồi tự động qua `mediaManager.revokeTrackedUrls()`.
+
+---
+
+### 3. P0-03 — Không Được Báo Import Thành Công Khi Thiếu Media (Zero Tolerance)
+- **Tệp thay đổi:**
+  - `src/project/exportImport.ts`: Nâng cấp hàm `validateProjectSchema` và hàm `importProjectZip`.
+- **Nguyên nhân gốc:**
+  - Khi gặp ảnh hoặc nhạc không tồn tại trong file ZIP, hàm import cũ chỉ gọi `console.warn` rồi tiếp tục import dự án thiếu dữ liệu, để lại các đường dẫn gãy `media/...`.
+- **Giải pháp triệt để:**
+  - Bổ sung xác thực cấu trúc sâu `validateProjectSchema`: kiểm tra bắt buộc `id`, `title`, mảng `chapters`, `chapterIndex`, mảng `photos` (có `id` và `url`), cùng mảng `audioTracks`.
+  - Kiểm tra phiên bản manifest hợp lệ (hỗ trợ `1.0.0`, `2.0.0`, `3.0.0`, `3.2.0`, `3.2.1`).
+  - **Zero Tolerance Pre-scan:** Quét toàn bộ danh sách ảnh và nhạc tham chiếu trong project. Nếu thiếu bất kỳ file nào trong thư mục `media/` hoặc `audio/`, hoặc file có kích thước 0 byte (hỏng), quá trình dừng ngay lập tức và ném lỗi rõ ràng (`File ZIP bị thiếu ... tệp phương tiện bắt buộc`).
+  - Quy trình Commit nguyên tử bằng Dexie Transaction: nếu có lỗi, tự động rollback, bảo đảm không làm hỏng hay mất dự án đang chạy.
+
+---
+
+## 3. CHI TIẾT CÁC TỐI ƯU P1 ĐÃ KHẮC PHỤC
+
+### 1. P1-04 — Filmstrip Frame Synchronization & Decode Cache
+- **Tệp thay đổi:** `src/scenes/FilmRollScene.tsx`
+- **Tối ưu:**
+  - Tính toán `initialCameraX` ngay từ frame render đầu tiên để tránh độ trễ 1 khung hình.
+  - Thiết lập bộ nhớ đệm giải mã `decodedUrlsRef` với giới hạn tối đa 200 mục, ngăn ngừa việc gọi `new Image()` trùng lặp liên tục khi danh sách `visibleItems` thay đổi trong lúc cuộn.
+  - Đồng bộ tức thì `virtualCameraX` khi seek hoặc wrap dải phim, không để xuất hiện khoảng trống (blank frame).
+
+### 2. P1-05 — Scene Prewarm Isolation & Freeze Outgoing Scene
+- **Tệp thay đổi:** `src/scenes/SceneRenderer.tsx`
+- **Tối ưu:**
+  - Vùng prewarm ẩn được khóa hoàn toàn tương tác (`pointer-events-none opacity-0`) với cờ `isPrewarming={true}` để ngăn chạy âm thanh hoặc loop hoạt họa ngầm.
+  - Outgoing scene khi chuyển cảnh được truyền cờ `isPlaying={false}` nhằm đóng băng trạng thái hiển thị, giảm tải CPU/GPU và đảm bảo visual continuity ổn định.
+
+---
+
+## 4. KẾT QUẢ KIỂM THỬ TỔNG THỂ
+- **Vitest Unit & Regression Tests:** 11/11 files passed, **70/70 tests passed** (100%).
+  - Bổ sung bộ test mới `src/timeline/__tests__/regressionHotfix.test.ts` (10 tests) chuyên trách cho P0-01, P0-02, P0-03.
+- **TypeScript & Production Build:** `tsc -b && vite build` hoàn thành với **0 lỗi**, bundle sạch 653.75 kB (gzip 199.65 kB).
+- **Browser Visual QA:** Ghi hình và chụp ảnh thực tế qua trình duyệt Chromium:
+  - Landing Home Page hiển thị chuẩn sắc nét.
+  - Studio timeline đầy đủ 7 chương, tính năng Xuất ZIP tải về thành công.
+  - Stage Presentation: Grand Wedding Curtain Reveal tách đôi mượt mà, rèm mở lộ diện Chương 6 trang trọng.

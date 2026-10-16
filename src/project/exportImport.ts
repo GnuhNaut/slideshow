@@ -93,16 +93,36 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
   // Audio folder
   const audioFolder = zip.folder('audio');
   for (const track of projectToExport.audioTracks) {
-    if (track.url.startsWith('blob:')) {
+    let audioBlob: Blob | null = null;
+    let ext = 'mp3';
+
+    if (track.mediaId) {
       try {
-        const resp = await fetch(track.url);
-        const blob = await resp.blob();
-        const filename = `${track.id}.mp3`;
-        audioFolder?.file(filename, blob);
-        track.url = `audio/${filename}`;
-      } catch {
-        // Continue
+        const storedAudio = await db.audio.get(track.mediaId);
+        if (storedAudio && storedAudio.blob) {
+          audioBlob = storedAudio.blob;
+          ext = storedAudio.mimeType.includes('wav') ? 'wav' : 'mp3';
+        }
+      } catch (e) {
+        console.warn('Could not read from db.audio:', e);
       }
+    }
+
+    if (!audioBlob && track.url) {
+      if (track.url.startsWith('blob:') || track.url.startsWith('data:')) {
+        try {
+          const resp = await fetch(track.url);
+          audioBlob = await resp.blob();
+        } catch {
+          // Continue
+        }
+      }
+    }
+
+    if (audioBlob) {
+      const filename = `${track.id}.${ext}`;
+      audioFolder?.file(filename, audioBlob);
+      track.url = `audio/${filename}`;
     }
   }
 
@@ -118,14 +138,35 @@ export async function exportProjectZip(project: WeddingProject): Promise<Blob> {
 import { compileProjectTimeline } from '../timeline/compiler';
 
 /**
- * Validates project JSON against WeddingProject schema
+ * Validates project JSON against WeddingProject schema deeply and strictly
  */
 export function validateProjectSchema(data: unknown): data is WeddingProject {
   if (!data || typeof data !== 'object') return false;
   const p = data as Record<string, unknown>;
-  if (typeof p.id !== 'string' || typeof p.title !== 'string') return false;
+  if (typeof p.id !== 'string' || !p.id.trim()) return false;
+  if (typeof p.title !== 'string') return false;
   if (!Array.isArray(p.chapters) || p.chapters.length === 0) return false;
   if (!Array.isArray(p.audioTracks)) return false;
+
+  for (const ch of p.chapters) {
+    if (!ch || typeof ch !== 'object') return false;
+    const c = ch as Record<string, unknown>;
+    if (typeof c.id !== 'string' || typeof c.title !== 'string') return false;
+    if (typeof c.chapterIndex !== 'number') return false;
+    if (!Array.isArray(c.photos)) return false;
+    for (const ph of c.photos) {
+      if (!ph || typeof ph !== 'object') return false;
+      const phObj = ph as Record<string, unknown>;
+      if (typeof phObj.id !== 'string' || typeof phObj.url !== 'string') return false;
+    }
+  }
+
+  for (const tr of p.audioTracks) {
+    if (!tr || typeof tr !== 'object') return false;
+    const trObj = tr as Record<string, unknown>;
+    if (typeof trObj.id !== 'string' || typeof trObj.url !== 'string') return false;
+  }
+
   return true;
 }
 
@@ -140,7 +181,17 @@ interface StagedMediaRecord {
   createdAt: number;
 }
 
-// Atomic Import with Prepare, Stage, Commit, Activate & Rollback (TC-54, TC-55, TC-56)
+interface StagedAudioRecord {
+  id: string;
+  projectId: string;
+  blob: Blob;
+  name: string;
+  mimeType: string;
+  duration: number;
+  createdAt: number;
+}
+
+// Atomic Import with Prepare, Stage, Commit, Activate & Rollback (TC-54, TC-55, TC-56, P0-02, P0-03)
 export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   // 1. Phase: PREPARE (Validate ZIP & Files without touching storage)
   let zip: JSZip;
@@ -164,8 +215,12 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
     throw new Error('File manifest.json bị lỗi cú pháp');
   }
 
-  if (!manifest.manifestVersion) {
-    throw new Error('Version manifest không được hỗ trợ');
+  const supportedVersions = ['1.0.0', '2.0.0', '3.0.0', '3.2.0', '3.2.1'];
+  if (
+    !manifest.manifestVersion ||
+    (!supportedVersions.includes(manifest.manifestVersion) && !manifest.manifestVersion.match(/^\d+\.\d+\.\d+$/))
+  ) {
+    throw new Error(`Version manifest không được hỗ trợ: ${manifest.manifestVersion || 'không xác định'}`);
   }
 
   // Read and validate project.json
@@ -188,31 +243,15 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
 
   const stagedProject: WeddingProject = JSON.parse(JSON.stringify(rawProject));
 
-  // 2. Phase: STAGE (Extract binaries into memory, compile timeline for verification)
-  const stagedMediaRecords: StagedMediaRecord[] = [];
-  const stagedAudioBlobs: { track: AudioTrack; blob: Blob }[] = [];
+  // Verify missing files with ZERO TOLERANCE (P0-03)
+  const missingFiles: string[] = [];
 
   for (const chapter of stagedProject.chapters) {
     for (const photo of chapter.photos) {
       if (photo.url && photo.url.startsWith('media/')) {
         const fileInZip = zip.file(photo.url);
-        if (fileInZip) {
-          const blob = await fileInZip.async('blob');
-          const newMediaId = `media_import_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-          stagedMediaRecords.push({
-            id: newMediaId,
-            projectId: stagedProject.id,
-            blob,
-            mimeType: blob.type || 'image/jpeg',
-            filename: photo.title || 'imported_photo',
-            originalWidth: photo.originalWidth || 1920,
-            originalHeight: photo.originalHeight || 1080,
-            createdAt: Date.now(),
-          });
-          photo.mediaId = newMediaId;
-        } else {
-          // Graceful fallback if a single photo file is missing in zip
-          console.warn(`Media file missing in ZIP: ${photo.url}`);
+        if (!fileInZip) {
+          missingFiles.push(photo.url);
         }
       }
     }
@@ -221,10 +260,64 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   for (const track of stagedProject.audioTracks) {
     if (track.url && track.url.startsWith('audio/')) {
       const fileInZip = zip.file(track.url);
-      if (fileInZip) {
-        const blob = await fileInZip.async('blob');
-        stagedAudioBlobs.push({ track, blob });
+      if (!fileInZip) {
+        missingFiles.push(track.url);
       }
+    }
+  }
+
+  if (missingFiles.length > 0) {
+    throw new Error(
+      `File ZIP bị thiếu ${missingFiles.length} tệp phương tiện bắt buộc: ${missingFiles.slice(0, 4).join(', ')}${missingFiles.length > 4 ? '...' : ''}`
+    );
+  }
+
+  // 2. Phase: STAGE (Extract binaries into memory, compile timeline for verification)
+  const stagedMediaRecords: StagedMediaRecord[] = [];
+  const stagedAudioRecords: StagedAudioRecord[] = [];
+
+  for (const chapter of stagedProject.chapters) {
+    for (const photo of chapter.photos) {
+      if (photo.url && photo.url.startsWith('media/')) {
+        const fileInZip = zip.file(photo.url)!;
+        const blob = await fileInZip.async('blob');
+        if (blob.size === 0) {
+          throw new Error(`Tệp ảnh bị rỗng hoặc lỗi: ${photo.url}`);
+        }
+        const newMediaId = `media_import_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        stagedMediaRecords.push({
+          id: newMediaId,
+          projectId: stagedProject.id,
+          blob,
+          mimeType: blob.type || 'image/jpeg',
+          filename: photo.title || 'imported_photo',
+          originalWidth: photo.originalWidth || 1920,
+          originalHeight: photo.originalHeight || 1080,
+          createdAt: Date.now(),
+        });
+        photo.mediaId = newMediaId;
+      }
+    }
+  }
+
+  for (const track of stagedProject.audioTracks) {
+    if (track.url && track.url.startsWith('audio/')) {
+      const fileInZip = zip.file(track.url)!;
+      const blob = await fileInZip.async('blob');
+      if (blob.size === 0) {
+        throw new Error(`Tệp âm thanh bị rỗng hoặc lỗi: ${track.url}`);
+      }
+      const newAudioId = `audio_import_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      stagedAudioRecords.push({
+        id: newAudioId,
+        projectId: stagedProject.id,
+        blob,
+        name: track.name || 'imported_audio',
+        mimeType: blob.type || 'audio/mpeg',
+        duration: track.duration || 180,
+        createdAt: Date.now(),
+      });
+      track.mediaId = newAudioId;
     }
   }
 
@@ -237,9 +330,12 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
   // 3. Phase: COMMIT (Atomic IndexedDB transaction with zero tolerance for partial writes)
   try {
     if (typeof db.transaction === 'function') {
-      await db.transaction('rw', [db.projects, db.media], async () => {
+      await db.transaction('rw', [db.projects, db.media, db.audio], async () => {
         for (const item of stagedMediaRecords) {
           await db.media.put(item);
+        }
+        for (const item of stagedAudioRecords) {
+          await db.audio.put(item);
         }
         stagedProject.updatedAt = Date.now();
         await db.projects.put(stagedProject);
@@ -248,6 +344,9 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
       // Fallback for non-Dexie transaction environments
       for (const item of stagedMediaRecords) {
         await db.media.put(item);
+      }
+      for (const item of stagedAudioRecords) {
+        await db.audio.put(item);
       }
       stagedProject.updatedAt = Date.now();
       await db.projects.put(stagedProject);
@@ -270,8 +369,12 @@ export async function importProjectZip(zipFile: File): Promise<WeddingProject> {
     }
   }
 
-  for (const item of stagedAudioBlobs) {
-    item.track.url = URL.createObjectURL(item.blob);
+  for (const a of stagedAudioRecords) {
+    for (const track of stagedProject.audioTracks) {
+      if (track.mediaId === a.id) {
+        track.url = mediaManager.createTrackedUrl(a.id, a.blob);
+      }
+    }
   }
 
   return stagedProject;

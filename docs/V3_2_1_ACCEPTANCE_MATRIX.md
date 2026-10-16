@@ -76,11 +76,28 @@
 | **TC-57** | Audio unlock và fullscreen xử lý đúng từ Start | Nhấn Start trên màn hình Pre-show | Kích hoạt gesture handler | Gesture trực tiếp gọi Fullscreen & AudioContext.resume() an toàn | Browser Gesture | Tách biệt các promise, không bị mất quyền do await | **PASS** | `src/components/player/StagePlayer.tsx` |
 | **TC-58** | FinalHold vẫn giữ ảnh và Wake Lock | Phim kết thúc thời lượng chính | Đo trạng thái tại `FINAL_HOLD` | Ảnh cưới cuối đứng yên trang trọng, Wake Lock tiếp tục duy trì | Stage & WakeLock | `presentationWakeLock` duy trì cho đến khi thoát Stage | **PASS** | `src/timeline/__tests__/regressionV3_2_1.test.ts:TC-58` |
 | **TC-59** | Chạy liên tục nhiều lượt không tăng bất thường | Restart phát nhiều lần liên tiếp | Kiểm tra mảng cumulative offsets và listener | Các hàm tính toán giữ nguyên tính đơn điệu, không tích lũy rác | Longevity & Stability | Mảng offsets tăng đơn điệu tuyệt đối, không rò rỉ | **PASS** | `src/timeline/__tests__/regressionV3_2_1.test.ts:TC-59` |
-| **TC-60** | Production build chạy thực tế Intro đến FinalHold | Bundle production `npm run build` | Kiểm tra thông số lookahead và bundle output | Build thành công, `TRANSITION_LOOKAHEAD_WINDOW = 0.4s` | Release Candidate | Build 261ms, 60/60 tests PASS hoàn toàn | **PASS** | `src/timeline/__tests__/regressionV3_2_1.test.ts:TC-60` |
+| **TC-60** | Production build chạy thực tế Intro đến FinalHold | Bundle production `npm run build` | Kiểm tra thông số lookahead và bundle output | Build thành công, `TRANSITION_LOOKAHEAD_WINDOW = 0.4s` | Release Candidate | Build sạch, 60/60 tests PASS | **PASS** | `src/timeline/__tests__/regressionV3_2_1.test.ts:TC-60` |
 
 ---
 
-### TỔNG KẾT NGHIỆM THU:
-- **Tổng số ca kiểm thử:** 60/60 Test Cases
-- **Kết quả:** **60 PASS (100%)**, 0 FAIL, 0 BLOCKED.
-- **Tình trạng:** Sẵn sàng cho người dùng nghiệm thu thực tế.
+### PHẦN III: 10 CRITICAL HOTFIX TEST CASES (TC-HOTFIX-01 ĐẾN TC-HOTFIX-10)
+
+| ID | Hạng mục kiểm thử | Điều kiện ban đầu | Các bước thực hiện | Kết quả mong đợi | Loại test | Kết quả thực tế | Trạng thái | Minh chứng |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **TC-HOTFIX-01** | Bắt buộc có manifest.json trong ZIP | ZIP không chứa file manifest.json | Gọi `importProjectZip(zipFile)` | Quá trình dừng ngay, báo lỗi "Thiếu manifest.json" | Strict Import | Ném lỗi chi tiết, không chạm IndexedDB | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-01` |
+| **TC-HOTFIX-02** | Bắt buộc manifest version hợp lệ | manifest.json có version '999.0' | Gọi `importProjectZip(zipFile)` | Báo lỗi "Version manifest không được hỗ trợ" | Strict Import | Ném lỗi version không hợp lệ | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-02` |
+| **TC-HOTFIX-03** | Bắt buộc có project.json trong ZIP | ZIP không chứa file project.json | Gọi `importProjectZip(zipFile)` | Báo lỗi "Thiếu file cấu hình project.json" | Strict Import | Ném lỗi thiếu project.json | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-03` |
+| **TC-HOTFIX-04** | Kiểm tra cấu trúc project sâu (schema) | project.json thiếu mảng chapters hoặc photos | Gọi `importProjectZip(zipFile)` | Báo lỗi "Cấu trúc file project.json không đúng định dạng" | Schema Validation | `validateProjectSchema` từ chối | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-04` |
+| **TC-HOTFIX-05** | Zero Tolerance: Chặn ZIP thiếu file ảnh | Project tham chiếu ảnh nhưng thư mục `media/` thiếu file | Gọi `importProjectZip(zipFile)` | Dừng ngay lập tức, báo danh sách file ảnh bị thiếu | Zero Tolerance Media | Ném lỗi "File ZIP bị thiếu 1 tệp phương tiện bắt buộc: media/ph2.jpg" | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-05` |
+| **TC-HOTFIX-06** | Zero Tolerance: Chặn ZIP thiếu file nhạc | Project tham chiếu nhạc nhưng thư mục `audio/` thiếu file | Gọi `importProjectZip(zipFile)` | Dừng ngay lập tức, báo danh sách file nhạc bị thiếu | Zero Tolerance Media | Ném lỗi "File ZIP bị thiếu 1 tệp phương tiện bắt buộc: audio/audio_1.mp3" | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-06` |
+| **TC-HOTFIX-07** | Chặn file ảnh bị rỗng (0 bytes) | File ảnh trong ZIP có dung lượng 0 bytes | Gọi `importProjectZip(zipFile)` | Dừng ngay lập tức, báo lỗi file ảnh rỗng hoặc hỏng | Corrupt Media | Ném lỗi "Tệp ảnh bị rỗng hoặc lỗi: media/ph1.jpg" | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-07` |
+| **TC-HOTFIX-08** | Chặn file nhạc bị rỗng (0 bytes) | File nhạc trong ZIP có dung lượng 0 bytes | Gọi `importProjectZip(zipFile)` | Dừng ngay lập tức, báo lỗi file nhạc rỗng hoặc hỏng | Corrupt Media | Ném lỗi "Tệp âm thanh bị rỗng hoặc lỗi: audio/audio_1.mp3" | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-08` |
+| **TC-HOTFIX-09** | Nhạc nhập từ ZIP lưu bền vững vào IndexedDB | File ZIP hợp lệ có nhạc | Gọi `importProjectZip(zipFile)` | Cấp `mediaId` ổn định và ghi binary vào `db.audio` qua Dexie transaction | Audio Persistence | `track.mediaId` được cấp, `db.audio.put` được gọi với blob thật | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-09` |
+| **TC-HOTFIX-10** | Grand Wedding Curtain Visual Continuity tại 0% | Chuyển cảnh Chương 5 sang Chương 6 | Đo trạng thái transition tại 0%, 25%, 50%, 75% | Khớp chính xác outgoing scene, không tạo snapshot méo tỷ lệ, không giật | Visual Continuity | Outgoing scene được đóng băng (`isPlaying=false`), khớp 100% hình học | **PASS** | `src/timeline/__tests__/regressionHotfix.test.ts:TC-HOTFIX-10` |
+
+---
+
+### TỔNG KẾT NGHIỆM THU HOTFIX:
+- **Tổng số ca kiểm thử:** 70/70 Test Cases (60 RC + 10 Hotfix)
+- **Kết quả:** **70 PASS (100%)**, 0 FAIL, 0 BLOCKED.
+- **Tình trạng:** Hoàn tất nghiệm thu kỹ thuật và thẩm mỹ, sẵn sàng bàn giao cho người dùng review.

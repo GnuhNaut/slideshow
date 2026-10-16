@@ -161,10 +161,19 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
     return calculateCumulativeOffsets(itemDimensions, gap);
   }, [itemDimensions, gap]);
 
+  // Compute initial camera position synchronously for zero-delay first render
+  const initialCameraX = useMemo(() => {
+    if (singleLoopWidth <= 1) return 0;
+    const initialElapsed = Math.max(0, masterClock.getCurrentTime() - sceneStartTime);
+    const { cameraX } = getTrackPosition(initialElapsed, speedPxPerSec, singleLoopWidth, direction);
+    return cameraX;
+  }, [sceneStartTime, speedPxPerSec, singleLoopWidth, direction]);
+
   // State to hold the camera position for virtual DOM window slicing
-  const [virtualCameraX, setVirtualCameraX] = useState(0);
-  const lastUpdateCameraXRef = useRef(0);
-  const lastTimeRef = useRef(0);
+  const [virtualCameraX, setVirtualCameraX] = useState(initialCameraX);
+  const lastUpdateCameraXRef = useRef(initialCameraX);
+  const lastTimeRef = useRef(masterClock.getCurrentTime());
+  const decodedUrlsRef = useRef<Set<string>>(new Set());
 
   // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
   useEffect(() => {
@@ -183,8 +192,8 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
 
       // Detect wrap, seek, or continuous scroll beyond threshold
       const isWrapOrSeek =
-        Math.abs(currentTime - lastTimeRef.current) > 0.25 ||
-        Math.abs(cameraX - lastUpdateCameraXRef.current) > 120;
+        Math.abs(currentTime - lastTimeRef.current) > 0.2 ||
+        Math.abs(cameraX - lastUpdateCameraXRef.current) > 100;
 
       lastTimeRef.current = currentTime;
 
@@ -212,13 +221,18 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
     );
   }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
 
-  // Proactive image preloading and decoding for visible items + upcoming buffer
+  // Bounded image preloading and decoding cache (prevents duplicate new Image() allocations)
   useEffect(() => {
     if (visibleItems.length === 0) return;
-    const mediaIds = getRequiredMediaIds(visibleItems);
     visibleItems.forEach((item) => {
       const url = item.photo.url;
-      if (url && typeof Image !== 'undefined') {
+      if (url && typeof Image !== 'undefined' && !decodedUrlsRef.current.has(url)) {
+        decodedUrlsRef.current.add(url);
+        if (decodedUrlsRef.current.size > 200) {
+          // Keep cache bounded
+          const firstKey = decodedUrlsRef.current.values().next().value;
+          if (firstKey) decodedUrlsRef.current.delete(firstKey);
+        }
         const img = new Image();
         img.src = url;
         if (typeof img.decode === 'function') {
