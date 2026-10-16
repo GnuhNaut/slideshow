@@ -6,18 +6,17 @@ interface FX05Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
-  accentQuote?: string;
 }
 
 export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
   photos,
   progress,
-  accentQuote = 'Từng khoảnh khắc đọng lại mãi theo năm tháng.',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    const xScale = Math.min(1, (containerRef.current?.clientWidth || 1280) / 1280);
     // Spatial configuration for up to 4 floating photos
     const configs = [
       { x: -280, y: -40, z: -80, rotateY: 10, rotateZ: -2 }, // Back left
@@ -32,7 +31,7 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
       const drift = Math.sin(progress * Math.PI) * 15;
 
       gsap.set(card, {
-        x: base.x + drift * (idx % 2 === 0 ? 1 : -1),
+        x: base.x * xScale + drift * (idx % 2 === 0 ? 1 : -1),
         y: base.y + drift * 0.5,
         z: base.z,
         rotationY: base.rotateY,
@@ -44,11 +43,7 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
   }, [progress]);
 
   if (!photos || photos.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh cho Floating Gallery
-      </div>
-    );
+    return <div className="w-full h-full bg-[#FFF9F2]" />;
   }
 
   const displayPhotos = photos.slice(0, 4);
@@ -73,8 +68,8 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
               }}
               className={`absolute p-3 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform ${
                 isHero
-                  ? 'w-[420px] h-[560px] z-30 ring-2 ring-[#C5A16E]/40'
-                  : 'w-[320px] h-[430px] z-10 opacity-90'
+                  ? 'w-[76vw] aspect-[2/3] max-h-[72vh] md:w-[420px] md:h-[560px] md:aspect-auto z-30 ring-2 ring-[#E77A93]/40'
+                  : 'w-[58vw] aspect-[2/3] max-h-[56vh] md:w-[320px] md:h-[430px] md:aspect-auto z-10 opacity-90'
               }`}
             >
               <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
@@ -89,14 +84,6 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
         })}
       </div>
 
-      {/* Caption Bar */}
-      {accentQuote && (
-        <div className="absolute bottom-10 z-40 px-8 py-3 bg-white/80 backdrop-blur-md border border-[#C5A16E]/30 rounded-full shadow-sm">
-          <p className="text-sm lg:text-base font-serif italic text-[#40322F]">
-            "{accentQuote}"
-          </p>
-        </div>
-      )}
     </div>
   );
 };

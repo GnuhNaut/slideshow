@@ -208,4 +208,41 @@ describe('FINAL REBUILD — TIMING & AUDIO DIRECTOR ACCEPTANCE TESTS', () => {
 
     expect(audioDirector.getState().activeChapterIndex).toBe(2);
   });
+
+  it('TC-107: Final image hold does not fade or pause the soundtrack', () => {
+    const fadeSpy = vi.spyOn(audioDirector as any, 'fadeOutAndStop');
+    const silenceSpy = vi.spyOn(audioDirector as any, 'fadeToSilence');
+    const project = createInitialWeddingProject();
+    const compiled = compileProjectTimeline(project);
+
+    project.globalSettings.audioMode = 'per_chapter';
+    project.audioTracks = [{
+      id: 'track_ch6',
+      chapterId: project.chapters[5].id,
+      name: 'Final song',
+      url: 'https://test.com/final.mp3',
+      duration: 180,
+      startTime: 0,
+      endTime: 180,
+      volume: 0.85,
+      fadeInDuration: 1,
+      fadeOutDuration: 1,
+      isGlobal: false,
+    }];
+    project.chapters[5].musicTrackId = 'track_ch6';
+    audioDirector.setProject(project, compiled);
+
+    const switchChapterTrack = (audioDirector as any).switchChapterTrack.bind(audioDirector);
+    switchChapterTrack(6, 0, false);
+    switchChapterTrack(7, 0, false);
+    masterClock.enterFinalHold();
+
+    expect(silenceSpy).not.toHaveBeenCalled();
+    expect(fadeSpy).not.toHaveBeenCalled();
+
+    silenceSpy.mockRestore();
+    fadeSpy.mockRestore();
+    masterClock.play();
+    masterClock.pause();
+  });
 });

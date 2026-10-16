@@ -7,23 +7,16 @@ interface FX03Props {
   photo: PhotoItem;
   progress: number; // 0.0 to 1.0
   isPlaying: boolean;
-  title?: string;
-  subtitle?: string;
-  quote?: string;
   sceneId?: string;
 }
 
 export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   photo,
   progress,
-  title = 'LỜI CẦU HÔN',
-  subtitle = 'KHOẢNH KHẮC MÃI MÃI',
-  quote = 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
   sceneId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
 
   const applyMorph = useCallback((p: number) => {
     if (!frameRef.current) return;
@@ -39,12 +32,6 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
         opacity: Math.min(1, ease * 1.5),
         force3D: true,
       });
-      if (textRef.current) {
-        gsap.set(textRef.current, {
-          opacity: Math.max(0, (ease - 0.4) / 0.6),
-          y: (1 - ease) * 20,
-        });
-      }
     } else if (p <= 0.85) {
       const normP = (p - 0.3) / 0.55;
       gsap.set(frameRef.current, {
@@ -55,12 +42,6 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
         opacity: 1,
         force3D: true,
       });
-      if (textRef.current) {
-        gsap.set(textRef.current, {
-          opacity: 1,
-          y: 0,
-        });
-      }
     } else {
       const normP = (p - 0.85) / 0.15;
       gsap.set(frameRef.current, {
@@ -79,22 +60,7 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   }, [progress, applyMorph]);
 
   if (!photo || !photo.url) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] p-8 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-white shadow-sm">
-          <span className="font-serif text-2xl text-[#C93442] italic">III</span>
-        </div>
-        <h2 className="font-serif text-2xl font-medium text-[#40322F]">
-          {title || 'LỜI CẦU HÔN'}
-        </h2>
-        <p className="text-xs text-[#C5A16E] italic font-serif max-w-md">
-          "{quote}"
-        </p>
-        <span className="text-[11px] text-[#40322F]/60 font-mono">
-          (Thêm ảnh vào public/gallery/03-proposal/)
-        </span>
-      </div>
-    );
+    return <div className="w-full h-full bg-[#FFF9F2]" />;
   }
 
   return (
@@ -102,42 +68,25 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
       ref={containerRef}
       className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] perspective-cinema"
     >
-      {/* Luxury radial ambiance */}
-      <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/80 to-[#FFF9F2] pointer-events-none" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-[-32px] scale-110 bg-center bg-cover opacity-35 blur-2xl"
+        style={{ backgroundImage: `url("${photo.displayUrl || photo.url}")` }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FFF9F2]/45 via-[#FFF9F2]/55 to-[#F3E9DD]/90 pointer-events-none" />
 
       {/* Main Hero Card */}
       <div
         ref={frameRef}
-        className="relative z-10 w-[82vw] max-w-[1100px] h-[72vh] max-h-[680px] p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg preserve-3d will-change-transform flex flex-col md:flex-row items-center gap-6"
+        className="relative z-10 w-[82vw] aspect-[2/3] md:aspect-auto md:w-[min(42vw,68vh)] max-w-[700px] max-h-[88vh] md:h-[88vh] md:max-h-[920px] p-3 md:p-4 bg-white/95 rounded-sm border border-[#E77A93]/45 shadow-[0_28px_90px_-28px_rgba(64,50,47,0.42)] preserve-3d will-change-transform flex flex-col"
       >
-        {/* Photo Container */}
-        <div className="w-full md:w-3/5 h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative flex items-center justify-center">
+        <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative flex items-center justify-center">
           <img
             src={photo.displayUrl || photo.url}
             alt={photo.title || 'Proposal Hero'}
-            className={`w-full h-full ${photo.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
-            style={{
-              objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
-            }}
+            className="w-full h-full object-contain mx-auto"
           />
           <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
-        </div>
-
-        {/* Narrative Sidecard */}
-        <div
-          ref={textRef}
-          className="w-full md:w-2/5 flex flex-col justify-center px-4 py-6 text-left"
-        >
-          <div className="inline-block px-3 py-1 mb-3 text-[11px] uppercase tracking-[0.25em] font-sans font-medium text-[#C93442] bg-[#F0DFD5]/60 rounded-full w-fit">
-            {subtitle}
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-serif text-[#40322F] tracking-wide mb-4">
-            {title}
-          </h2>
-          <div className="w-12 h-[1px] bg-[#C5A16E] mb-5" />
-          <p className="text-base lg:text-lg font-serif italic text-[#40322F]/85 leading-relaxed">
-            "{quote}"
-          </p>
         </div>
       </div>
     </div>

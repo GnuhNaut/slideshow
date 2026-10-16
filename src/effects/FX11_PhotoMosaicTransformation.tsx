@@ -6,13 +6,11 @@ interface FX11Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
-  accentQuote?: string;
 }
 
 export const FX11_PhotoMosaicTransformation: React.FC<FX11Props> = ({
   photos,
   progress,
-  accentQuote = 'Từng khoảnh khắc đong đầy dư vị ngọt ngào.',
 }) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const sub1Ref = useRef<HTMLDivElement>(null);
@@ -49,11 +47,7 @@ export const FX11_PhotoMosaicTransformation: React.FC<FX11Props> = ({
   }, [progress]);
 
   if (!photos || photos.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh cho Photo Mosaic
-      </div>
-    );
+    return <div className="w-full h-full bg-[#FFF9F2]" />;
   }
 
   const heroPhoto = photos[0];
@@ -61,59 +55,39 @@ export const FX11_PhotoMosaicTransformation: React.FC<FX11Props> = ({
   const subPhoto2 = photos[2] || photos[0];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center p-8 md:p-12 overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F5EDE1]">
-      <div className="w-full max-w-[1300px] h-[78vh] flex flex-col md:flex-row gap-6">
-        {/* Left: Large Hero (62%) */}
+    <div className="relative w-full h-full flex items-center justify-center p-3 md:p-12 overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F5EDE1]">
+      <div className="flex w-full max-w-[1320px] flex-col items-center justify-center gap-3 md:grid md:h-[78vh] md:grid-cols-3 md:gap-5 md:px-4">
         <div
           ref={heroRef}
-          className="w-full md:w-[62%] h-full p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg flex flex-col"
+          className="h-[34vh] w-[72vw] p-2.5 bg-white rounded-md border border-[#E77A93]/35 luxury-shadow-lg flex flex-col md:h-full md:w-full md:p-3"
         >
           <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE]">
             <img
-              src={heroPhoto.url}
+              src={heroPhoto.displayUrl || heroPhoto.url}
               alt={heroPhoto.title || 'Mosaic Hero'}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
 
-        {/* Right: Stacked Sub Photos (38%) */}
-        <div className="w-full md:w-[38%] h-full flex flex-col gap-6">
+        <div className="flex w-full items-center justify-center gap-3 md:contents">
+        {[subPhoto1, subPhoto2].map((photo, index) => (
           <div
-            ref={sub1Ref}
-            className="w-full h-1/2 p-3 bg-white rounded-md border border-[#C5A16E]/30 luxury-shadow-md flex flex-col"
+            key={photo.id + index}
+            ref={index === 0 ? sub1Ref : sub2Ref}
+            className="h-[22vh] w-[31vw] p-2 bg-white rounded-md border border-[#E77A93]/35 luxury-shadow-md flex flex-col md:h-full md:w-full md:p-3"
           >
             <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE]">
               <img
-                src={subPhoto1.url}
-                alt={subPhoto1.title || 'Mosaic Detail 1'}
-                className="w-full h-full object-cover"
+                src={photo.displayUrl || photo.url}
+                alt={photo.title || `Wedding detail ${index + 1}`}
+                className="w-full h-full object-contain"
               />
             </div>
           </div>
-
-          <div
-            ref={sub2Ref}
-            className="w-full h-1/2 p-3 bg-white rounded-md border border-[#C5A16E]/30 luxury-shadow-md flex flex-col"
-          >
-            <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE]">
-              <img
-                src={subPhoto2.url}
-                alt={subPhoto2.title || 'Mosaic Detail 2'}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
+        ))}
         </div>
       </div>
-
-      {accentQuote && (
-        <div className="absolute bottom-6 px-6 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-[#C5A16E]/20">
-          <p className="text-sm font-serif italic text-[#40322F]">
-            "{accentQuote}"
-          </p>
-        </div>
-      )}
     </div>
   );
 };

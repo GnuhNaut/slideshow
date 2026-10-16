@@ -37,12 +37,17 @@
     "01-intro": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 14
+      "durationSeconds": 10,
+      "vietnameseTitle": "Ngày chúng mình bắt đầu",
+      "subtitle": "Có những ánh nhìn mở ra cả một hành trình."
     },
     "02-memories": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 60,
+      "durationSeconds": 30,
+      "vietnameseTitle": "Những ngày mình đã có nhau",
+      "subtitle": "Từ những buổi hẹn đầu đến những chuyến đi vẫn còn nguyên tiếng cười.",
+      "accentQuote": "Từ những buổi hẹn đầu đến những chuyến đi vẫn còn nguyên tiếng cười.",
       "showCenterTitle": true,
       "showCenterNames": false,
       "showFrameNames": false,
@@ -53,24 +58,32 @@
     "03-proposal": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 15
+      "durationSeconds": 5,
+      "vietnameseTitle": "Khoảnh khắc em nói đồng ý",
+      "subtitle": "Một lời rất khẽ, mở ra lời hứa cùng nhau đi hết cuộc đời."
     },
     "04-family": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 30,
-      "cropMode": "contain"
+      "durationSeconds": 10,
+      "cropMode": "contain",
+      "vietnameseTitle": "Hai mái nhà, một gia đình",
+      "subtitle": "Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về."
     },
     "05-wedding": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 90,
-      "cropMode": "contain"
+      "durationSeconds": 30,
+      "cropMode": "contain",
+      "vietnameseTitle": "Ngày mình chọn nhau",
+      "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt."
     },
     "06-thanks": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 14
+      "durationSeconds": 10,
+      "vietnameseTitle": "Gửi những người thương",
+      "subtitle": "Cảm ơn gia đình, bạn bè đã cùng làm nên ngày vui trọn vẹn."
     },
     "07-final": {
       "enabled": true,

@@ -16,9 +16,6 @@ export const FilmToHeroScene: React.FC<FilmToHeroSceneProps> = ({ scene, progres
       photo={heroPhoto}
       progress={progress}
       isPlaying={isPlaying}
-      title={scene.config.textTitle || 'LỜI CẦU HÔN'}
-      subtitle={scene.chapterTitle || 'KHOẢNH KHẮC MÃI MÃI'}
-      quote={scene.config.quote || 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.'}
       sceneId={scene.id}
     />
   );

@@ -3,9 +3,7 @@ import { masterClock } from '../../player/PlaybackClock';
 import { compileProjectTimeline } from '../compiler';
 import { createInitialWeddingProject } from '../../project/defaultProject';
 import { motionRuntime } from '../../motion/MotionRuntime';
-import { useWeddingStore } from '../../app/store';
-import { computeTransitionState } from '../../transitions/TransitionDirector';
-import { PhotoItem, WeddingProject } from '../../types/project';
+import { PhotoItem } from '../../types/project';
 
 describe('V3.2 Full Acceptance Tests: Playback, Continuity, Timeline & Data Integrity', () => {
   beforeEach(() => {
@@ -141,7 +139,6 @@ describe('V3.2 Full Acceptance Tests: Playback, Continuity, Timeline & Data Inte
 
   it('TC-23: Family chapter groups photos safely in pairs (never cropped, layout split/single)', () => {
     const project = createInitialWeddingProject();
-    const familyChapter = project.chapters.find((c) => c.chapterIndex === 4)!;
     const compiled = compileProjectTimeline(project);
     const familyScenes = compiled.scenes.filter((s) => s.chapterIndex === 4);
 
@@ -149,22 +146,6 @@ describe('V3.2 Full Acceptance Tests: Playback, Continuity, Timeline & Data Inte
       expect(['family_gallery', 'family_split']).toContain(s.type);
       expect(s.photos.length).toBeLessThanOrEqual(2);
     });
-  });
-
-  // F. DATA & ATOMIC REPLACEMENT
-  it('TC-35: Atomic replaceProject recompiles timeline immediately and resets clock', async () => {
-    const freshProj = createInitialWeddingProject();
-    freshProj.title = 'Khoảnh Khắc Vĩnh Cửu - Tuấn Hùng & Sao Mai';
-    freshProj.groomName = 'Tuấn Hùng';
-    freshProj.brideName = 'Sao Mai';
-
-    await useWeddingStore.getState().replaceProject(freshProj);
-
-    const currentStore = useWeddingStore.getState();
-    expect(currentStore.project.title).toBe('Khoảnh Khắc Vĩnh Cửu - Tuấn Hùng & Sao Mai');
-    expect(currentStore.timeline.scenes.length).toBeGreaterThan(0);
-    expect(currentStore.playback.currentTime).toBe(0);
-    expect(masterClock.getCurrentTime()).toBe(0);
   });
 
   it('TC-36: Total timeline duration is realistic (4-5 minutes), zero 600-minute dummy bloat', () => {

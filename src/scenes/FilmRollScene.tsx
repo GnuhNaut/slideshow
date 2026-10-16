@@ -56,16 +56,6 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
         <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#C5A16E]/60" />
       </div>
 
-      {/* Chapter Kicker Pill */}
-      <div className="absolute top-7 left-10 z-30 pointer-events-none">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/90 border border-[#C5A16E]/30 rounded-full shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
-          <span className="text-[11px] tracking-[0.25em] uppercase text-[#40322F] font-serif font-semibold">
-            {scene.chapterTitle || 'CHƯƠNG II • NHỮNG NGÀY BÊN NHAU'}
-          </span>
-        </div>
-      </div>
-
       {isDual ? (
         <div className="relative z-10 w-full h-full flex flex-col justify-between py-6">
           {/* Top Film Strip (Right to Left) */}
@@ -87,7 +77,7 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
               <div className="flex flex-col items-center max-w-xl text-center py-2 px-6 rounded-xl bg-white/70 backdrop-blur-md border border-[#C5A16E]/25 shadow-sm">
                 {showCenterTitle && (
                   <h2 className="text-base md:text-lg lg:text-xl font-serif font-medium text-[#40322F] tracking-wide">
-                    {config.textTitle || 'Những Ngày Bên Nhau'}
+                    {config.textTitle || scene.chapterTitle || 'Những ngày mình đã có nhau'}
                   </h2>
                 )}
 
@@ -189,7 +179,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   }, []);
 
   // Compute layout dimensions for each photo based on natural aspect ratio
-  const frameHeight = isSingleLarge ? 320 : 210;
+  const frameHeight = isSingleLarge ? 360 : 240;
   const gap = 24;
 
   const itemDimensions = useMemo(() => {
@@ -213,7 +203,6 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   const [virtualCameraX, setVirtualCameraX] = useState(initialCameraX);
   const lastUpdateCameraXRef = useRef(initialCameraX);
   const lastTimeRef = useRef(masterClock.getCurrentTime());
-  const decodedUrlsRef = useRef<Set<string>>(new Set());
 
   // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
   useEffect(() => {
@@ -248,7 +237,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
 
   // Compute the bounded virtual window of items (covers viewport + lookahead buffer)
   const visibleItems: VisibleFilmItem[] = useMemo(() => {
-    const bufferPx = Math.max(1200, Math.round(containerWidth * 0.7));
+    const bufferPx = Math.max(480, Math.round(containerWidth * 0.35));
     return getVisibleItems(
       virtualCameraX,
       containerWidth,
@@ -260,26 +249,6 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       direction
     );
   }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
-
-  // Bounded image preloading and decoding cache
-  useEffect(() => {
-    if (visibleItems.length === 0) return;
-    visibleItems.forEach((item) => {
-      const url = item.photo.url;
-      if (url && typeof Image !== 'undefined' && !decodedUrlsRef.current.has(url)) {
-        decodedUrlsRef.current.add(url);
-        if (decodedUrlsRef.current.size > 200) {
-          const firstKey = decodedUrlsRef.current.values().next().value;
-          if (firstKey) decodedUrlsRef.current.delete(firstKey);
-        }
-        const img = new Image();
-        img.src = url;
-        if (typeof img.decode === 'function') {
-          img.decode().catch(() => {});
-        }
-      }
-    });
-  }, [visibleItems]);
 
   const handleImageError = (id: string) => {
     setFailedImageIds((prev) => new Set(prev).add(id));
@@ -302,7 +271,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       className="relative w-full flex flex-col justify-center select-none overflow-hidden"
     >
       {/* 35mm Top Perforation Track */}
-      <div className="w-full h-3 bg-[#F3E9DD] film-sprocket-track border-y border-[#C5A16E]/25" />
+      <div className="w-full h-4 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
 
       {/* Film Strip Track with True DOM Windowing */}
       <div
@@ -318,19 +287,10 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
             const isFailed = failedImageIds.has(item.photo.id);
             const photo = item.photo;
 
-            // Intelligent crop resolution:
-            // If cropMode is 'contain', or if aspect ratio is < 0.95 (portrait/standing/selfie) and not explicitly 'cover',
-            // use 'contain' so neither heads nor feet are sliced off!
-            const isPortrait = (photo.aspectRatio || 1) < 0.95;
-            const useContain = photo.cropMode === 'contain' || (isPortrait && photo.cropMode !== 'cover');
-
-            const focalX = photo.focalPoint ? `${photo.focalPoint.x}%` : '50%';
-            const focalY = photo.focalPoint ? `${photo.focalPoint.y}%` : '50%';
-
             return (
               <div
                 key={item.key}
-                className="absolute top-2 p-2.5 bg-white border border-[#C5A16E]/30 rounded-[2px] luxury-shadow-md flex flex-col justify-between"
+                className="absolute top-2 p-2.5 bg-white border border-[#E77A93]/40 rounded-[2px] luxury-shadow-md flex flex-col justify-between"
                 style={{
                   left: `${item.absoluteX}px`,
                   width: `${item.width}px`,
@@ -340,14 +300,9 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
                 <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center relative">
                   {!isFailed ? (
                     <img
-                      src={photo.url}
+                      src={photo.mediumUrl || photo.displayUrl || photo.url}
                       alt={photo.title || 'Wedding Memory'}
-                      className={`w-full h-full pointer-events-none ${
-                        useContain ? 'object-contain' : 'object-cover'
-                      }`}
-                      style={{
-                        objectPosition: `${focalX} ${focalY}`,
-                      }}
+                      className="w-full h-full object-contain pointer-events-none"
                       loading="eager"
                       decoding="async"
                       onError={() => handleImageError(photo.id)}
@@ -381,7 +336,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       </div>
 
       {/* 35mm Bottom Perforation Track */}
-      <div className="w-full h-3 bg-[#F3E9DD] film-sprocket-track border-y border-[#C5A16E]/25" />
+      <div className="w-full h-4 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
     </div>
   );
 };

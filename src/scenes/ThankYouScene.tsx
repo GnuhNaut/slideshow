@@ -14,13 +14,6 @@ export const ThankYouScene: React.FC<ThankYouSceneProps> = ({ scene, progress, i
       photos={scene.photos}
       progress={progress}
       isPlaying={isPlaying}
-      groomName="Tuấn Hùng"
-      brideName="Sao Mai"
-      weddingDate="19.10.2026"
-      message={
-        scene.config.quote ||
-        'Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.'
-      }
     />
   );
 };

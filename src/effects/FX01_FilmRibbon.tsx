@@ -18,20 +18,15 @@ export const FX01_FilmRibbon: React.FC<FX01Props> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // If no photos, show luxury fallback
-  if (!photos || photos.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh trong dải phim
-      </div>
-    );
-  }
-
   // Duplicate photos for smooth seamless loop
-  const displayPhotos = photos.length < 5 ? [...photos, ...photos, ...photos, ...photos] : [...photos, ...photos];
+  const displayPhotos = photos?.length
+    ? photos.length < 5
+      ? [...photos, ...photos, ...photos, ...photos]
+      : [...photos, ...photos]
+    : [];
 
   useEffect(() => {
-    if (!trackRef.current) return;
+    if (!trackRef.current || displayPhotos.length === 0) return;
     const totalCount = displayPhotos.length;
     const cardWidth = 360; // 360px per card with gap
     const totalDistance = (totalCount / 2) * cardWidth;
@@ -44,6 +39,14 @@ export const FX01_FilmRibbon: React.FC<FX01Props> = ({
       force3D: true,
     });
   }, [progress, displayPhotos.length, reversed]);
+
+  if (!photos || photos.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
+        Chưa có ảnh trong dải phim
+      </div>
+    );
+  }
 
   return (
     <div

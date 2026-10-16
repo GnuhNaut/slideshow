@@ -132,7 +132,8 @@ class AudioDirectorEngine {
     if (this.channelB && !this.isCrossfading) {
       this.channelB.volume = effectiveVol;
     }
-    audioEngine.setVolume(vol);
+    audioEngine.setMuted(this.isMuted);
+    audioEngine.setVolume(this.volume);
     this.emit();
   }
 
@@ -188,8 +189,6 @@ class AudioDirectorEngine {
       this.resume();
     } else if (status === 'PAUSED') {
       this.pause();
-    } else if (status === 'FINAL_HOLD') {
-      this.fadeOutAndStop();
     }
   }
 
@@ -230,6 +229,10 @@ class AudioDirectorEngine {
     }
 
     if (!targetTrack || !targetTrack.url) {
+      if (newChapterIndex === 7 && this.currentTrackId) {
+        this.emit();
+        return;
+      }
       // Chapter has no music assigned: fade out existing audio to silence
       this.fadeToSilence();
       this.currentTrackId = null;

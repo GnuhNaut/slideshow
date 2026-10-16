@@ -143,8 +143,8 @@ function compileChapterScenes(
         photos: photos.slice(0, 1),
         heroPhoto,
         config: {
-          textTitle: project.title,
-          textSubtitle: `${project.groomName} & ${project.brideName}`,
+          textTitle: chapter.vietnameseTitle,
+          textSubtitle: chapter.subtitle || 'Có những ánh nhìn mở ra cả một hành trình.',
           quote: chapter.accentQuote || 'Mọi câu chuyện tình yêu đều đẹp, nhưng câu chuyện của chúng mình là điều tuyệt vời nhất.',
           ambientLight: 'gold',
         },
@@ -183,8 +183,9 @@ function compileChapterScenes(
         photos: [...photos],
         config: {
           speed,
+          textTitle: chapter.vietnameseTitle,
           ambientLight: 'warm',
-          quote: chapter.accentQuote || 'Từ những buổi hẹn hò đầu tiên đến những chuyến đi đầy ắp tiếng cười.',
+          quote: chapter.accentQuote || chapter.subtitle || 'Từ những buổi hẹn đầu đến những chuyến đi vẫn còn nguyên tiếng cười.',
           showCenterTitle: chapter.showCenterTitle ?? true,
           showCenterNames: chapter.showCenterNames ?? false,
           showFrameNames: chapter.showFrameNames ?? false,
@@ -218,8 +219,9 @@ function compileChapterScenes(
           photos: heroPhoto ? [heroPhoto] : [],
           heroPhoto,
           config: {
-            textTitle: 'LỜI CẦU HÔN',
-            quote: chapter.accentQuote || 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
+            textTitle: chapter.vietnameseTitle,
+            textSubtitle: chapter.subtitle || 'Một lời rất khẽ, mở ra lời hứa cùng nhau đi hết cuộc đời.',
+            quote: chapter.accentQuote || chapter.subtitle,
             ambientLight: 'rose',
           },
           transitionIn: 'soft_light',
@@ -262,8 +264,9 @@ function compileChapterScenes(
           photos: heroPhoto ? [heroPhoto] : [],
           heroPhoto,
           config: {
-            textTitle: 'LỜI CẦU HÔN',
-            quote: chapter.accentQuote || 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
+            textTitle: chapter.vietnameseTitle,
+            textSubtitle: chapter.subtitle || 'Một lời rất khẽ, mở ra lời hứa cùng nhau đi hết cuộc đời.',
+            quote: chapter.accentQuote || chapter.subtitle,
             ambientLight: 'rose',
           },
           transitionIn: 'soft_light',
@@ -295,6 +298,8 @@ function compileChapterScenes(
             photos: chunk,
             config: {
               layout: chunk.length === 1 ? 'single' : 'split_2',
+              textTitle: chapter.vietnameseTitle,
+              textSubtitle: chapter.subtitle,
               ambientLight: 'warm',
             },
             transitionIn: 'dissolve',
@@ -320,7 +325,12 @@ function compileChapterScenes(
           duration,
           endTime: cursor + duration,
           photos: [],
-          config: { layout: 'single', ambientLight: 'warm' },
+          config: {
+            layout: 'single',
+            textTitle: chapter.vietnameseTitle,
+            textSubtitle: chapter.subtitle,
+            ambientLight: 'warm',
+          },
           transitionIn: 'soft_light',
           transitionOut: 'fade',
         });
@@ -364,11 +374,13 @@ function compileChapterScenes(
           photos: chunk,
           config: {
             layout: chunk.length === 1 ? 'single' : 'split_2',
+            textTitle: chapter.vietnameseTitle,
+            textSubtitle: chapter.subtitle,
             ambientLight: 'warm',
             quote:
               i === 0
-                ? 'Lễ dạm ngõ ấm cúng — Hai gia đình chung một niềm hạnh phúc.'
-                : chapter.accentQuote || 'Hạnh phúc trọn vẹn trong tình thương yêu của đấng sinh thành.',
+                ? chapter.subtitle || 'Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về.'
+                : chapter.accentQuote || chapter.subtitle,
           },
           transitionIn: i === 0 ? 'soft_light' : 'dissolve',
           transitionOut: isLast ? 'fade' : 'dissolve',
@@ -538,7 +550,11 @@ function compileChapterScenes(
           endTime: cursor + dur,
           photos: d.photos,
           heroPhoto: d.heroPhoto,
-          config: d.config,
+          config: {
+            ...d.config,
+            textTitle: chapter.vietnameseTitle,
+            textSubtitle: chapter.subtitle,
+          },
           transitionIn: d.transitionIn,
           transitionOut: d.transitionOut,
         });
@@ -576,7 +592,8 @@ function compileChapterScenes(
         photos: chapterPhotos.slice(0, 2),
         heroPhoto: chapterPhotos[0],
         config: {
-          textTitle: 'LỜI CẢM ƠN',
+          textTitle: chapter.vietnameseTitle,
+          textSubtitle: chapter.subtitle || 'Cảm ơn gia đình, bạn bè đã cùng làm nên ngày vui trọn vẹn.',
           quote: project.thankYouMessage,
           ambientLight: 'warm',
         },

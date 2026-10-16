@@ -12,7 +12,6 @@ import {
   X,
   Sun,
   ShieldCheck,
-  CheckCircle2,
 } from 'lucide-react';
 import { useWeddingStore } from '../../app/store';
 import { SceneRenderer } from '../../scenes/SceneRenderer';
@@ -100,7 +99,7 @@ export const StagePlayer: React.FC = () => {
         case 'Escape':
           if (!document.fullscreenElement) {
             presentationWakeLock.release();
-            setViewMode('studio');
+            setViewMode('home');
           }
           break;
       }
@@ -110,7 +109,7 @@ export const StagePlayer: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, nextChapter, prevChapter, toggleMute, restart, setViewMode]);
 
-  const toggleFullscreen = async () => {
+  async function toggleFullscreen() {
     try {
       if (!document.fullscreenElement) {
         await containerRef.current?.requestFullscreen();
@@ -122,7 +121,7 @@ export const StagePlayer: React.FC = () => {
     } catch (err) {
       console.warn('Fullscreen blocked:', err);
     }
-  };
+  }
 
   const isStartingRef = useRef(false);
 
@@ -165,7 +164,7 @@ export const StagePlayer: React.FC = () => {
         console.warn('Exit fullscreen error:', err);
       }
     }
-    setViewMode('studio');
+    setViewMode('home');
   };
 
   const formatTime = (timeInSec: number) => {
@@ -224,10 +223,10 @@ export const StagePlayer: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#40322F]/70">Dữ liệu IndexedDB:</span>
-                    <span className="font-mono text-indigo-600 font-medium">An toàn 100%</span>
+                    <span className="font-mono text-emerald-600 font-medium">Đồng bộ project</span>
                   </div>
                   <div className="pt-2 border-t border-[#C5A16E]/20 text-[10px] text-[#40322F]/60">
-                    Phím tắt: Space (Phát/Dừng), F (Toàn màn hình), M (Bật/Tắt tiếng), Esc (Studio)
+                    Phím tắt: Space (Phát/Dừng), F (Toàn màn hình), M (Bật/Tắt tiếng), Esc (Trang đầu)
                   </div>
                 </div>
               </div>
@@ -268,7 +267,7 @@ export const StagePlayer: React.FC = () => {
           </button>
 
           <p className="relative z-10 mt-6 text-xs text-[#40322F]/60 font-serif tracking-widest">
-            Nhấn ESC bất kỳ lúc nào để quay lại Studio
+            Nhấn ESC bất kỳ lúc nào để quay lại trang đầu
           </p>
         </div>
       )}
@@ -373,12 +372,6 @@ export const StagePlayer: React.FC = () => {
                   {wakeLockState.isActive ? 'LUÔN SÁNG' : 'WAKE LOCK OFF'}
                 </span>
               </div>
-
-              {playback.currentChapter && (
-                <div className="hidden md:block text-xs font-serif text-[#F3E9DD] tracking-wide">
-                  {playback.currentChapter.title}
-                </div>
-              )}
 
               <button
                 type="button"

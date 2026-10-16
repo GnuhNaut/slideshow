@@ -125,7 +125,7 @@ export function getVisibleItems(
   }
 
   // Safety buffer proportional to viewport and scrolling velocity
-  const effectiveBuffer = Math.max(bufferPx, Math.round(viewportWidth * 0.6));
+  const effectiveBuffer = Math.max(bufferPx, Math.round(viewportWidth * 0.4));
   const minX = cameraX - effectiveBuffer;
   const maxX = cameraX + viewportWidth + effectiveBuffer;
 

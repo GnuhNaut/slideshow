@@ -6,28 +6,18 @@ interface FX08Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
-  accentQuote?: string;
 }
 
 export const FX08_PhotoStackReveal: React.FC<FX08Props> = ({
   photos,
   progress,
-  accentQuote = 'Những khoảnh khắc giản dị mà đong đầy yêu thương.',
 }) => {
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-
-  if (!photos || photos.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh trong Photo Stack
-      </div>
-    );
-  }
-
-  const stack = photos.slice(0, 4);
+  const stack = photos?.slice(0, 4) || [];
   const cardCount = stack.length;
 
   useEffect(() => {
+    if (cardCount === 0) return;
     // Current active card index based on progress
     const activeIndex = Math.min(cardCount - 1, Math.floor(progress * cardCount));
     const subProgress = (progress * cardCount) % 1;
@@ -79,13 +69,17 @@ export const FX08_PhotoStackReveal: React.FC<FX08Props> = ({
     });
   }, [progress, cardCount]);
 
+  if (!photos || photos.length === 0) {
+    return <div className="w-full h-full bg-[#FFF9F2]" />;
+  }
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F3E9DD] perspective-cinema">
       {/* Ambient glow */}
       <div className="absolute inset-0 bg-radial from-[#C5A16E]/12 via-transparent to-transparent pointer-events-none" />
 
       {/* Photo Stack Container */}
-      <div className="relative w-[480px] h-[580px] flex items-center justify-center preserve-3d">
+      <div className="relative w-[76vw] aspect-[2/3] max-h-[62vh] md:w-[480px] md:h-[580px] md:aspect-auto flex items-center justify-center preserve-3d">
         {stack.map((photo, idx) => (
           <div
             key={photo.id}
@@ -97,23 +91,15 @@ export const FX08_PhotoStackReveal: React.FC<FX08Props> = ({
           >
             <div className="w-full h-full overflow-hidden rounded-[2px] bg-[#FAF5EE]">
               <img
-                src={photo.url}
+                src={photo.displayUrl || photo.url}
                 alt={photo.title || 'Stack Moment'}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Quote Banner */}
-      {accentQuote && (
-        <div className="mt-8 px-6 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-[#C5A16E]/20">
-          <p className="text-sm font-serif italic text-[#40322F]">
-            "{accentQuote}"
-          </p>
-        </div>
-      )}
     </div>
   );
 };

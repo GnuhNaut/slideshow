@@ -9,6 +9,7 @@ export function usePlaybackController(isStageMode: boolean = false) {
   const isPlaying = useWeddingStore((s) => s.playback.isPlaying);
   const currentTime = useWeddingStore((s) => s.playback.currentTime);
   const isFinished = useWeddingStore((s) => s.playback.isFinished);
+  const isMuted = useWeddingStore((s) => s.playback.isMuted);
   const totalDuration = useWeddingStore((s) => s.playback.totalDuration);
   const project = useWeddingStore((s) => s.project);
   const timeline = useWeddingStore((s) => s.timeline);
@@ -18,6 +19,10 @@ export function usePlaybackController(isStageMode: boolean = false) {
     audioDirector.setProject(project, timeline);
   }, [project, timeline]);
 
+  useEffect(() => {
+    audioDirector.setMuted(isMuted);
+  }, [isMuted]);
+
   // Synchronize Audio with masterClock
   useEffect(() => {
     const unsub = masterClock.onStatusChange((status) => {
@@ -26,8 +31,6 @@ export function usePlaybackController(isStageMode: boolean = false) {
           audioDirector.resume();
         });
       } else if (status === 'PAUSED') {
-        audioDirector.pause();
-      } else if (status === 'FINAL_HOLD') {
         audioDirector.pause();
       }
     });

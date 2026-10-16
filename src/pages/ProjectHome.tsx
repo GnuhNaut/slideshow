@@ -1,31 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
-import {
-  Film,
-  Play,
-  Sliders,
-  Download,
-  Upload,
-  Settings,
-  Sparkles,
-} from 'lucide-react';
+import { Film, Play, Sparkles } from 'lucide-react';
 import { useWeddingStore } from '../app/store';
 
-interface ProjectHomeProps {
-  onOpenSettings: () => void;
-  onExportZip: () => void;
-  onImportZip: () => void;
-}
-
-export const ProjectHome: React.FC<ProjectHomeProps> = ({
-  onOpenSettings,
-  onExportZip,
-  onImportZip,
-}) => {
+export const ProjectHome: React.FC = () => {
   const project = useWeddingStore((s) => s.project);
   const setViewMode = useWeddingStore((s) => s.setViewMode);
-  const play = useWeddingStore((s) => s.play);
-  const seek = useWeddingStore((s) => s.seek);
+  const [posterLoaded, setPosterLoaded] = useState(false);
+  const [posterFailed, setPosterFailed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const textColRef = useRef<HTMLDivElement>(null);
@@ -51,10 +33,6 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
     return () => ctx.revert();
   }, []);
 
-  const handleOpenStudio = () => {
-    setViewMode('studio');
-  };
-
   const handleStartPresentation = () => {
     setViewMode('player');
   };
@@ -64,6 +42,7 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
     project.chapters[0]?.photos[0] ||
     project.chapters[4]?.photos[0] ||
     null;
+  const posterUrl = posterPhoto?.displayUrl || posterPhoto?.url;
 
   return (
     <div
@@ -92,37 +71,6 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
           </div>
         </div>
 
-        {/* Secondary Utility Controls */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onImportZip}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-serif text-[#40322F] bg-white border border-[#C5A16E]/30 hover:border-[#C93442] shadow-sm hover:shadow transition-all cursor-pointer"
-            title="Nhập dữ liệu dự án từ tệp ZIP"
-          >
-            <Upload className="w-3.5 h-3.5 text-[#C5A16E]" />
-            <span className="hidden sm:inline">Nhập ZIP</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExportZip}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-serif text-[#40322F] bg-white border border-[#C5A16E]/30 hover:border-[#C93442] shadow-sm hover:shadow transition-all cursor-pointer"
-            title="Xuất gói sao lưu ZIP đầy đủ"
-          >
-            <Download className="w-3.5 h-3.5 text-[#C5A16E]" />
-            <span className="hidden sm:inline">Xuất ZIP</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="p-2 rounded-full text-[#40322F] bg-white border border-[#C5A16E]/30 hover:text-[#C93442] hover:border-[#C93442] shadow-sm transition-all cursor-pointer"
-            title="Cài đặt dự án"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
       </header>
 
       {/* Main Editorial Hero Poster Split Section */}
@@ -184,14 +132,6 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
               <span>BẮT ĐẦU TRÌNH CHIẾU</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleOpenStudio}
-              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#FFF9F2] text-[#40322F] border border-[#C5A16E]/40 hover:border-[#C5A16E] rounded-full font-serif text-base tracking-[0.2em] shadow-sm hover:shadow transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer hover:scale-105"
-            >
-              <Sliders className="w-4 h-4 text-[#C5A16E]" />
-              <span>MỞ STUDIO</span>
-            </button>
           </div>
         </div>
 
@@ -203,11 +143,28 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
           {posterPhoto ? (
             <div className="relative w-full h-full p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg flex flex-col">
               <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative">
-                <img
-                  src={posterPhoto.url}
-                  alt="Wedding Poster"
-                  className="w-full h-full object-cover"
-                />
+                <div className="absolute inset-0 bg-linear-to-br from-[#E8D9C7] via-[#FAF5EE] to-[#EDE1D5] flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-[#C5A16E]/60" aria-hidden="true" />
+                </div>
+                {!posterFailed && posterUrl && (
+                  <img
+                    src={posterUrl}
+                    alt="Wedding Poster"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    onLoad={(event) => {
+                      event.currentTarget.decode().then(
+                        () => setPosterLoaded(true),
+                        () => setPosterLoaded(true)
+                      );
+                    }}
+                    onError={() => setPosterFailed(true)}
+                    className={`relative w-full h-full object-contain transition-opacity duration-500 ${
+                      posterLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                )}
                 <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
               </div>
               {/* Subtle Poster Caption */}
@@ -224,15 +181,8 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
                 Chưa có ảnh cưới
               </h3>
               <p className="text-sm font-serif italic text-[#40322F]/70 max-w-sm">
-                Nhấn "Mở Studio" để tải ảnh cưới của bạn vào các chương phim điện ảnh.
+                Chưa có ảnh trong project để trình chiếu.
               </p>
-              <button
-                type="button"
-                onClick={handleOpenStudio}
-                className="px-6 py-2.5 bg-[#C93442] text-white rounded-full font-serif text-xs tracking-widest uppercase cursor-pointer"
-              >
-                Mở Studio ngay
-              </button>
             </div>
           )}
         </div>
@@ -241,7 +191,7 @@ export const ProjectHome: React.FC<ProjectHomeProps> = ({
       {/* Footer Minimalist Info */}
       <footer className="relative z-10 py-4 px-8 md:px-16 flex items-center justify-between text-xs font-serif text-[#40322F]/60 border-t border-[#C5A16E]/20 bg-white/30">
         <div>WEDDING CINEMATIC EXPERIENCE V3</div>
-        <div>HÀ NỘI • 19.10.2026</div>
+        <div>{project.venueName || 'HÀ NỘI'} • {project.weddingDate}</div>
       </footer>
     </div>
   );

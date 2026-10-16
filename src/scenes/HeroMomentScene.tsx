@@ -19,9 +19,6 @@ export const HeroMomentScene: React.FC<HeroMomentSceneProps> = ({ scene, progres
         photo={photo}
         progress={progress}
         isPlaying={isPlaying}
-        title={scene.config.textTitle || 'LỜI CẦU HÔN'}
-        subtitle="YES, I DO"
-        quote={scene.config.quote || 'Khoảnh khắc thiêng liêng khi hai tâm hồn hòa vào làm một.'}
         sceneId={scene.id}
       />
     );
@@ -33,7 +30,6 @@ export const HeroMomentScene: React.FC<HeroMomentSceneProps> = ({ scene, progres
       photo={photo}
       progress={progress}
       isPlaying={isPlaying}
-      accentQuote={scene.config.quote || photo?.title || 'Vẻ đẹp tinh khôi trong ngày hạnh phúc.'}
       sceneId={scene.id}
     />
   );

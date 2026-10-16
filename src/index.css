@@ -103,13 +103,16 @@ html, body {
   box-shadow: 0 0 45px -5px rgba(197, 161, 110, 0.35);
 }
 
-/* 35mm Filmstrip Sprockets - Luxury Champagne & Cocoa edition */
+/* Pink and red heart perforations for the filmstrip */
 .film-sprocket-track {
-  background-image: radial-gradient(circle, #40322f 35%, transparent 40%),
-                    radial-gradient(circle, #40322f 35%, transparent 40%);
-  background-size: 28px 12px;
-  background-position: 0 0, 14px 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'%3E%3Cpath fill='%23C93442' d='M8 14.5S1.2 10.3 1.2 6.3C1.2 2.2 6.4 1.4 8 5.1c1.6-3.7 6.8-2.9 6.8 1.2 0 4-6.8 8.2-6.8 8.2z'/%3E%3Cpath fill='%23E77A93' d='M8 14.5S1.2 10.3 1.2 6.3C1.2 2.2 6.4 1.4 8 5.1c1.6-3.7 6.8-2.9 6.8 1.2 0 4-6.8 8.2-6.8 8.2z' transform='translate(16)'/%3E%3C/svg%3E");
+  background-size: 32px 16px;
+  background-position: center;
   background-repeat: repeat-x;
+}
+
+.scene-photo-fit img {
+  object-fit: contain !important;
 }
 
 /* Subtle Film Grain */

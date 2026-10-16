@@ -462,7 +462,6 @@ export async function syncGallery() {
       fadeInDuration: 1.2,
       fadeOutDuration: 2.0,
       isGlobal: true,
-      relativePath: globalTrackFile,
     });
   }
 
@@ -504,7 +503,6 @@ export async function syncGallery() {
         fadeInDuration: 1.0,
         fadeOutDuration: 1.5,
         isGlobal: false,
-        relativePath: chapterAudioFile,
       });
 
       const ch = scannedChapters.find((c) => c.id === mapping.id);

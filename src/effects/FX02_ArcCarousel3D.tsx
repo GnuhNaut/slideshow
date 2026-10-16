@@ -15,19 +15,12 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  if (!photos || photos.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh cho 3D Arc Carousel
-      </div>
-    );
-  }
-
-  const count = photos.length;
+  const count = photos?.length || 0;
   // Step through photos based on progress
-  const activeFloat = progress * (count - 1);
+  const activeFloat = count > 0 ? progress * (count - 1) : 0;
 
   useEffect(() => {
+    if (count === 0) return;
     cardsRef.current.forEach((el, idx) => {
       if (!el) return;
       const diff = idx - activeFloat;
@@ -47,7 +40,11 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
         force3D: true,
       });
     });
-  }, [activeFloat]);
+  }, [activeFloat, count]);
+
+  if (!photos || photos.length === 0) {
+    return <div className="w-full h-full bg-[#FFF9F2]" />;
+  }
 
   return (
     <div
@@ -58,7 +55,7 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
       <div className="absolute inset-0 bg-radial from-[#C5A16E]/15 via-transparent to-transparent pointer-events-none" />
 
       {/* 3D Carousel Stage */}
-      <div className="relative w-full h-[600px] flex items-center justify-center preserve-3d">
+      <div className="relative w-full h-[80vh] md:h-[600px] flex items-center justify-center preserve-3d">
         {photos.map((photo, idx) => {
           return (
             <div
@@ -66,7 +63,7 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
               ref={(el) => {
                 cardsRef.current[idx] = el;
               }}
-              className="absolute w-[440px] h-[580px] p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
+              className="absolute w-[76vw] aspect-[2/3] max-h-[78vh] p-3 md:p-4 md:w-[440px] md:h-[580px] md:aspect-auto bg-white rounded-md border border-[#E77A93]/35 luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
               style={{
                 transformOrigin: '50% 50%',
               }}
@@ -78,11 +75,6 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
                   className="w-full h-full object-cover"
                 />
               </div>
-              {photo.title && (
-                <div className="mt-3 text-center text-xs tracking-widest uppercase font-serif text-[#40322F]">
-                  {photo.title}
-                </div>
-              )}
             </div>
           );
         })}

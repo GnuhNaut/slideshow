@@ -11,9 +11,7 @@ interface IntroSceneProps {
 
 export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
   const heroCardRef = useRef<HTMLDivElement>(null);
-  const subtitleRef = useRef<HTMLDivElement>(null);
 
   // 60 FPS Direct Motion Hook
   useSceneMotion(
@@ -29,26 +27,12 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
-      // Intro entrance GSAP timeline
       const tl = gsap.timeline();
-
       tl.fromTo(
         heroCardRef.current,
         { opacity: 0, scale: 0.9, y: 30, rotationY: -8 },
         { opacity: 1, scale: 1, y: 0, rotationY: 0, duration: 2.0, ease: 'power3.out' }
-      )
-        .fromTo(
-          titleRef.current,
-          { opacity: 0, y: 25 },
-          { opacity: 1, y: 0, duration: 1.6, ease: 'power2.out' },
-          '-=1.2'
-        )
-        .fromTo(
-          subtitleRef.current,
-          { opacity: 0, y: 15 },
-          { opacity: 1, y: 0, duration: 1.4, ease: 'power2.out' },
-          '-=0.8'
-        );
+      );
     }, containerRef);
 
     return () => ctx.revert();
@@ -73,87 +57,23 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
       </div>
 
       {/* Main Split / Hero Composition */}
-      <div className="relative z-10 w-full max-w-[1300px] h-[78vh] flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-14 px-8 preserve-3d">
-        {/* Left Side: Floating 3D Wedding Hero Frame */}
+      <div className="relative z-10 w-full h-full flex items-center justify-center px-6 preserve-3d">
         <div
           ref={heroCardRef}
-          className="w-full md:w-[48%] h-[55vh] md:h-[72vh] p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
+          className="w-[82vw] aspect-[2/3] md:aspect-auto md:w-[min(38vw,64vh)] max-w-[640px] max-h-[86vh] md:h-[86vh] md:max-h-[900px] p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
         >
           <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative flex items-center justify-center">
-            {heroPhoto && heroPhoto.url ? (
+            {heroPhoto?.url && (
               <img
                 src={heroPhoto.displayUrl || heroPhoto.url}
                 alt={heroPhoto.title || 'Wedding Hero'}
-                className={`w-full h-full ${heroPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
-                style={{
-                  objectPosition: `${heroPhoto.focalPoint?.x ?? 50}% ${heroPhoto.focalPoint?.y ?? 50}%`,
-                }}
+                className="w-full h-full object-contain mx-auto"
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
-                <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-[#FAF3EB] shadow-inner">
-                  <span className="font-serif text-2xl text-[#C93442] italic">H&amp;M</span>
-                </div>
-                <div className="font-serif text-lg font-medium text-[#40322F] tracking-wider uppercase">
-                  {scene.config?.textSubtitle || 'Tuấn Hùng & Sao Mai'}
-                </div>
-                <p className="text-xs text-[#C5A16E] italic font-serif">
-                  Chương I: Lời Mở Đầu
-                </p>
-                <span className="text-[10px] text-[#40322F]/60 font-mono">
-                  (Thêm ảnh vào public/gallery/01-intro/)
-                </span>
-              </div>
             )}
             <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
           </div>
         </div>
 
-        {/* Right Side: Editorial Typography */}
-        <div className="w-full md:w-[52%] flex flex-col items-center md:items-start text-center md:text-left z-20">
-          {/* Wedding Red Tag */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 mb-5 bg-[#F0DFD5]/90 border border-[#C93442]/30 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
-            <span className="text-[11px] tracking-[0.3em] font-sans font-semibold text-[#C93442] uppercase">
-              THE WEDDING OF
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C93442]" />
-          </div>
-
-          {/* Couple Names */}
-          <div ref={titleRef} className="space-y-2 mb-6">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-[#40322F] tracking-wide leading-tight">
-              <span className="block font-medium">TUẤN HÙNG</span>
-              <span className="block font-serif italic text-3xl sm:text-4xl text-[#C5A16E] my-1">
-                &amp;
-              </span>
-              <span className="block font-medium">SAO MAI</span>
-            </h1>
-          </div>
-
-          <div className="w-16 h-[2px] bg-[#C5A16E] mb-6" />
-
-          {/* Wedding Date */}
-          <div ref={subtitleRef} className="space-y-2">
-            <div className="flex items-center gap-3 text-base lg:text-lg tracking-[0.25em] text-[#40322F] font-serif font-medium">
-              <span>19</span>
-              <span className="text-[#C93442]">•</span>
-              <span>10</span>
-              <span className="text-[#C93442]">•</span>
-              <span>2026</span>
-            </div>
-            <p className="text-xs lg:text-sm tracking-[0.12em] text-[#40322F]/75 italic font-serif">
-              (Nhằm ngày 10 tháng 09 năm Bính Ngọ)
-            </p>
-          </div>
-
-          {/* Accent quote */}
-          {scene.config.quote && (
-            <p className="mt-8 text-sm lg:text-base tracking-wide text-[#40322F]/85 font-serif italic max-w-lg border-l-2 border-[#C5A16E]/40 pl-4">
-              "{scene.config.quote}"
-            </p>
-          )}
-        </div>
       </div>
 
       {/* Top & Bottom Champagne Perforation Ribbons */}

@@ -7,23 +7,14 @@ interface FX12Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
-  groomName?: string;
-  brideName?: string;
-  weddingDate?: string;
-  message?: string;
 }
 
 export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
   photos,
   progress,
-  groomName = 'Tuấn Hùng',
-  brideName = 'Sao Mai',
-  weddingDate = '19.10.2026',
-  message = 'Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.',
 }) => {
   const leftPhotoRef = useRef<HTMLDivElement>(null);
   const rightPhotoRef = useRef<HTMLDivElement>(null);
-  const centerTextRef = useRef<HTMLDivElement>(null);
 
   const applyTransforms = (prog: number) => {
     // 0.0 -> 0.35: Grand 3D curtain opening
@@ -49,13 +40,6 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
         });
       }
 
-      if (centerTextRef.current) {
-        gsap.set(centerTextRef.current, {
-          scale: 0.9 + ease * 0.1,
-          opacity: Math.max(0, (ease - 0.2) / 0.8),
-          force3D: true,
-        });
-      }
     } else {
       // Steady breathing state
       const drift = (prog - 0.35) / 0.65;
@@ -71,13 +55,6 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
         gsap.set(rightPhotoRef.current, {
           x: drift * 8,
           rotationY: -4,
-          opacity: 1,
-          force3D: true,
-        });
-      }
-      if (centerTextRef.current) {
-        gsap.set(centerTextRef.current, {
-          scale: 1.0 + drift * 0.02,
           opacity: 1,
           force3D: true,
         });
@@ -116,93 +93,24 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
       <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/80 to-[#FFF9F2] pointer-events-none" />
 
       {/* Main Grand Stage */}
-      <div className="relative z-10 w-full max-w-[1400px] h-full flex items-center justify-between gap-8 preserve-3d">
-        {/* Left Flanking Wedding Photo */}
-        <div
-          ref={leftPhotoRef}
-          className="hidden md:flex w-[28%] h-[68vh] p-3 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex-col"
-        >
-          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
-            {leftPhoto && leftPhoto.url ? (
-              <img
-                src={leftPhoto.displayUrl || leftPhoto.url}
-                alt="Thank You Left"
-                className={`w-full h-full ${leftPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
-                style={{
-                  objectPosition: `${leftPhoto.focalPoint?.x ?? 50}% ${leftPhoto.focalPoint?.y ?? 50}%`,
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-[#C5A16E] italic font-serif">
-                Wedding Moment
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Center Grand Typography Stage */}
-        <div
-          ref={centerTextRef}
-          className="w-full md:w-[48%] flex flex-col items-center justify-center text-center px-4 py-8 z-30 will-change-transform"
-        >
-          {/* Subtle Golden Seal Accent Rule */}
-          <div className="flex items-center gap-3 mb-6">
-            <span className="w-10 h-[1.5px] bg-[#C5A16E]/60" />
-            <span className="text-[11px] uppercase tracking-[0.25em] font-sans font-semibold text-[#C93442]">
-              WEDDING APPRECIATION
-            </span>
-            <span className="w-10 h-[1.5px] bg-[#C5A16E]/60" />
-          </div>
-
-          {/* Grand Title */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-[#40322F] tracking-[0.08em] mb-6">
-            LỜI CẢM ƠN
-          </h1>
-
-          <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-[#C5A16E] to-transparent mb-8" />
-
-          {/* Heartfelt Message */}
-          <p className="text-lg md:text-xl lg:text-2xl font-serif italic text-[#40322F]/90 leading-relaxed max-w-[580px] mb-10">
-            "{message}"
-          </p>
-
-          {/* Couple Signature & Wedding Date */}
-          <div className="space-y-2 pt-6 border-t border-[#C5A16E]/30 w-full max-w-[400px]">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-serif font-medium text-[#40322F] tracking-wide">
-              <span>{groomName}</span>
-              <span className="font-serif italic font-normal text-2xl sm:text-3xl text-[#C5A16E] mx-3">
-                &amp;
-              </span>
-              <span>{brideName}</span>
-            </div>
-            <div className="text-xs sm:text-sm font-sans tracking-[0.2em] text-[#40322F]/70 uppercase">
-              {weddingDate}
+      <div className="relative z-10 w-full max-w-[1100px] h-full flex flex-row items-center justify-center gap-2 md:gap-8 preserve-3d">
+        {[leftPhoto, rightPhoto].map((photo, index) => (
+          <div
+            key={`${photo?.id || 'photo'}_${index}`}
+            ref={index === 0 ? leftPhotoRef : rightPhotoRef}
+            className="w-[42vw] md:w-[min(31vw,420px)] h-[30vh] md:h-[82vh] max-h-[780px] p-2 md:p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
+          >
+            <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
+              {photo?.url && (
+                <img
+                  src={photo.displayUrl || photo.url}
+                  alt={photo.title || 'Wedding portrait'}
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Right Flanking Wedding Photo */}
-        <div
-          ref={rightPhotoRef}
-          className="hidden md:flex w-[28%] h-[68vh] p-3 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex-col"
-        >
-          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
-            {rightPhoto && rightPhoto.url ? (
-              <img
-                src={rightPhoto.displayUrl || rightPhoto.url}
-                alt="Thank You Right"
-                className={`w-full h-full ${rightPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
-                style={{
-                  objectPosition: `${rightPhoto.focalPoint?.x ?? 50}% ${rightPhoto.focalPoint?.y ?? 50}%`,
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-[#C5A16E] italic font-serif">
-                Wedding Moment
-              </div>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
