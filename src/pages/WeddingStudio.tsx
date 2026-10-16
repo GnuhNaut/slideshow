@@ -6,6 +6,7 @@ import { TimelineBar } from '../components/studio/TimelineBar';
 import { MediaLibrary } from '../components/studio/MediaLibrary';
 import { InspectorPanel } from '../components/studio/InspectorPanel';
 import { ProjectSettingsModal } from '../components/studio/ProjectSettingsModal';
+import { AudioManagementModal } from '../components/studio/AudioManagementModal';
 import { usePlaybackController } from '../player/usePlaybackController';
 
 interface WeddingStudioProps {
@@ -18,6 +19,7 @@ export const WeddingStudio: React.FC<WeddingStudioProps> = ({
   onImportZip,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
 
   // Run the playback engine loop in studio preview mode
   usePlaybackController(false);
@@ -27,6 +29,7 @@ export const WeddingStudio: React.FC<WeddingStudioProps> = ({
       {/* Studio Top Navigation Bar */}
       <StudioHeader
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenAudio={() => setIsAudioOpen(true)}
         onExportZip={onExportZip}
         onImportZip={onImportZip}
       />
@@ -56,6 +59,12 @@ export const WeddingStudio: React.FC<WeddingStudioProps> = ({
       <ProjectSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Audio Director Modal */}
+      <AudioManagementModal
+        isOpen={isAudioOpen}
+        onClose={() => setIsAudioOpen(false)}
       />
     </div>
   );

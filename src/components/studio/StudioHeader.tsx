@@ -12,18 +12,21 @@ import {
   AlertCircle,
   Loader2,
   MonitorPlay,
+  Music,
 } from 'lucide-react';
 import { useWeddingStore, SaveStatus } from '../../app/store';
 import { remoteChannel } from '../../player/remoteChannel';
 
 interface StudioHeaderProps {
   onOpenSettings: () => void;
+  onOpenAudio?: () => void;
   onExportZip: () => void;
   onImportZip: () => void;
 }
 
 export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onOpenSettings,
+  onOpenAudio,
   onExportZip,
   onImportZip,
 }) => {
@@ -136,6 +139,19 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <MonitorPlay className="w-3.5 h-3.5 text-[#C5A16E]" />
           <span>Màn Hình 2</span>
         </button>
+
+        {/* Audio Director */}
+        {onOpenAudio && (
+          <button
+            type="button"
+            onClick={onOpenAudio}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded border border-[#C5A16E]/35 text-[#40322F] bg-white hover:bg-[#FAF3EB] hover:text-[#C93442] text-xs font-serif cursor-pointer transition-colors shadow-sm"
+            title="Quản lý nhạc nền (Audio Director)"
+          >
+            <Music className="w-3.5 h-3.5 text-[#C93442]" />
+            <span className="hidden md:inline">Nhạc Nền</span>
+          </button>
+        )}
 
         {/* Project Settings */}
         <button

@@ -1,31 +1,33 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX10Props {
   photo: PhotoItem;
   progress: number;
   isPlaying: boolean;
   accentQuote?: string;
+  sceneId?: string;
 }
 
 export const FX10_ElegantParallax: React.FC<FX10Props> = ({
   photo,
   progress,
   accentQuote = 'Khi ánh mắt chạm nhau, thời gian như ngưng đọng.',
+  sceneId,
 }) => {
   const bgRef = useRef<HTMLDivElement>(null);
   const midRef = useRef<HTMLDivElement>(null);
   const fgRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Parallax displacements based on progress
-    const distance = (progress - 0.5) * 60;
+  const applyParallax = useCallback((p: number) => {
+    const distance = (p - 0.5) * 60;
 
     if (bgRef.current) {
       gsap.set(bgRef.current, {
         x: -distance * 0.4,
-        scale: 1.05 + progress * 0.02,
+        scale: 1.05 + p * 0.02,
         force3D: true,
       });
     }
@@ -33,7 +35,7 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
     if (midRef.current) {
       gsap.set(midRef.current, {
         x: distance * 0.6,
-        rotationY: (progress - 0.5) * 4,
+        rotationY: (p - 0.5) * 4,
         force3D: true,
       });
     }
@@ -44,7 +46,14 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
         force3D: true,
       });
     }
-  }, [progress]);
+  }, []);
+
+  // 60 FPS direct RAF motion
+  useSceneMotion(sceneId || '', applyParallax, progress);
+
+  useEffect(() => {
+    applyParallax(progress);
+  }, [progress, applyParallax]);
 
   if (!photo) {
     return (

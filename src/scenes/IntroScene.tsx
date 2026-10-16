@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { TimelineScene } from '../types/timeline';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface IntroSceneProps {
   scene: TimelineScene;
@@ -13,6 +14,17 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   const titleRef = useRef<HTMLDivElement>(null);
   const heroCardRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
+
+  // 60 FPS Direct Motion Hook
+  useSceneMotion(
+    scene.id,
+    (p) => {
+      if (heroCardRef.current) {
+        heroCardRef.current.style.transform = `scale(${1 + p * 0.03}) rotateY(${Math.sin(p * Math.PI) * 3}deg)`;
+      }
+    },
+    progress
+  );
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -67,9 +79,6 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
           <div
             ref={heroCardRef}
             className="w-full md:w-[48%] h-[55vh] md:h-[72vh] p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
-            style={{
-              transform: `scale(${1 + progress * 0.03}) rotateY(${Math.sin(progress * Math.PI) * 3}deg)`,
-            }}
           >
             <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative">
               <img

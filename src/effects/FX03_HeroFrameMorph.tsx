@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX03Props {
   photo: PhotoItem;
@@ -9,6 +10,7 @@ interface FX03Props {
   title?: string;
   subtitle?: string;
   quote?: string;
+  sceneId?: string;
 }
 
 export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
@@ -17,21 +19,18 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   title = 'LỜI CẦU HÔN',
   subtitle = 'KHOẢNH KHẮC MÃI MÃI',
   quote = 'Khoảnh khắc em nói "Em đồng ý", cả thế giới như ngừng lại.',
+  sceneId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const applyMorph = useCallback((p: number) => {
     if (!frameRef.current) return;
 
-    // Timeline phases:
-    // 0.0 -> 0.3: Entrance morph from small tilted frame to full center
-    // 0.3 -> 0.85: Calm stable view with microscopic camera drift
-    // 0.85 -> 1.0: Gentle prep for chapter transition
-    if (progress < 0.3) {
-      const p = progress / 0.3;
-      const ease = gsap.parseEase('power2.out')(p);
+    if (p < 0.3) {
+      const normP = p / 0.3;
+      const ease = gsap.parseEase('power2.out')(normP);
       gsap.set(frameRef.current, {
         scale: 0.82 + ease * 0.18,
         rotationY: (1 - ease) * 12,
@@ -46,10 +45,10 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
           y: (1 - ease) * 20,
         });
       }
-    } else if (progress <= 0.85) {
-      const p = (progress - 0.3) / 0.55;
+    } else if (p <= 0.85) {
+      const normP = (p - 0.3) / 0.55;
       gsap.set(frameRef.current, {
-        scale: 1.0 + p * 0.03, // Micro breathing
+        scale: 1.0 + normP * 0.03, // Micro breathing
         rotationY: 0,
         rotationX: 0,
         z: 0,
@@ -63,14 +62,21 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
         });
       }
     } else {
-      const p = (progress - 0.85) / 0.15;
+      const normP = (p - 0.85) / 0.15;
       gsap.set(frameRef.current, {
-        scale: 1.03 - p * 0.02,
-        opacity: 1 - p * 0.2,
+        scale: 1.03 - normP * 0.02,
+        opacity: 1 - normP * 0.2,
         force3D: true,
       });
     }
-  }, [progress]);
+  }, []);
+
+  // 60 FPS direct RAF motion
+  useSceneMotion(sceneId || '', applyMorph, progress);
+
+  useEffect(() => {
+    applyMorph(progress);
+  }, [progress, applyMorph]);
 
   if (!photo) {
     return (

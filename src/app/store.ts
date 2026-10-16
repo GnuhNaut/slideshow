@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { WeddingProject, ChapterConfig, PhotoItem, AudioTrack } from '../types/project';
+import { WeddingProject, ChapterConfig, PhotoItem, AudioTrack, GlobalSettings } from '../types/project';
 import { CompiledTimeline, PlaybackState } from '../types/timeline';
 import { createInitialWeddingProject } from '../project/defaultProject';
 import { compileProjectTimeline } from '../timeline/compiler';
@@ -31,6 +31,7 @@ interface WeddingStore {
   saveProjectToDb: () => Promise<void>;
   replaceProject: (newProject: WeddingProject) => Promise<void>;
   updateProjectMeta: (updates: Partial<WeddingProject>) => void;
+  updateGlobalSettings: (settings: Partial<GlobalSettings>) => void;
   updateChapter: (chapterId: string, updates: Partial<ChapterConfig>) => void;
   setActiveChapter: (chapterId: string) => void;
   setSelectedPhoto: (photoId: string | null) => void;
@@ -251,6 +252,21 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
           totalDuration: updatedTimeline.totalDuration,
         },
       });
+      triggerAutosave();
+    },
+
+    updateGlobalSettings: (settingsUpdates) => {
+      const currentProj = get().project;
+      pushUndo(currentProj);
+      const updatedProj: WeddingProject = {
+        ...currentProj,
+        globalSettings: {
+          ...currentProj.globalSettings,
+          ...settingsUpdates,
+        },
+        updatedAt: Date.now(),
+      };
+      set({ project: updatedProj });
       triggerAutosave();
     },
 

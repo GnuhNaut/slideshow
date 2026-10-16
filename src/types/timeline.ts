@@ -39,6 +39,12 @@ export interface TimelineScene {
     reversed?: boolean;
     layerDepth?: number;
     ambientLight?: 'warm' | 'rose' | 'gold' | 'ivory' | 'red';
+    showCenterTitle?: boolean;
+    showCenterNames?: boolean;
+    showFrameNames?: boolean;
+    showMetadata35mm?: boolean;
+    showQuote?: boolean;
+    coupleNames?: string;
   };
   transitionIn: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';
   transitionOut: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';

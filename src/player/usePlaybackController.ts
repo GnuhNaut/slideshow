@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useWeddingStore } from '../app/store';
 import { audioEngine } from '../audio/AudioEngine';
+import { audioDirector } from '../audio/AudioDirector';
 import { remoteChannel } from './remoteChannel';
 import { masterClock } from './PlaybackClock';
 
@@ -9,27 +10,30 @@ export function usePlaybackController(isStageMode: boolean = false) {
   const currentTime = useWeddingStore((s) => s.playback.currentTime);
   const isFinished = useWeddingStore((s) => s.playback.isFinished);
   const totalDuration = useWeddingStore((s) => s.playback.totalDuration);
-  const activeMusicTrack = useWeddingStore(
-    (s) => s.project.audioTracks.find((t) => t.isGlobal) || s.project.audioTracks[0]
-  );
+  const project = useWeddingStore((s) => s.project);
+  const timeline = useWeddingStore((s) => s.timeline);
+
+  // Synchronize Audio Director with project & timeline
+  useEffect(() => {
+    audioDirector.setProject(project, timeline);
+  }, [project, timeline]);
 
   // Synchronize Audio with masterClock
   useEffect(() => {
     const unsub = masterClock.onStatusChange((status) => {
       if (status === 'PLAYING') {
         audioEngine.unlock().then(() => {
-          audioEngine.play(activeMusicTrack?.url);
+          audioDirector.resume();
         });
       } else if (status === 'PAUSED') {
-        audioEngine.pause();
+        audioDirector.pause();
       } else if (status === 'FINAL_HOLD') {
-        // Soft audio fade out on final hold
-        audioEngine.pause();
+        audioDirector.pause();
       }
     });
 
     return () => unsub();
-  }, [activeMusicTrack]);
+  }, []);
 
   // Handle Dual Screen Remote Messages
   useEffect(() => {
@@ -47,6 +51,7 @@ export function usePlaybackController(isStageMode: boolean = false) {
           break;
         case 'SEEK':
           store.seek(msg.time);
+          audioDirector.seek(msg.time);
           audioEngine.seek(msg.time);
           break;
         case 'SEEK_CHAPTER':
@@ -60,14 +65,15 @@ export function usePlaybackController(isStageMode: boolean = false) {
           break;
         case 'RESTART':
           store.restart();
+          audioDirector.restart();
           break;
         case 'SET_VOLUME':
           store.setVolume(msg.volume);
-          audioEngine.setVolume(msg.volume);
+          audioDirector.setVolume(msg.volume);
           break;
         case 'TOGGLE_MUTE':
           store.toggleMute();
-          audioEngine.setMuted(!store.playback.isMuted);
+          audioDirector.setMuted(!store.playback.isMuted);
           break;
       }
     });

@@ -21,6 +21,9 @@ export const TimelineBar: React.FC = () => {
 
   const playheadPercent = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
+  const project = useWeddingStore((s) => s.project);
+  const audioMode = project.globalSettings.audioMode || 'global';
+
   return (
     <div className="h-16 bg-white border-t border-[#C5A16E]/20 flex flex-col justify-between px-4 py-1.5 shrink-0 select-none z-20">
       {/* Time ruler */}
@@ -46,6 +49,11 @@ export const TimelineBar: React.FC = () => {
           const widthPercent =
             totalDuration > 0 ? (meta.duration / totalDuration) * 100 : 100 / 7;
           const isCurrentActive = meta.chapterId === activeChapterId;
+          const ch = project.chapters.find((c) => c.id === meta.chapterId);
+          const hasMusic =
+            audioMode === 'global'
+              ? project.audioTracks.length > 0
+              : !!ch?.musicTrackId;
 
           return (
             <div
@@ -64,12 +72,19 @@ export const TimelineBar: React.FC = () => {
                   : 'bg-[#FAF3EB]/80 hover:bg-[#FFF9F2] text-[#40322F]/75'
               }`}
             >
-              <span className="text-[10px] font-mono font-bold truncate">
-                {`0${meta.chapterIndex}`}
-              </span>
-              <span className="text-[10px] font-serif truncate hidden md:inline">
-                {meta.title.split(':')[1] || meta.title}
-              </span>
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="text-[10px] font-mono font-bold truncate">
+                  {`0${meta.chapterIndex}`}
+                </span>
+                <span className="text-[10px] font-serif truncate hidden md:inline">
+                  {meta.title.split(':')[1] || meta.title}
+                </span>
+              </div>
+              {hasMusic && (
+                <span className="text-[9px] text-[#C93442]" title="Chương có nhạc nền">
+                  🎵
+                </span>
+              )}
             </div>
           );
         })}

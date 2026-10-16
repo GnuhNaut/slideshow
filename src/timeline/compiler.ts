@@ -5,6 +5,12 @@ export function calculateChapterAutoDuration(
   chapter: ChapterConfig,
   _project?: WeddingProject
 ): number {
+  // If user configured scene duration overrides and mode is auto, sum them up
+  if (chapter.sceneDurationOverrides && Object.keys(chapter.sceneDurationOverrides).length > 0) {
+    const sum = Object.values(chapter.sceneDurationOverrides).reduce((a, b) => a + b, 0);
+    if (sum > 0) return Number(sum.toFixed(1));
+  }
+
   const photos = chapter.photos || [];
   switch (chapter.chapterIndex) {
     case 1:
@@ -116,10 +122,14 @@ function compileChapterScenes(
   switch (chapter.chapterIndex) {
     case 1: {
       // CHƯƠNG 1 — INTRO: THE BEGINNING
-      const duration = isCustom ? Math.max(3, customDuration) : 14;
+      const sceneId = `${chapter.id}_scene_intro`;
+      const overrideDur = chapter.sceneDurationOverrides?.[sceneId] || chapter.sceneDurationOverrides?.['scene_intro'];
+      const duration = typeof overrideDur === 'number' && overrideDur > 0
+        ? overrideDur
+        : (isCustom ? Math.max(3, customDuration) : 14);
       const heroPhoto = photos[0];
       scenes.push({
-        id: `${chapter.id}_scene_intro`,
+        id: sceneId,
         chapterId: chapter.id,
         chapterIndex: 1,
         chapterTitle: chapter.vietnameseTitle,
@@ -144,12 +154,22 @@ function compileChapterScenes(
 
     case 2: {
       // CHƯƠNG 2 — NHỮNG NGÀY BÊN NHAU (Continuous / Dual Film Roll)
+      const sceneId = `${chapter.id}_scene_filmroll`;
       const autoDuration = Math.max(16, photos.length * 3.5);
-      const duration = isCustom ? Math.max(5, customDuration) : autoDuration;
-      const isDual = chapter.effectMode === 'f02_dual_roll' || (chapter.effectMode !== 'f01_continuous_roll' && photos.length >= 8);
+      const overrideDur = chapter.sceneDurationOverrides?.[sceneId] || chapter.sceneDurationOverrides?.['scene_filmroll'];
+      const duration = typeof overrideDur === 'number' && overrideDur > 0
+        ? overrideDur
+        : (isCustom ? Math.max(5, customDuration) : autoDuration);
+      const isDual = chapter.effectMode === 'f02_dual_roll' || (chapter.effectMode !== 'f01_continuous_roll' && photos.length >= 6);
+
+      let speed = chapter.speed || 48;
+      if (chapter.filmstripSpeedMode === 'slow') speed = 34;
+      else if (chapter.filmstripSpeedMode === 'medium') speed = 50;
+      else if (chapter.filmstripSpeedMode === 'fast') speed = 72;
+      else if (chapter.filmstripSpeedMode === 'custom') speed = chapter.filmstripSpeedCustom || 48;
 
       scenes.push({
-        id: `${chapter.id}_scene_filmroll`,
+        id: sceneId,
         chapterId: chapter.id,
         chapterIndex: 2,
         chapterTitle: chapter.vietnameseTitle,
@@ -159,9 +179,15 @@ function compileChapterScenes(
         endTime: cursor + duration,
         photos: [...photos],
         config: {
-          speed: chapter.speed || 48,
+          speed,
           ambientLight: 'warm',
           quote: chapter.accentQuote || 'Từ những buổi hẹn hò đầu tiên đến những chuyến đi đầy ắp tiếng cười.',
+          showCenterTitle: chapter.showCenterTitle ?? true,
+          showCenterNames: chapter.showCenterNames ?? false,
+          showFrameNames: chapter.showFrameNames ?? false,
+          showMetadata35mm: chapter.showMetadata35mm ?? false,
+          showQuote: chapter.showQuote ?? true,
+          coupleNames: `${project.groomName} & ${project.brideName}`,
         },
         transitionIn: 'cut',
         transitionOut: 'film_wipe',
@@ -213,9 +239,12 @@ function compileChapterScenes(
 
         // Proportional distribution
         let distributed = 0;
-        const heroDuration = chunks.length === 0
-          ? targetTotal
-          : Number((baseHeroDur * scale).toFixed(1));
+        const heroOverride = chapter.sceneDurationOverrides?.[`${chapter.id}_scene_proposal_hero`];
+        const heroDuration = typeof heroOverride === 'number' && heroOverride > 0
+          ? heroOverride
+          : (chunks.length === 0
+              ? targetTotal
+              : Number((baseHeroDur * scale).toFixed(1)));
         distributed += heroDuration;
 
         scenes.push({
@@ -241,14 +270,18 @@ function compileChapterScenes(
 
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
+          const chunkSceneId = `${chapter.id}_scene_proposal_others_${i}`;
           const isLast = i === chunks.length - 1;
-          const chunkDur = isLast
-            ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
-            : Math.max(1.0, Number((baseChunkDurs[i] * scale).toFixed(1)));
+          const chunkOverride = chapter.sceneDurationOverrides?.[chunkSceneId];
+          const chunkDur = typeof chunkOverride === 'number' && chunkOverride > 0
+            ? chunkOverride
+            : (isLast
+                ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
+                : Math.max(1.0, Number((baseChunkDurs[i] * scale).toFixed(1))));
           distributed += chunkDur;
 
           scenes.push({
-            id: `${chapter.id}_scene_proposal_others_${i}`,
+            id: chunkSceneId,
             chapterId: chapter.id,
             chapterIndex: 3,
             chapterTitle: chapter.vietnameseTitle,
@@ -306,14 +339,18 @@ function compileChapterScenes(
       let distributed = 0;
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
+        const chunkSceneId = `${chapter.id}_scene_family_chunk_${i}`;
         const isLast = i === chunks.length - 1;
-        const sceneDuration = isLast
-          ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
-          : Math.max(1.0, Number((baseChunkDurs[i] * scale).toFixed(1)));
+        const chunkOverride = chapter.sceneDurationOverrides?.[chunkSceneId];
+        const sceneDuration = typeof chunkOverride === 'number' && chunkOverride > 0
+          ? chunkOverride
+          : (isLast
+              ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
+              : Math.max(1.0, Number((baseChunkDurs[i] * scale).toFixed(1))));
         distributed += sceneDuration;
 
         scenes.push({
-          id: `${chapter.id}_scene_family_chunk_${i}`,
+          id: chunkSceneId,
           chapterId: chapter.id,
           chapterIndex: 4,
           chapterTitle: chapter.vietnameseTitle,
@@ -479,9 +516,12 @@ function compileChapterScenes(
       for (let i = 0; i < drafts.length; i++) {
         const d = drafts[i];
         const isLast = i === drafts.length - 1;
-        const dur = isLast
-          ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
-          : Math.max(1.0, Number((d.baseDuration * scale).toFixed(1)));
+        const overrideDur = chapter.sceneDurationOverrides?.[d.id];
+        const dur = typeof overrideDur === 'number' && overrideDur > 0
+          ? overrideDur
+          : (isLast
+              ? Math.max(1.0, Number((targetTotal - distributed).toFixed(1)))
+              : Math.max(1.0, Number((d.baseDuration * scale).toFixed(1))));
         distributed += dur;
 
         scenes.push({
@@ -506,8 +546,12 @@ function compileChapterScenes(
 
     case 6: {
       // CHƯƠNG 6 — LỜI CẢM ƠN (Thank You Message)
+      const sceneId = `${chapter.id}_scene_thank_you`;
       const autoDuration = 14;
-      const duration = isCustom ? Math.max(3, customDuration) : autoDuration;
+      const overrideDur = chapter.sceneDurationOverrides?.[sceneId] || chapter.sceneDurationOverrides?.['scene_thank_you'];
+      const duration = typeof overrideDur === 'number' && overrideDur > 0
+        ? overrideDur
+        : (isCustom ? Math.max(3, customDuration) : autoDuration);
       const chapterPhotos = [...photos];
       if (chapterPhotos.length < 2) {
         const weddingPhotos = project.chapters.find((c) => c.chapterIndex === 5)?.photos || [];
@@ -518,7 +562,7 @@ function compileChapterScenes(
       }
 
       scenes.push({
-        id: `${chapter.id}_scene_thank_you`,
+        id: sceneId,
         chapterId: chapter.id,
         chapterIndex: 6,
         chapterTitle: chapter.vietnameseTitle,
@@ -543,8 +587,12 @@ function compileChapterScenes(
     case 7: {
       // CHƯƠNG 7 — OUR FOREVER (FINAL FREEZE / FINAL HOLD)
       // Reveal duration is finite (2.0s or user custom) before permanent FINAL_HOLD
+      const sceneId = `${chapter.id}_scene_final_freeze`;
       const autoDuration = 2.0;
-      const duration = isCustom ? Math.max(1.0, customDuration) : autoDuration;
+      const overrideDur = chapter.sceneDurationOverrides?.[sceneId] || chapter.sceneDurationOverrides?.['scene_final_freeze'];
+      const duration = typeof overrideDur === 'number' && overrideDur > 0
+        ? overrideDur
+        : (isCustom ? Math.max(1.0, customDuration) : autoDuration);
 
       // GLOBAL ENDING PHOTO LOOKUP:
       // Searches across ALL chapters in the project, so picking a photo from Chapter 5, 2, etc. works seamlessly!

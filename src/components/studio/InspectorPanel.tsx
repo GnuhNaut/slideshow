@@ -11,6 +11,11 @@ import {
   Sparkles,
   X,
   Check,
+  Gauge,
+  Eye,
+  RotateCcw,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 import { useWeddingStore } from '../../app/store';
 import { EffectMode, CropMode, PhotoItem } from '../../types/project';
@@ -28,6 +33,7 @@ export const InspectorPanel: React.FC = () => {
   const updateChapter = useWeddingStore((s) => s.updateChapter);
   const setEndingPhoto = useWeddingStore((s) => s.updateProjectMeta);
   const project = useWeddingStore((s) => s.project);
+  const timeline = useWeddingStore((s) => s.timeline);
 
   const [isEndingPickerOpen, setIsEndingPickerOpen] = useState(false);
   const focalCanvasRef = useRef<HTMLDivElement>(null);
@@ -35,6 +41,7 @@ export const InspectorPanel: React.FC = () => {
   if (!activeChapter) return null;
 
   const calculatedAutoDuration = calculateChapterAutoDuration(activeChapter, project);
+  const chapterScenes = timeline.scenes.filter((sc) => sc.chapterId === activeChapter.id);
 
   const allProjectPhotos = project.chapters.flatMap((c) =>
     (c.photos || []).map((p) => ({ ...p, chapterTitle: c.vietnameseTitle, chapterIndex: c.chapterIndex }))
@@ -55,10 +62,58 @@ export const InspectorPanel: React.FC = () => {
     });
   };
 
+  const handleSceneDurationChange = (sceneId: string, durationSec: number) => {
+    const validDur = Math.max(1, Number(durationSec.toFixed(1)));
+    const currentOverrides = { ...(activeChapter.sceneDurationOverrides || {}) };
+    currentOverrides[sceneId] = validDur;
+    updateChapter(activeChapterId, { sceneDurationOverrides: currentOverrides });
+  };
+
+  const handleResetSceneDuration = (sceneId: string) => {
+    const currentOverrides = { ...(activeChapter.sceneDurationOverrides || {}) };
+    delete currentOverrides[sceneId];
+    updateChapter(activeChapterId, { sceneDurationOverrides: currentOverrides });
+  };
+
+  const getSceneDisplayName = (sceneType: string, sceneIndex: number): string => {
+    switch (sceneType) {
+      case 'intro':
+        return 'Mở đầu & Tiêu đề điện ảnh';
+      case 'film_roll':
+      case 'dual_film_roll':
+        return 'Cuộn phim ký ức 35mm';
+      case 'film_to_hero':
+        return 'Lời cầu hôn • Hero Moment';
+      case 'hero_moment':
+        return `Hero Photo ${sceneIndex}`;
+      case 'family_gallery':
+      case 'family_split':
+        return `Khoảnh khắc gia đình ${sceneIndex}`;
+      case 'living_collage':
+        return `Bộ sưu tập ảnh cưới ${sceneIndex}`;
+      case 'thank_you':
+        return 'Lời tri ân & Lời cảm ơn';
+      case 'final_freeze':
+        return 'Khung hình kết thúc phim';
+      default:
+        return `Phân cảnh ${sceneIndex}`;
+    }
+  };
+
+  // Chapter 2 Filmstrip Speed calculations
+  const currentSpeedMode = activeChapter.filmstripSpeedMode || 'auto';
+  let effectiveSpeed = activeChapter.speed || 48;
+  if (currentSpeedMode === 'slow') effectiveSpeed = 34;
+  else if (currentSpeedMode === 'medium') effectiveSpeed = 50;
+  else if (currentSpeedMode === 'fast') effectiveSpeed = 72;
+  else if (currentSpeedMode === 'custom') effectiveSpeed = activeChapter.filmstripSpeedCustom || 48;
+
+  const estimatedPhotoObservationSec = Math.round((320 / Math.max(10, effectiveSpeed)) * 10) / 10;
+
   return (
-    <aside className="w-72 sm:w-80 h-full bg-white border-l border-[#C5A16E]/20 flex flex-col shrink-0 select-none overflow-y-auto z-20">
+    <aside className="w-80 sm:w-88 h-full bg-white border-l border-[#C5A16E]/20 flex flex-col shrink-0 select-none overflow-y-auto z-20">
       {/* Panel Header */}
-      <div className="h-12 px-4 border-b border-[#C5A16E]/20 flex items-center justify-between bg-[#FFF9F2]/60">
+      <div className="h-12 px-4 border-b border-[#C5A16E]/20 flex items-center justify-between bg-[#FFF9F2]/60 shrink-0">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-[#C93442]" />
           <h2 className="text-xs tracking-[0.2em] uppercase font-sans font-bold text-[#40322F]">
@@ -145,20 +200,83 @@ export const InspectorPanel: React.FC = () => {
                 <span>Chế độ hiển thị (Crop Mode)</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {(['cover', 'contain', 'fill'] as CropMode[]).map((mode) => (
+                {(['contain', 'cover', 'fill'] as CropMode[]).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => updatePhoto(activeChapterId, selectedPhoto.id, { cropMode: mode })}
-                    className={`py-1 px-2 rounded text-[11px] font-mono capitalize border cursor-pointer transition-colors ${
-                      selectedPhoto.cropMode === mode
+                    className={`py-1.5 px-2 rounded text-[11px] font-mono capitalize border cursor-pointer transition-colors ${
+                      (selectedPhoto.cropMode || 'contain') === mode
                         ? 'bg-[#C93442] border-[#C93442] text-white font-medium shadow-sm'
                         : 'bg-white border-[#C5A16E]/30 text-[#40322F]/70 hover:text-[#40322F]'
                     }`}
                   >
-                    {mode}
+                    {mode === 'contain' ? 'Trọn vẹn (Contain)' : mode === 'cover' ? 'Lấp đầy (Cover)' : 'Gốc (Fill)'}
                   </button>
                 ))}
+              </div>
+              <p className="text-[10px] text-[#40322F]/65 font-serif italic mt-1">
+                * Contain: giữ 100% người, không bị cắt mất đầu/chân. Cover: phóng to vừa khung.
+              </p>
+            </div>
+
+            {/* PHOTO DURATION (THỜI GIAN HIỂN THỊ ẢNH) */}
+            <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
+              <label className="flex items-center justify-between text-xs font-serif text-[#40322F] font-semibold">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#C93442]" />
+                  <span>Thời gian hiển thị ảnh</span>
+                </div>
+                {selectedPhoto.duration && (
+                  <button
+                    type="button"
+                    onClick={() => updatePhoto(activeChapterId, selectedPhoto.id, { duration: undefined })}
+                    className="text-[10px] text-[#C93442] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </label>
+
+              <div className="p-2.5 rounded bg-white border border-[#C5A16E]/30 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-serif text-[#40322F]">
+                    {selectedPhoto.duration ? 'Tùy chỉnh riêng:' : 'Mặc định (Auto):'}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={selectedPhoto.duration || 4}
+                      onChange={(e) => {
+                        const val = Math.max(1, parseInt(e.target.value) || 1);
+                        updatePhoto(activeChapterId, selectedPhoto.id, { duration: val });
+                      }}
+                      className="w-14 px-2 py-1 rounded bg-[#FAF5EE] border border-[#C5A16E]/40 text-xs font-mono font-bold text-[#40322F] text-center"
+                    />
+                    <span className="font-mono text-[#40322F]/70">giây</span>
+                  </div>
+                </div>
+
+                {/* Preset duration buttons */}
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  {[2, 3, 4, 5, 6, 8, 10].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => updatePhoto(activeChapterId, selectedPhoto.id, { duration: sec })}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
+                        selectedPhoto.duration === sec
+                          ? 'bg-[#C93442] border-[#C93442] text-white font-bold'
+                          : 'bg-[#FAF5EE] border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF3EB]'
+                      }`}
+                    >
+                      {sec}s
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -211,7 +329,7 @@ export const InspectorPanel: React.FC = () => {
           </div>
         ) : (
           /* ================= CHAPTER INSPECTOR ================= */
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Chapter Title */}
             <div>
               <label className="text-xs font-serif text-[#40322F] font-semibold mb-1 block">
@@ -240,28 +358,6 @@ export const InspectorPanel: React.FC = () => {
               />
             </div>
 
-            {/* Effect Mode Picker */}
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold mb-1">
-                <Film className="w-3.5 h-3.5 text-[#C93442]" />
-                <span>Hiệu ứng cuộn phim (Film Engine)</span>
-              </label>
-              <select
-                value={activeChapter.effectMode}
-                onChange={(e) =>
-                  updateChapter(activeChapterId, { effectMode: e.target.value as EffectMode })
-                }
-                className="w-full px-2.5 py-1.5 rounded bg-white border border-[#C5A16E]/30 text-xs text-[#40322F] focus:outline-none focus:border-[#C93442] cursor-pointer shadow-sm"
-              >
-                <option value="f01_continuous_roll">FX01 — Dải phim chạy ngang liên tục</option>
-                <option value="f02_dual_roll">FX02 — 3D Arc Carousel hình trụ</option>
-                <option value="f04_film_to_hero">FX03 — Hero Frame Morph điện ảnh</option>
-                <option value="f03_multi_layer">FX04 — Luxury Album Page Turn 3D</option>
-                <option value="f06_living_collage">FX06 / FX11 — Editorial Split &amp; Mosaic</option>
-                <option value="f08_final_freeze">FX12 — Grand Thank You &amp; Final Hold</option>
-              </select>
-            </div>
-
             {/* Quote Editor */}
             <div>
               <label className="text-xs font-serif text-[#40322F] font-semibold mb-1 block">
@@ -275,6 +371,328 @@ export const InspectorPanel: React.FC = () => {
                 placeholder="Nhập câu trích dẫn..."
               />
             </div>
+
+            {/* ================= CHAPTER DURATION SECTION ================= */}
+            <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
+              <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold">
+                <Clock className="w-3.5 h-3.5 text-[#C93442]" />
+                <span>THỜI LƯỢNG CHƯƠNG</span>
+              </label>
+
+              {/* Mode Toggle: AUTO vs CUSTOM */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#FAF5EE] rounded-lg border border-[#C5A16E]/30">
+                <button
+                  type="button"
+                  onClick={() => updateChapter(activeChapterId, { mode: 'auto' })}
+                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
+                    activeChapter.mode !== 'custom'
+                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
+                      : 'text-[#40322F]/70 hover:text-[#40322F]'
+                  }`}
+                >
+                  TỰ ĐỘNG (AUTO)
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateChapter(activeChapterId, {
+                      mode: 'custom',
+                      durationOverride: activeChapter.durationOverride || calculatedAutoDuration,
+                    })
+                  }
+                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
+                    activeChapter.mode === 'custom'
+                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
+                      : 'text-[#40322F]/70 hover:text-[#40322F]'
+                  }`}
+                >
+                  TÙY CHỈNH (CUSTOM)
+                </button>
+              </div>
+
+              {activeChapter.mode !== 'custom' ? (
+                /* Auto mode display */
+                <div className="p-2.5 rounded bg-white border border-[#C5A16E]/20 text-xs">
+                  <div className="flex items-center justify-between text-[#40322F]">
+                    <span className="font-serif">Thời lượng tự tính:</span>
+                    <span className="font-mono font-bold text-[#C93442] text-sm">
+                      {calculatedAutoDuration} giây
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#40322F]/65 italic font-serif mt-1">
+                    Tự động tính theo {activeChapter.photos.length} bức ảnh và các phân cảnh.
+                  </p>
+                </div>
+              ) : (
+                /* Custom mode controls with presets [5, 10, 15, 20, 30, 45, 60, 90] */
+                <div className="p-3 rounded bg-white border border-[#C5A16E]/30 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-serif text-[#40322F]">Số giây mong muốn:</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="2"
+                        max="300"
+                        value={activeChapter.durationOverride || calculatedAutoDuration}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          updateChapter(activeChapterId, {
+                            durationOverride: val,
+                            mode: 'custom',
+                          });
+                        }}
+                        className="w-16 px-2 py-1 rounded bg-[#FAF5EE] border border-[#C5A16E]/40 text-xs font-mono font-bold text-[#40322F] text-center shadow-inner"
+                      />
+                      <span className="text-xs font-mono text-[#40322F]/70">giây</span>
+                    </div>
+                  </div>
+
+                  {/* 8 User-Requested Presets: 5s, 10s, 15s, 20s, 30s, 45s, 60s, 90s */}
+                  <div>
+                    <div className="text-[10px] font-serif text-[#40322F]/60 mb-1">Mức thời gian nhanh:</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[5, 10, 15, 20, 30, 45, 60, 90].map((sec) => (
+                        <button
+                          key={sec}
+                          type="button"
+                          onClick={() =>
+                            updateChapter(activeChapterId, {
+                              durationOverride: sec,
+                              mode: 'custom',
+                            })
+                          }
+                          className={`py-1 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
+                            activeChapter.durationOverride === sec
+                              ? 'bg-[#C93442] border-[#C93442] text-white font-bold'
+                              : 'bg-[#FAF5EE] border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF3EB]'
+                          }`}
+                        >
+                          {sec}s
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ================= SCENE LIST IN CHAPTER (DANH SÁCH CẢNH TRONG CHƯƠNG) ================= */}
+            <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
+              <label className="flex items-center justify-between text-xs font-serif text-[#40322F] font-semibold">
+                <div className="flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-[#C93442]" />
+                  <span>DANH SÁCH CẢNH TRONG CHƯƠNG</span>
+                </div>
+                <span className="text-[10px] font-mono text-stone-500">{chapterScenes.length} cảnh</span>
+              </label>
+
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {chapterScenes.map((scene, idx) => {
+                  const isOverridden = activeChapter.sceneDurationOverrides?.[scene.id] !== undefined;
+                  const currentDur = scene.duration;
+
+                  return (
+                    <div
+                      key={scene.id}
+                      className="p-2.5 rounded bg-white border border-[#C5A16E]/25 shadow-sm space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-serif font-bold text-[#40322F] truncate max-w-[170px]">
+                          {getSceneDisplayName(scene.type, idx + 1)}
+                        </span>
+                        <span className="text-[10px] font-mono text-[#C5A16E] bg-[#FAF5EE] px-1.5 py-0.5 rounded">
+                          {scene.photos.length} ảnh
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] font-serif text-[#40322F]/70">Thời lượng cảnh:</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSceneDurationChange(scene.id, currentDur - 0.5)}
+                            className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="1"
+                            max="60"
+                            value={currentDur}
+                            onChange={(e) =>
+                              handleSceneDurationChange(scene.id, parseFloat(e.target.value) || 1)
+                            }
+                            className={`w-12 px-1 py-0.5 text-center text-[11px] font-mono font-bold rounded border ${
+                              isOverridden
+                                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                : 'bg-white border-[#C5A16E]/30 text-[#40322F]'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSceneDurationChange(scene.id, currentDur + 0.5)}
+                            className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center cursor-pointer"
+                          >
+                            +
+                          </button>
+                          <span className="text-[10px] font-mono text-stone-500">s</span>
+
+                          {isOverridden && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetSceneDuration(scene.id)}
+                              className="ml-1 text-stone-400 hover:text-rose-600 cursor-pointer"
+                              title="Khôi phục mặc định"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ================= CHAPTER 2 SPECIAL CONTROLS ================= */}
+            {activeChapter.chapterIndex === 2 && (
+              <div className="space-y-4 pt-2 border-t border-[#C5A16E]/20">
+                {/* 1. Filmstrip Speed Control */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold">
+                    <Gauge className="w-3.5 h-3.5 text-[#C93442]" />
+                    <span>TỐC ĐỘ CUỘN PHIM</span>
+                  </label>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'auto', label: 'TỰ ĐỘNG' },
+                      { id: 'slow', label: 'CHẬM' },
+                      { id: 'medium', label: 'VỪA' },
+                      { id: 'fast', label: 'NHANH' },
+                      { id: 'custom', label: 'TÙY CHỈNH' },
+                    ].map((sp) => (
+                      <button
+                        key={sp.id}
+                        type="button"
+                        onClick={() =>
+                          updateChapter(activeChapterId, {
+                            filmstripSpeedMode: sp.id as any,
+                          })
+                        }
+                        className={`py-1 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
+                          currentSpeedMode === sp.id
+                            ? 'bg-[#C93442] border-[#C93442] text-white font-bold shadow-sm'
+                            : 'bg-white border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF5EE]'
+                        }`}
+                      >
+                        {sp.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {currentSpeedMode === 'custom' && (
+                    <div className="flex items-center justify-between p-2 rounded bg-white border border-[#C5A16E]/30 text-xs">
+                      <span className="font-serif text-[#40322F]">Tốc độ tùy chọn:</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="20"
+                          max="150"
+                          value={activeChapter.filmstripSpeedCustom || 48}
+                          onChange={(e) =>
+                            updateChapter(activeChapterId, {
+                              filmstripSpeedCustom: parseInt(e.target.value) || 48,
+                            })
+                          }
+                          className="w-14 px-1.5 py-0.5 rounded bg-[#FAF5EE] border border-[#C5A16E]/40 text-xs font-mono font-bold text-center"
+                        />
+                        <span className="text-[10px] font-mono text-stone-500">px/s</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-[#40322F]/70 font-serif italic bg-white p-2 rounded border border-[#C5A16E]/20">
+                    ⏱️ Thời gian quan sát ước tính: <strong>~{estimatedPhotoObservationSec}s</strong> / ảnh.
+                  </div>
+                </div>
+
+                {/* 2. Visual Toggles (User explicit directive) */}
+                <div className="space-y-2 p-3 rounded bg-white border border-[#C5A16E]/30 shadow-sm">
+                  <label className="text-xs font-serif text-[#40322F] font-bold block mb-1">
+                    TÙY CHỌN HIỂN THỊ CHƯƠNG 2
+                  </label>
+
+                  {/* Show Center Title */}
+                  <label className="flex items-center justify-between text-xs font-serif text-[#40322F] cursor-pointer py-0.5">
+                    <span>Hiện tiêu đề "Những ngày bên nhau"</span>
+                    <input
+                      type="checkbox"
+                      checked={activeChapter.showCenterTitle !== false}
+                      onChange={(e) =>
+                        updateChapter(activeChapterId, { showCenterTitle: e.target.checked })
+                      }
+                      className="accent-[#C93442] w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  {/* Show Center Couple Names (DEFAULT OFF) */}
+                  <label className="flex items-center justify-between text-xs font-serif text-[#40322F] cursor-pointer py-0.5">
+                    <span>Hiện tên Tuấn Hùng &amp; Sao Mai ở giữa</span>
+                    <input
+                      type="checkbox"
+                      checked={activeChapter.showCenterNames === true}
+                      onChange={(e) =>
+                        updateChapter(activeChapterId, { showCenterNames: e.target.checked })
+                      }
+                      className="accent-[#C93442] w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  {/* Show Frame Names (DEFAULT OFF) */}
+                  <label className="flex items-center justify-between text-xs font-serif text-[#40322F] cursor-pointer py-0.5">
+                    <span>Hiện tên trên từng khung ảnh 35mm</span>
+                    <input
+                      type="checkbox"
+                      checked={activeChapter.showFrameNames === true}
+                      onChange={(e) =>
+                        updateChapter(activeChapterId, { showFrameNames: e.target.checked })
+                      }
+                      className="accent-[#C93442] w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  {/* Show Metadata 35mm (DEFAULT OFF) */}
+                  <label className="flex items-center justify-between text-xs font-serif text-[#40322F] cursor-pointer py-0.5">
+                    <span>Hiện metadata "35MM • #Frame"</span>
+                    <input
+                      type="checkbox"
+                      checked={activeChapter.showMetadata35mm === true}
+                      onChange={(e) =>
+                        updateChapter(activeChapterId, { showMetadata35mm: e.target.checked })
+                      }
+                      className="accent-[#C93442] w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  {/* Show Quote */}
+                  <label className="flex items-center justify-between text-xs font-serif text-[#40322F] cursor-pointer py-0.5">
+                    <span>Hiện câu trích dẫn lãng mạn</span>
+                    <input
+                      type="checkbox"
+                      checked={activeChapter.showQuote !== false}
+                      onChange={(e) =>
+                        updateChapter(activeChapterId, { showQuote: e.target.checked })
+                      }
+                      className="accent-[#C93442] w-4 h-4 rounded"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
 
             {/* Chapter 7 Ending Photo Section */}
             {activeChapter.chapterIndex === 7 && (
@@ -323,116 +741,6 @@ export const InspectorPanel: React.FC = () => {
                 )}
               </div>
             )}
-
-            {/* Duration Mode & Controls */}
-            <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
-              <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold">
-                <Clock className="w-3.5 h-3.5 text-[#C93442]" />
-                <span>Thời lượng chương</span>
-              </label>
-
-              {/* Mode Toggle: AUTO vs CUSTOM */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#FAF5EE] rounded-lg border border-[#C5A16E]/30">
-                <button
-                  type="button"
-                  onClick={() => updateChapter(activeChapterId, { mode: 'auto' })}
-                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
-                    activeChapter.mode !== 'custom'
-                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
-                      : 'text-[#40322F]/70 hover:text-[#40322F]'
-                  }`}
-                >
-                  TỰ ĐỘNG (AUTO)
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateChapter(activeChapterId, {
-                      mode: 'custom',
-                      durationOverride: activeChapter.durationOverride || calculatedAutoDuration,
-                    })
-                  }
-                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
-                    activeChapter.mode === 'custom'
-                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
-                      : 'text-[#40322F]/70 hover:text-[#40322F]'
-                  }`}
-                >
-                  TÙY CHỈNH (CUSTOM)
-                </button>
-              </div>
-
-              {activeChapter.mode !== 'custom' ? (
-                /* Auto mode display */
-                <div className="p-2.5 rounded bg-white border border-[#C5A16E]/20 text-xs">
-                  <div className="flex items-center justify-between text-[#40322F]">
-                    <span className="font-serif">Thời lượng thực tế:</span>
-                    <span className="font-mono font-bold text-[#C93442] text-sm">
-                      {calculatedAutoDuration} giây
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#40322F]/65 italic font-serif mt-1">
-                    Tự động tính theo {activeChapter.photos.length} bức ảnh và bố cục từng cảnh.
-                  </p>
-                </div>
-              ) : (
-                /* Custom mode controls */
-                <div className="p-2.5 rounded bg-white border border-[#C5A16E]/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-serif text-[#40322F]">Số giây sử dụng:</span>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min="2"
-                        max="300"
-                        value={activeChapter.durationOverride || calculatedAutoDuration}
-                        onChange={(e) => {
-                          const val = Math.max(1, parseInt(e.target.value) || 1);
-                          updateChapter(activeChapterId, {
-                            durationOverride: val,
-                            mode: 'custom',
-                          });
-                        }}
-                        className="w-16 px-2 py-1 rounded bg-white border border-[#C5A16E]/40 text-xs font-mono font-bold text-[#40322F] text-center shadow-inner"
-                      />
-                      <span className="text-xs font-mono text-[#40322F]/70">giây</span>
-                    </div>
-                  </div>
-
-                  {/* Quick Preset Buttons */}
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <span className="text-[10px] font-serif text-[#40322F]/60">Nhanh:</span>
-                    {[20, 30, 45, 60, 90].map((sec) => (
-                      <button
-                        key={sec}
-                        type="button"
-                        onClick={() =>
-                          updateChapter(activeChapterId, {
-                            durationOverride: sec,
-                            mode: 'custom',
-                          })
-                        }
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
-                          activeChapter.durationOverride === sec
-                            ? 'bg-[#C93442] border-[#C93442] text-white font-bold'
-                            : 'bg-[#FAF5EE] border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF3EB]'
-                        }`}
-                      >
-                        {sec}s
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Warning if duration is too short */}
-                  {activeChapter.photos.length > 0 &&
-                    (activeChapter.durationOverride || 0) < activeChapter.photos.length * 1.5 && (
-                      <div className="text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 font-serif leading-tight">
-                        ⚠️ Thời lượng khá ngắn cho {activeChapter.photos.length} ảnh. Khuyến nghị tối thiểu {Math.ceil(activeChapter.photos.length * 2)}s để khách xem trọn vẹn.
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
@@ -451,69 +759,53 @@ export const InspectorPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsEndingPickerOpen(false)}
-                className="p-1 rounded-full text-[#40322F]/60 hover:text-[#C93442] hover:bg-[#FAF3EB]"
+                className="p-1 rounded-full hover:bg-black/5 text-[#40322F]/60 hover:text-[#40322F] cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-4">
-              <p className="text-xs font-serif text-[#40322F]/80 italic">
-                Nhấp vào bất kỳ bức ảnh nào từ 7 chương để đặt làm bức ảnh đóng băng vĩnh cửu kết thúc bộ phim:
-              </p>
-
-              {project.chapters.map((ch) => {
-                if (ch.photos.length === 0) return null;
+            <div className="p-4 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3 flex-1 bg-[#FAF5EE]/40">
+              {allProjectPhotos.map((photo) => {
+                const isSelected = project.endingPhotoId === photo.id;
                 return (
-                  <div key={ch.id} className="space-y-1.5">
-                    <div className="text-xs font-serif font-bold text-[#40322F] border-b border-[#C5A16E]/20 pb-0.5">
-                      {ch.vietnameseTitle} ({ch.photos.length} ảnh)
+                  <div
+                    key={photo.id}
+                    onClick={() => {
+                      setEndingPhoto({ endingPhotoId: photo.id });
+                      setIsEndingPickerOpen(false);
+                    }}
+                    className={`group relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-[#C93442] ring-2 ring-[#C93442]/40 shadow-lg scale-95'
+                        : 'border-[#C5A16E]/30 hover:border-[#C93442] hover:shadow-md'
+                    }`}
+                  >
+                    <img
+                      src={photo.thumbnail || photo.url}
+                      alt={photo.title || 'Wedding moment'}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80" />
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5 text-[10px] text-white font-serif truncate">
+                      <div className="font-semibold truncate">{photo.title || 'Khoảnh khắc'}</div>
+                      <div className="text-amber-200 text-[9px] truncate">{photo.chapterTitle}</div>
                     </div>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                      {ch.photos.map((p) => {
-                        const isCurrent = project.endingPhotoId === p.id;
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => {
-                              setEndingPhoto({ endingPhotoId: p.id });
-                              setIsEndingPickerOpen(false);
-                            }}
-                            className={`group relative aspect-square rounded overflow-hidden border cursor-pointer transition-all ${
-                              isCurrent
-                                ? 'border-[#C93442] ring-2 ring-[#C93442] shadow-md'
-                                : 'border-[#C5A16E]/30 hover:border-[#C93442] hover:scale-105'
-                            }`}
-                          >
-                            <img
-                              src={p.thumbnail || p.url}
-                              alt={p.title || 'Photo'}
-                              className="w-full h-full object-cover"
-                            />
-                            {isCurrent && (
-                              <div className="absolute inset-0 bg-[#C93442]/30 flex items-center justify-center">
-                                <div className="bg-[#C93442] text-white p-1 rounded-full shadow">
-                                  <Check className="w-3.5 h-3.5" />
-                                </div>
-                              </div>
-                            )}
-                            <div className="absolute bottom-0 inset-x-0 bg-black/50 text-[9px] text-white px-1 py-0.5 truncate">
-                              {p.title || `Ảnh ${p.order + 1}`}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#C93442] text-white flex items-center justify-center shadow">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <div className="p-3 border-t border-[#C5A16E]/20 flex justify-end bg-white/70">
+            <div className="p-3 border-t border-[#C5A16E]/20 bg-white/70 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsEndingPickerOpen(false)}
-                className="px-4 py-1.5 rounded-full border border-[#C5A16E]/30 text-xs font-serif text-[#40322F] hover:bg-[#FAF3EB]"
+                className="px-4 py-1.5 rounded-lg bg-[#C93442] text-white text-xs font-serif font-semibold cursor-pointer"
               >
                 Đóng
               </button>

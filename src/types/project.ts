@@ -46,6 +46,23 @@ export interface ChapterConfig {
   photos: PhotoItem[];
   musicTrackId?: string;
   accentQuote?: string;
+
+  // Granular Scene & Presentation Controls
+  sceneDurationOverrides?: Record<string, number>;
+  filmstripSpeedMode?: 'auto' | 'slow' | 'medium' | 'fast' | 'custom';
+  filmstripSpeedCustom?: number;
+
+  // Chapter 2 Visual Elegance Toggles (User Requested)
+  showCenterTitle?: boolean; // Default true
+  showCenterNames?: boolean; // Default false (User explicit directive)
+  showFrameNames?: boolean;  // Default false (User explicit directive)
+  showMetadata35mm?: boolean;// Default false (User explicit directive)
+  showQuote?: boolean;       // Default true
+
+  // Per-Chapter Audio Settings
+  musicVolume?: number;      // 0.0 to 1.0 (default: 0.85)
+  musicLoop?: boolean;       // default: true
+  musicStartOffset?: number; // start offset in seconds
 }
 
 export interface AudioTrack {
@@ -73,6 +90,12 @@ export interface GlobalSettings {
   enableVignette: boolean;
   enableSprockets: boolean;
   filmColorTone: 'warm_classic' | 'burgundy_luxe' | 'monochrome_gold' | 'natural';
+
+  // Performance & Audio Architecture
+  performanceMode?: 'balanced' | 'high_performance'; // Balanced is standard luxury, High Performance reduces heavy filters
+  audioMode?: 'global' | 'per_chapter'; // Global: 1 song throughout; Per-Chapter: dedicated track per chapter
+  crossfadeDuration?: number; // Crossfade in seconds (default: 0.8s, range: 0.2 to 2.0s)
+  loopGlobalAudio?: boolean;  // Loop global song if shorter than movie (default: true)
 }
 
 export interface WeddingProject {
