@@ -78,10 +78,21 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
     applyMorph(progress);
   }, [progress, applyMorph]);
 
-  if (!photo) {
+  if (!photo || !photo.url) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa chọn ảnh Hero
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-white shadow-sm">
+          <span className="font-serif text-2xl text-[#C93442] italic">III</span>
+        </div>
+        <h2 className="font-serif text-2xl font-medium text-[#40322F]">
+          {title || 'LỜI CẦU HÔN'}
+        </h2>
+        <p className="text-xs text-[#C5A16E] italic font-serif max-w-md">
+          "{quote}"
+        </p>
+        <span className="text-[11px] text-[#40322F]/60 font-mono">
+          (Thêm ảnh vào public/gallery/03-proposal/)
+        </span>
       </div>
     );
   }
@@ -100,13 +111,16 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
         className="relative z-10 w-[82vw] max-w-[1100px] h-[72vh] max-h-[680px] p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg preserve-3d will-change-transform flex flex-col md:flex-row items-center gap-6"
       >
         {/* Photo Container */}
-        <div className="w-full md:w-3/5 h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative">
+        <div className="w-full md:w-3/5 h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative flex items-center justify-center">
           <img
-            src={photo.url}
+            src={photo.displayUrl || photo.url}
             alt={photo.title || 'Proposal Hero'}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${photo.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
+            style={{
+              objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+            }}
           />
-          <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
+          <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
         </div>
 
         {/* Narrative Sidecard */}

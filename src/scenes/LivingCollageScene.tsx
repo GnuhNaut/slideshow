@@ -20,8 +20,28 @@ export const LivingCollageScene: React.FC<LivingCollageSceneProps> = ({
   const photos = scene.photos;
   const count = photos.length;
 
+  // Empty state guard
+  if (count === 0) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EC] to-[#F5EDE1] p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-white shadow-sm">
+          <span className="font-serif text-2xl text-[#C93442] italic">◈</span>
+        </div>
+        <h2 className="font-serif text-2xl font-medium text-[#40322F]">
+          {scene.chapterTitle || 'BỘ SƯU TẬP ẢNH'}
+        </h2>
+        <p className="text-xs text-[#C5A16E] italic font-serif max-w-md">
+          {scene.config.quote || 'Khoảnh khắc thiêng liêng khi hai trái tim chung một nhịp đập.'}
+        </p>
+        <span className="text-[11px] text-[#40322F]/60 font-mono">
+          (Thêm ảnh vào thư mục tương ứng trong public/gallery/)
+        </span>
+      </div>
+    );
+  }
+
   // Single photo: Cinematic Mask Reveal
-  if (count <= 1) {
+  if (count === 1) {
     return (
       <FX09_CinematicMaskReveal
         photo={photos[0]}

@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cache and generated media derivatives
+.cache/
+public/gallery/_optimized/

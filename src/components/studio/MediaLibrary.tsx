@@ -176,6 +176,21 @@ export const MediaLibrary: React.FC = () => {
           <span className="text-[8px] text-[#40322F]/50 mt-0.5">JPEG, PNG, WebP</span>
         </div>
 
+        {/* Empty Chapter Helper Note */}
+        {activeChapter.photos.length === 0 && (
+          <div className="flex flex-col justify-center px-3 py-2 text-left">
+            <span className="text-xs font-serif font-medium text-[#40322F]">
+              Chưa có ảnh trong chương này
+            </span>
+            <span className="text-[10px] text-[#40322F]/70 font-mono mt-0.5">
+              Chép ảnh vào thư mục: <strong className="text-[#C93442]">public/gallery/{activeChapter.folderName || '...'}/</strong>
+            </span>
+            <span className="text-[10px] text-[#C5A16E] italic mt-0.5">
+              (Gợi ý: đặt tên 001.jpg, 002.jpg... Hệ thống sẽ tự nhận dạng theo thứ tự số tự nhiên)
+            </span>
+          </div>
+        )}
+
         {/* Chapter Photo Cards */}
         {activeChapter.photos.map((photo, index) => {
           const isSelected = photo.id === selectedPhotoId;

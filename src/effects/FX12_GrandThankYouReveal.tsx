@@ -122,13 +122,20 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
           ref={leftPhotoRef}
           className="hidden md:flex w-[28%] h-[68vh] p-3 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex-col"
         >
-          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
-            {leftPhoto && (
+          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
+            {leftPhoto && leftPhoto.url ? (
               <img
-                src={leftPhoto.url}
+                src={leftPhoto.displayUrl || leftPhoto.url}
                 alt="Thank You Left"
-                className="w-full h-full object-cover"
+                className={`w-full h-full ${leftPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
+                style={{
+                  objectPosition: `${leftPhoto.focalPoint?.x ?? 50}% ${leftPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-[#C5A16E] italic font-serif">
+                Wedding Moment
+              </div>
             )}
           </div>
         </div>
@@ -179,13 +186,20 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
           ref={rightPhotoRef}
           className="hidden md:flex w-[28%] h-[68vh] p-3 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex-col"
         >
-          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
-            {rightPhoto && (
+          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center">
+            {rightPhoto && rightPhoto.url ? (
               <img
-                src={rightPhoto.url}
+                src={rightPhoto.displayUrl || rightPhoto.url}
                 alt="Thank You Right"
-                className="w-full h-full object-cover"
+                className={`w-full h-full ${rightPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
+                style={{
+                  objectPosition: `${rightPhoto.focalPoint?.x ?? 50}% ${rightPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-[#C5A16E] italic font-serif">
+                Wedding Moment
+              </div>
             )}
           </div>
         </div>

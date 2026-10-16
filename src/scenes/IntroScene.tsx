@@ -75,21 +75,39 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
       {/* Main Split / Hero Composition */}
       <div className="relative z-10 w-full max-w-[1300px] h-[78vh] flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-14 px-8 preserve-3d">
         {/* Left Side: Floating 3D Wedding Hero Frame */}
-        {heroPhoto && (
-          <div
-            ref={heroCardRef}
-            className="w-full md:w-[48%] h-[55vh] md:h-[72vh] p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
-          >
-            <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative">
+        <div
+          ref={heroCardRef}
+          className="w-full md:w-[48%] h-[55vh] md:h-[72vh] p-4 bg-white border border-[#C5A16E]/40 rounded-sm luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
+        >
+          <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] relative flex items-center justify-center">
+            {heroPhoto && heroPhoto.url ? (
               <img
-                src={heroPhoto.url}
+                src={heroPhoto.displayUrl || heroPhoto.url}
                 alt={heroPhoto.title || 'Wedding Hero'}
-                className="w-full h-full object-cover"
+                className={`w-full h-full ${heroPhoto.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
+                style={{
+                  objectPosition: `${heroPhoto.focalPoint?.x ?? 50}% ${heroPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
-              <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-[#FAF3EB] shadow-inner">
+                  <span className="font-serif text-2xl text-[#C93442] italic">H&amp;M</span>
+                </div>
+                <div className="font-serif text-lg font-medium text-[#40322F] tracking-wider uppercase">
+                  {scene.config?.textSubtitle || 'Tuấn Hùng & Sao Mai'}
+                </div>
+                <p className="text-xs text-[#C5A16E] italic font-serif">
+                  Chương I: Lời Mở Đầu
+                </p>
+                <span className="text-[10px] text-[#40322F]/60 font-mono">
+                  (Thêm ảnh vào public/gallery/01-intro/)
+                </span>
+              </div>
+            )}
+            <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
           </div>
-        )}
+        </div>
 
         {/* Right Side: Editorial Typography */}
         <div className="w-full md:w-[52%] flex flex-col items-center md:items-start text-center md:text-left z-20">

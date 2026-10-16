@@ -1,6 +1,5 @@
 import { WeddingProject, ChapterConfig } from '../types/project';
 import { generateDefaultPhotos, createCinematicSvgPhoto } from '../utils/sampleMedia';
-
 export function createInitialWeddingProject(): WeddingProject {
   const introPhotos = [
     {

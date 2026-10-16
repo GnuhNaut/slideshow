@@ -2,13 +2,14 @@ import { create } from 'zustand';
 import { WeddingProject, ChapterConfig, PhotoItem, AudioTrack, GlobalSettings } from '../types/project';
 import { CompiledTimeline, PlaybackState } from '../types/timeline';
 import { createInitialWeddingProject } from '../project/defaultProject';
+import { filesystemProject } from '../generated/galleryManifest';
 import { compileProjectTimeline } from '../timeline/compiler';
 import { db } from '../storage/db';
 import { masterClock } from '../player/PlaybackClock';
 import { mediaManager } from '../media/mediaManager';
 import { motionRuntime } from '../motion/MotionRuntime';
 
-export type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved';
+export type SaveStatus = 'saved' | 'saving' | 'error' | 'unsaved' | 'local_preview';
 
 interface WeddingStore {
   // Project State
@@ -72,7 +73,9 @@ interface WeddingStore {
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useWeddingStore = create<WeddingStore>((set, get) => {
-  const initialProj = createInitialWeddingProject();
+  const initialProj = filesystemProject?.contentSource === 'filesystem'
+    ? filesystemProject
+    : createInitialWeddingProject();
   const initialTimeline = compileProjectTimeline(initialProj);
 
   // Initialize master clock
@@ -86,7 +89,8 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
   }
 
   function triggerAutosave() {
-    set({ saveStatus: 'unsaved' });
+    const isFs = get().project.contentSource === 'filesystem';
+    set({ saveStatus: isFs ? 'local_preview' : 'unsaved' });
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
       get().saveProjectToDb();
@@ -120,20 +124,18 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
 
     initStore: async () => {
       try {
-        const storedProjects = await db.projects.toArray();
-        if (storedProjects && storedProjects.length > 0) {
-          const rawProj = storedProjects[0];
-          // Restore media blobs from IndexedDB!
-          const loadedProj = await mediaManager.restoreProjectMedia(rawProj);
-          const newTimeline = compileProjectTimeline(loadedProj);
-
+        if (initialProj.contentSource === 'filesystem') {
+          // FILESYSTEM REPOSITORY MODE IS PRIMARY:
+          // Files from repository & config/wedding.config.json take absolute precedence.
+          // Never allow stale IndexedDB browser projects to overwrite repository files on deploy.
+          const newTimeline = compileProjectTimeline(initialProj);
           masterClock.init(newTimeline.totalDuration, 0);
 
           set({
-            project: loadedProj,
+            project: initialProj,
             timeline: newTimeline,
-            activeChapterId: loadedProj.chapters[0]?.id || 'ch1_intro',
-            selectedPhotoId: loadedProj.chapters[0]?.photos[0]?.id || null,
+            activeChapterId: initialProj.chapters[0]?.id || 'ch1_intro',
+            selectedPhotoId: initialProj.chapters[0]?.photos[0]?.id || null,
             saveStatus: 'saved',
             playback: {
               ...get().playback,
@@ -143,8 +145,31 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
             },
           });
         } else {
-          await db.projects.put(initialProj);
-          set({ saveStatus: 'saved' });
+          const storedProjects = await db.projects.toArray();
+          if (storedProjects && storedProjects.length > 0) {
+            const rawProj = storedProjects[0];
+            const loadedProj = await mediaManager.restoreProjectMedia(rawProj);
+            const newTimeline = compileProjectTimeline(loadedProj);
+
+            masterClock.init(newTimeline.totalDuration, 0);
+
+            set({
+              project: loadedProj,
+              timeline: newTimeline,
+              activeChapterId: loadedProj.chapters[0]?.id || 'ch1_intro',
+              selectedPhotoId: loadedProj.chapters[0]?.photos[0]?.id || null,
+              saveStatus: 'saved',
+              playback: {
+                ...get().playback,
+                totalDuration: newTimeline.totalDuration,
+                currentScene: newTimeline.scenes[0] || null,
+                currentChapter: newTimeline.chaptersMeta[0] || null,
+              },
+            });
+          } else {
+            await db.projects.put(initialProj);
+            set({ saveStatus: 'saved' });
+          }
         }
       } catch (err) {
         console.warn('Could not read from IndexedDB, using in-memory defaults:', err);
@@ -170,6 +195,20 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
     },
 
     saveProjectToDb: async () => {
+      const isFs = get().project.contentSource === 'filesystem';
+      if (isFs) {
+        try {
+          const proj = get().project;
+          await db.projects.put({
+            ...proj,
+            updatedAt: Date.now(),
+          });
+          set({ saveStatus: 'local_preview' });
+        } catch {
+          // non-critical
+        }
+        return;
+      }
       set({ saveStatus: 'saving' });
       try {
         const proj = get().project;

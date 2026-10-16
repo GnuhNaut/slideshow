@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contentSource": "filesystem",
+  "project": {
+    "title": "WEDDING FILM STORY",
+    "groomName": "Tuấn Hùng",
+    "brideName": "Sao Mai",
+    "weddingDate": "19.10.2026",
+    "lunarDate": "09.09 Bính Ngọ",
+    "venueName": "White Palace Convention Center",
+    "thankYouMessage": "Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.",
+    "openingPhoto": "01-intro/001.jpg",
+    "endingPhoto": "07-final/001.jpg"
+  },
+  "display": {
+    "aspectRatio": "16:9",
+    "performanceMode": "balanced",
+    "defaultCropMode": "contain"
+  },
+  "audio": {
+    "mode": "global",
+    "globalFile": "global/background.mp3",
+    "globalVolume": 0.85,
+    "loopGlobal": true,
+    "crossfadeSeconds": 0.8,
+    "perChapter": {
+      "01-intro": "01-intro/music.mp3",
+      "02-memories": "02-memories/music.mp3",
+      "03-proposal": "03-proposal/music.mp3",
+      "04-family": "04-family/music.mp3",
+      "05-wedding": "05-wedding/music.mp3",
+      "06-thanks": "06-thanks/music.mp3",
+      "07-final": "07-final/music.mp3"
+    }
+  },
+  "chapters": {
+    "01-intro": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 14
+    },
+    "02-memories": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 60,
+      "showCenterTitle": true,
+      "showCenterNames": false,
+      "showFrameNames": false,
+      "showMetadata35mm": false,
+      "cropMode": "contain",
+      "filmstripSpeedMode": "auto"
+    },
+    "03-proposal": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 15
+    },
+    "04-family": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 30,
+      "cropMode": "contain"
+    },
+    "05-wedding": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 90,
+      "cropMode": "contain"
+    },
+    "06-thanks": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 14
+    },
+    "07-final": {
+      "enabled": true,
+      "mode": "custom",
+      "durationSeconds": 2
+    }
+  },
+  "photoOverrides": {}
+}

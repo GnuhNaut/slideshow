@@ -55,10 +55,21 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
     applyParallax(progress);
   }, [progress, applyParallax]);
 
-  if (!photo) {
+  if (!photo || !photo.url) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Chưa có ảnh cho Elegant Parallax
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#FFF9F2] via-[#FAF3EB] to-[#F3E9DD] p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full border border-[#C5A16E]/40 flex items-center justify-center bg-white shadow-sm">
+          <span className="font-serif text-2xl text-[#C93442] italic">V</span>
+        </div>
+        <h2 className="font-serif text-2xl font-medium text-[#40322F]">
+          HẠNH PHÚC TRỌN VẸN
+        </h2>
+        <p className="text-xs text-[#C5A16E] italic font-serif max-w-md">
+          "{accentQuote}"
+        </p>
+        <span className="text-[11px] text-[#40322F]/60 font-mono">
+          (Thêm ảnh vào public/gallery/05-wedding/)
+        </span>
       </div>
     );
   }
@@ -76,11 +87,14 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
         ref={midRef}
         className="relative z-20 w-[84vw] max-w-[1150px] h-[76vh] max-h-[720px] p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg preserve-3d will-change-transform flex flex-col"
       >
-        <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative">
+        <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative flex items-center justify-center">
           <img
-            src={photo.url}
+            src={photo.displayUrl || photo.url}
             alt={photo.title || 'Parallax Hero'}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${photo.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
+            style={{
+              objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+            }}
           />
         </div>
       </div>

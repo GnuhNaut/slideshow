@@ -127,7 +127,10 @@ function compileChapterScenes(
       const duration = typeof overrideDur === 'number' && overrideDur > 0
         ? overrideDur
         : (isCustom ? Math.max(3, customDuration) : 14);
-      const heroPhoto = photos[0];
+      const allProjectPhotos = project.chapters.flatMap((c) => c.photos || []);
+      const heroPhoto =
+        (project.openingPhotoId ? allProjectPhotos.find((p) => p?.id === project.openingPhotoId) : null) ||
+        photos[0];
       scenes.push({
         id: sceneId,
         chapterId: chapter.id,
@@ -198,8 +201,8 @@ function compileChapterScenes(
 
     case 3: {
       // CHƯƠNG 3 — LỜI CẦU HÔN (Hero Frame Morph Sequence)
-      const heroPhoto = photos.find((p) => p.isHero) || photos[0];
-      const otherPhotos = photos.filter((p) => p.id !== heroPhoto?.id);
+      const heroPhoto = photos.find((p) => p?.isHero) || photos[0];
+      const otherPhotos = photos.filter((p) => p && p.id !== heroPhoto?.id);
 
       if (photos.length <= 1) {
         const duration = isCustom ? Math.max(2, customDuration) : 5.5;

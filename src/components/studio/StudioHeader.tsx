@@ -38,7 +38,32 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   const undoStack = useWeddingStore((s) => s.undoStack);
   const redoStack = useWeddingStore((s) => s.redoStack);
 
+  const isFilesystemMode = project.contentSource === 'filesystem';
+
   const renderSaveBadge = (status: SaveStatus) => {
+    if (isFilesystemMode) {
+      if (status === 'local_preview') {
+        return (
+          <span
+            className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-300 font-medium cursor-help"
+            title="Đang xem trước thay đổi trên trình duyệt này. Để lưu vĩnh viễn trên mọi máy, hãy sửa file config/wedding.config.json và đẩy lên GitHub."
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="hidden sm:inline">Xem trước cục bộ</span>
+          </span>
+        );
+      }
+      return (
+        <span
+          className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 font-medium cursor-help"
+          title="Nguồn dữ liệu từ thư mục dự án (Repository / Filesystem). Đồng bộ trên mọi máy tính."
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="hidden sm:inline">Đồng bộ từ Repository</span>
+        </span>
+      );
+    }
+
     switch (status) {
       case 'saved':
         return (
@@ -55,6 +80,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           </span>
         );
       case 'unsaved':
+      case 'local_preview':
         return (
           <span className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -91,10 +117,14 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xs md:text-sm font-serif font-bold text-[#40322F] tracking-wide">
-                STUDIO DỰNG PHIM V3
+                STUDIO DỰNG PHIM
               </h1>
-              <span className="text-[9px] font-mono text-[#C93442] px-1.5 py-0.5 rounded bg-[#FAF5EE] border border-[#C5A16E]/30 font-semibold" title="Bản phát hành chính thức">
-                v3.2.3-live
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border font-semibold ${
+                isFilesystemMode
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-[#FAF5EE] text-[#C93442] border-[#C5A16E]/30'
+              }`} title={isFilesystemMode ? 'Chế độ Repository (Filesystem)' : 'Chế độ Trình duyệt (Browser Edit)'}>
+                {isFilesystemMode ? 'FILESYSTEM' : 'BROWSER EDIT'}
               </span>
               {renderSaveBadge(saveStatus)}
             </div>

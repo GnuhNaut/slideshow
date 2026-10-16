@@ -16,8 +16,12 @@ export interface PhotoItem {
   chapterId: string;
   mediaId?: string; // Stable key in Dexie db.media
   title?: string;
-  url: string; // ObjectURL or data URL
+  url: string; // ObjectURL or static URL
   thumbnail?: string;
+  mediumUrl?: string; // Optimized for filmstrip & multi-photo grids
+  displayUrl?: string; // Optimized for full-screen presentation
+  originalUrl?: string; // Original uncompressed file
+  relativePath?: string; // e.g. 02-memories/001.jpg
   originalWidth: number;
   originalHeight: number;
   aspectRatio: number; // width / height
@@ -58,6 +62,10 @@ export interface ChapterConfig {
   showFrameNames?: boolean;  // Default false (User explicit directive)
   showMetadata35mm?: boolean;// Default false (User explicit directive)
   showQuote?: boolean;       // Default true
+
+  // Folder Gallery System
+  folderName?: string;       // e.g. '01-intro', '02-memories'
+  cropMode?: CropMode;       // Chapter-level default crop mode
 
   // Per-Chapter Audio Settings
   musicVolume?: number;      // 0.0 to 1.0 (default: 0.85)
@@ -101,6 +109,7 @@ export interface GlobalSettings {
 export interface WeddingProject {
   id: string;
   version: string;
+  contentSource?: 'filesystem' | 'indexeddb';
   title: string;
   groomName: string;
   brideName: string;

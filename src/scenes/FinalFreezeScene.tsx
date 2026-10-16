@@ -16,16 +16,16 @@ export const FinalFreezeScene: React.FC<FinalFreezeSceneProps> = ({ scene }) => 
       <div className="absolute inset-0 bg-radial from-[#C5A16E]/18 via-[#FFF9F2]/75 to-[#FFF9F2] pointer-events-none" />
 
       {/* Main Ending Photo: Pristine Full-Res Presentation Hold */}
-      {photo ? (
+      {photo && photo.url ? (
         <div className="relative z-10 w-[86vw] max-w-[1240px] max-h-[84vh] p-4 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg flex flex-col items-center">
           <div
             className="relative w-full overflow-hidden rounded-[2px] bg-[#FAF5EE]"
             style={{ maxHeight: '72vh' }}
           >
             <img
-              src={photo.url}
+              src={photo.displayUrl || photo.url}
               alt={photo.title || 'Our Forever Final Photo'}
-              className="w-full h-auto max-h-[70vh] object-contain mx-auto"
+              className={`w-full h-auto max-h-[70vh] ${photo.cropMode === 'cover' ? 'object-cover' : 'object-contain'} mx-auto`}
               style={{
                 objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
               }}
@@ -51,8 +51,20 @@ export const FinalFreezeScene: React.FC<FinalFreezeSceneProps> = ({ scene }) => 
           </div>
         </div>
       ) : (
-        <div className="text-sm text-[#C5A16E] italic font-serif">
-          Đang hiển thị ảnh kết thúc (Our Forever)
+        <div className="relative z-10 w-[86vw] max-w-[800px] p-8 bg-white rounded-md border border-[#C5A16E]/40 luxury-shadow-lg flex flex-col items-center text-center space-y-4">
+          <div className="w-20 h-20 rounded-full border-2 border-[#C5A16E]/40 flex items-center justify-center bg-[#FAF3EB] shadow-inner">
+            <span className="font-serif text-3xl text-[#C93442] italic">H&amp;M</span>
+          </div>
+          <h2 className="font-serif text-3xl font-medium text-[#40322F] tracking-wide">
+            TUẤN HÙNG &amp; SAO MAI
+          </h2>
+          <div className="w-16 h-[2px] bg-[#C5A16E]" />
+          <p className="text-sm tracking-[0.25em] text-[#C5A16E] font-serif font-medium uppercase">
+            OUR FOREVER • 19.10.2026
+          </p>
+          <span className="text-[11px] text-[#40322F]/60 font-mono">
+            (Thêm ảnh vào public/gallery/07-final/ hoặc cấu hình "endingPhoto" trong wedding.config.json)
+          </span>
         </div>
       )}
     </div>
