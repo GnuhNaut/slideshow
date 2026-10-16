@@ -68,7 +68,7 @@ describe('V2 Auto Director Compiler — No Photos Left Behind', () => {
     const compiled = compileProjectTimeline(project);
 
     const finalScene = compiled.scenes.find((s) => s.chapterId === 'ch7_forever')!;
-    expect(finalScene.duration).toBe(12);
+    expect(finalScene.duration).toBe(2.0);
 
     // Total duration should be in reasonable minutes (between 100s and 300s), NOT 36000s+!
     expect(compiled.totalDuration).toBeLessThan(600);

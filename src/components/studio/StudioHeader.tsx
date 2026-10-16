@@ -90,6 +90,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               <h1 className="text-xs md:text-sm font-serif font-bold text-[#40322F] tracking-wide">
                 STUDIO DỰNG PHIM V3
               </h1>
+              <span className="text-[9px] font-mono text-[#C93442] px-1.5 py-0.5 rounded bg-[#FAF5EE] border border-[#C5A16E]/30 font-semibold" title="Bản phát hành chính thức">
+                v3.2.3-live
+              </span>
               {renderSaveBadge(saveStatus)}
             </div>
             <p className="text-[10px] text-[#40322F]/70 font-serif italic truncate max-w-[200px] sm:max-w-none">

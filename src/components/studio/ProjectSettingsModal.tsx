@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { X, Music, Heart, Upload } from 'lucide-react';
+import { X, Music, Heart, Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useWeddingStore } from '../../app/store';
+import { mediaManager } from '../../media/mediaManager';
+import { db } from '../../storage/db';
+import { AudioTrack } from '../../types/project';
 
 interface ProjectSettingsModalProps {
   isOpen: boolean;
@@ -20,6 +23,10 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({ isOp
   const [thankYou, setThankYou] = useState(project.thankYouMessage);
   const [enableGrain, setEnableGrain] = useState(project.globalSettings.enableFilmGrain);
   const [enableVignette, setEnableVignette] = useState(project.globalSettings.enableVignette);
+
+  const [isAudioUploading, setIsAudioUploading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioSuccess, setAudioSuccess] = useState<string | null>(null);
 
   const audioInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,24 +48,49 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({ isOp
     onClose();
   };
 
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
-    addAudioTrack({
-      id: `audio_${Date.now()}`,
-      name: file.name.replace(/\.[^/.]+$/, ''),
-      url,
-      duration: 180,
-      startTime: 0,
-      endTime: 180,
-      volume: 0.85,
-      fadeInDuration: 3,
-      fadeOutDuration: 4,
-      isGlobal: true,
-    });
-    e.target.value = '';
+    // Validate audio file format
+    const isAudioType = file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name);
+    if (!isAudioType) {
+      setAudioError('Vui lòng chọn file âm thanh hợp lệ (MP3, WAV, M4A, AAC).');
+      return;
+    }
+
+    try {
+      setIsAudioUploading(true);
+      setAudioError(null);
+      setAudioSuccess(null);
+
+      // Persist binary into IndexedDB db.audio and obtain track with stable mediaId
+      const track = await mediaManager.saveAudioFile(file, project.id);
+      addAudioTrack(track);
+
+      // Trigger immediate atomic save to IndexedDB
+      await useWeddingStore.getState().saveProjectToDb();
+      setAudioSuccess(`Đã lưu nhạc "${file.name}" bền vững vào bộ nhớ trình duyệt.`);
+    } catch (err: any) {
+      console.error('Audio upload failed:', err);
+      setAudioError(err.message || 'Không thể lưu file âm thanh vào bộ nhớ trình duyệt.');
+    } finally {
+      setIsAudioUploading(false);
+      if (audioInputRef.current) audioInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveTrack = async (track: AudioTrack) => {
+    if (track.mediaId) {
+      try {
+        await db.audio.delete(track.mediaId);
+        mediaManager.revokeUrl(track.mediaId);
+      } catch (e) {
+        console.warn('Could not delete audio from db:', e);
+      }
+    }
+    removeAudioTrack(track.id);
+    await useWeddingStore.getState().saveProjectToDb();
   };
 
   return (
@@ -152,25 +184,50 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({ isOp
           <div>
             <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold mb-1">
               <Music className="w-3.5 h-3.5 text-[#C93442]" />
-              <span>Nhạc nền tiệc cưới (Background Music MP3/WAV)</span>
+              <span>Nhạc nền tiệc cưới (MP3 / WAV / M4A)</span>
             </label>
             <div className="flex items-center gap-2">
               <input
                 ref={audioInputRef}
                 type="file"
-                accept="audio/*"
+                accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg"
                 onChange={handleAudioUpload}
+                disabled={isAudioUploading}
                 className="hidden"
               />
               <button
                 type="button"
+                disabled={isAudioUploading}
                 onClick={() => audioInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-white border border-[#C5A16E]/30 hover:border-[#C93442] text-xs font-serif text-[#40322F] cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-white border border-[#C5A16E]/30 hover:border-[#C93442] text-xs font-serif text-[#40322F] cursor-pointer shadow-sm disabled:opacity-50"
               >
-                <Upload className="w-3 h-3 text-[#C5A16E]" />
-                <span>Tải tệp âm thanh của bạn</span>
+                {isAudioUploading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C93442]" />
+                    <span>Đang lưu trữ âm thanh...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3 h-3 text-[#C5A16E]" />
+                    <span>Tải tệp âm thanh của bạn</span>
+                  </>
+                )}
               </button>
             </div>
+
+            {audioSuccess && (
+              <div className="mt-2 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-1.5 flex items-center gap-1.5 font-serif">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{audioSuccess}</span>
+              </div>
+            )}
+
+            {audioError && (
+              <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded p-1.5 flex items-center gap-1.5 font-serif">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>{audioError}</span>
+              </div>
+            )}
 
             {/* Current Audio Tracks List */}
             {project.audioTracks.length > 0 && (
@@ -180,10 +237,15 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({ isOp
                     key={track.id}
                     className="flex items-center justify-between p-2 rounded bg-white border border-[#C5A16E]/20 text-xs font-mono"
                   >
-                    <span className="truncate max-w-[320px] text-[#40322F]">{track.name}</span>
+                    <div className="flex items-center gap-2 truncate max-w-[320px]">
+                      <span className="truncate text-[#40322F]">{track.name}</span>
+                      <span className="text-[10px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200 font-sans">
+                        {track.mediaId ? 'IndexedDB' : 'Bộ nhớ'}
+                      </span>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => removeAudioTrack(track.id)}
+                      onClick={() => handleRemoveTrack(track)}
                       className="text-xs text-rose-600 hover:underline cursor-pointer"
                     >
                       Xóa

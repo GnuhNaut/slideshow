@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Sliders,
   Crosshair,
@@ -8,9 +8,13 @@ import {
   BookmarkCheck,
   Type,
   Film,
+  Sparkles,
+  X,
+  Check,
 } from 'lucide-react';
 import { useWeddingStore } from '../../app/store';
-import { EffectMode, CropMode } from '../../types/project';
+import { EffectMode, CropMode, PhotoItem } from '../../types/project';
+import { calculateChapterAutoDuration } from '../../timeline/compiler';
 
 export const InspectorPanel: React.FC = () => {
   const activeChapterId = useWeddingStore((s) => s.activeChapterId);
@@ -25,9 +29,20 @@ export const InspectorPanel: React.FC = () => {
   const setEndingPhoto = useWeddingStore((s) => s.updateProjectMeta);
   const project = useWeddingStore((s) => s.project);
 
+  const [isEndingPickerOpen, setIsEndingPickerOpen] = useState(false);
   const focalCanvasRef = useRef<HTMLDivElement>(null);
 
   if (!activeChapter) return null;
+
+  const calculatedAutoDuration = calculateChapterAutoDuration(activeChapter, project);
+
+  const allProjectPhotos = project.chapters.flatMap((c) =>
+    (c.photos || []).map((p) => ({ ...p, chapterTitle: c.vietnameseTitle, chapterIndex: c.chapterIndex }))
+  );
+  const currentEndingPhoto =
+    allProjectPhotos.find((p) => p.id === project.endingPhotoId) ||
+    allProjectPhotos.find((p) => p.id === activeChapter.photos[0]?.id) ||
+    allProjectPhotos[allProjectPhotos.length - 1];
 
   const handleFocalPointClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!focalCanvasRef.current || !selectedPhoto) return;
@@ -163,20 +178,21 @@ export const InspectorPanel: React.FC = () => {
                 </span>
               </label>
 
+              {/* Prominent Ending Photo Button */}
               <button
                 type="button"
                 onClick={() => setEndingPhoto({ endingPhotoId: selectedPhoto.id })}
-                className={`w-full flex items-center justify-center gap-2 p-2 rounded border text-xs font-serif cursor-pointer transition-colors shadow-sm ${
+                className={`w-full flex items-center justify-center gap-2 p-2.5 rounded border text-xs font-serif cursor-pointer transition-all shadow-sm ${
                   project.endingPhotoId === selectedPhoto.id
-                    ? 'bg-[#C93442] border-[#C93442] text-white font-bold'
-                    : 'bg-white border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF3EB]'
+                    ? 'bg-[#C93442] border-[#C93442] text-white font-bold ring-2 ring-[#C93442]/30'
+                    : 'bg-white border-[#C5A16E]/40 text-[#40322F] hover:bg-[#FAF3EB] hover:border-[#C93442]'
                 }`}
               >
-                <BookmarkCheck className="w-3.5 h-3.5 text-[#C5A16E]" />
+                <BookmarkCheck className={`w-4 h-4 ${project.endingPhotoId === selectedPhoto.id ? 'text-white' : 'text-[#C93442]'}`} />
                 <span>
                   {project.endingPhotoId === selectedPhoto.id
-                    ? '✓ Đang là ảnh kết thúc phim'
-                    : 'Chọn làm ảnh kết thúc (Chương 7)'}
+                    ? '✓ Đang là ảnh kết thúc phim (Chương 7)'
+                    : 'CHỌN LÀM ẢNH KẾT THÚC (CHƯƠNG 7)'}
                 </span>
               </button>
             </div>
@@ -260,31 +276,251 @@ export const InspectorPanel: React.FC = () => {
               />
             </div>
 
-            {/* Duration override */}
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold mb-1">
-                <Clock className="w-3.5 h-3.5 text-[#C5A16E]" />
-                <span>Thời lượng chương (giây)</span>
+            {/* Chapter 7 Ending Photo Section */}
+            {activeChapter.chapterIndex === 7 && (
+              <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
+                <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold">
+                  <BookmarkCheck className="w-3.5 h-3.5 text-[#C93442]" />
+                  <span>Ảnh kết thúc phim (Our Forever)</span>
+                </label>
+
+                {currentEndingPhoto ? (
+                  <div className="p-2.5 rounded bg-white border border-[#C5A16E]/30 space-y-2 shadow-sm">
+                    <div className="flex gap-2.5 items-center">
+                      <img
+                        src={currentEndingPhoto.thumbnail || currentEndingPhoto.url}
+                        alt="Ending photo"
+                        className="w-16 h-12 object-cover rounded border border-[#C5A16E]/30 bg-[#FAF5EE]"
+                      />
+                      <div className="min-w-0 flex-1 text-xs">
+                        <div className="font-serif font-bold text-[#40322F] truncate">
+                          {currentEndingPhoto.title || 'Ảnh kết thúc phim'}
+                        </div>
+                        <div className="text-[11px] text-[#C5A16E] font-serif truncate">
+                          {currentEndingPhoto.chapterTitle}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEndingPickerOpen(true)}
+                      className="w-full py-1.5 rounded bg-[#FAF5EE] hover:bg-[#F0DFD5] border border-[#C5A16E]/30 text-xs font-serif text-[#C93442] font-semibold cursor-pointer transition-colors shadow-sm"
+                    >
+                      Đổi ảnh kết thúc từ toàn bộ thư viện
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded bg-amber-50 border border-amber-200 text-xs text-amber-800 font-serif space-y-1.5">
+                    <div>⚠️ Chưa chọn ảnh kết thúc hoặc ảnh đã bị xóa.</div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEndingPickerOpen(true)}
+                      className="w-full py-1 rounded bg-white border border-amber-300 text-amber-900 font-semibold cursor-pointer"
+                    >
+                      Chọn ảnh kết thúc từ thư viện
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Duration Mode & Controls */}
+            <div className="space-y-2 pt-2 border-t border-[#C5A16E]/20">
+              <label className="flex items-center gap-1.5 text-xs font-serif text-[#40322F] font-semibold">
+                <Clock className="w-3.5 h-3.5 text-[#C93442]" />
+                <span>Thời lượng chương</span>
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="5"
-                  max="300"
-                  value={activeChapter.durationOverride || 20}
-                  onChange={(e) =>
+
+              {/* Mode Toggle: AUTO vs CUSTOM */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#FAF5EE] rounded-lg border border-[#C5A16E]/30">
+                <button
+                  type="button"
+                  onClick={() => updateChapter(activeChapterId, { mode: 'auto' })}
+                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
+                    activeChapter.mode !== 'custom'
+                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
+                      : 'text-[#40322F]/70 hover:text-[#40322F]'
+                  }`}
+                >
+                  TỰ ĐỘNG (AUTO)
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
                     updateChapter(activeChapterId, {
-                      durationOverride: parseInt(e.target.value) || 20,
+                      mode: 'custom',
+                      durationOverride: activeChapter.durationOverride || calculatedAutoDuration,
                     })
                   }
-                  className="w-20 px-2.5 py-1 rounded bg-white border border-[#C5A16E]/30 text-xs font-mono text-[#40322F] shadow-sm"
-                />
-                <span className="text-xs text-[#40322F]/60 font-mono">giây</span>
+                  className={`py-1 text-xs font-serif rounded transition-all cursor-pointer ${
+                    activeChapter.mode === 'custom'
+                      ? 'bg-[#C93442] text-white font-bold shadow-sm'
+                      : 'text-[#40322F]/70 hover:text-[#40322F]'
+                  }`}
+                >
+                  TÙY CHỈNH (CUSTOM)
+                </button>
               </div>
+
+              {activeChapter.mode !== 'custom' ? (
+                /* Auto mode display */
+                <div className="p-2.5 rounded bg-white border border-[#C5A16E]/20 text-xs">
+                  <div className="flex items-center justify-between text-[#40322F]">
+                    <span className="font-serif">Thời lượng thực tế:</span>
+                    <span className="font-mono font-bold text-[#C93442] text-sm">
+                      {calculatedAutoDuration} giây
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#40322F]/65 italic font-serif mt-1">
+                    Tự động tính theo {activeChapter.photos.length} bức ảnh và bố cục từng cảnh.
+                  </p>
+                </div>
+              ) : (
+                /* Custom mode controls */
+                <div className="p-2.5 rounded bg-white border border-[#C5A16E]/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-serif text-[#40322F]">Số giây sử dụng:</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="2"
+                        max="300"
+                        value={activeChapter.durationOverride || calculatedAutoDuration}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          updateChapter(activeChapterId, {
+                            durationOverride: val,
+                            mode: 'custom',
+                          });
+                        }}
+                        className="w-16 px-2 py-1 rounded bg-white border border-[#C5A16E]/40 text-xs font-mono font-bold text-[#40322F] text-center shadow-inner"
+                      />
+                      <span className="text-xs font-mono text-[#40322F]/70">giây</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-serif text-[#40322F]/60">Nhanh:</span>
+                    {[20, 30, 45, 60, 90].map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() =>
+                          updateChapter(activeChapterId, {
+                            durationOverride: sec,
+                            mode: 'custom',
+                          })
+                        }
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
+                          activeChapter.durationOverride === sec
+                            ? 'bg-[#C93442] border-[#C93442] text-white font-bold'
+                            : 'bg-[#FAF5EE] border-[#C5A16E]/30 text-[#40322F] hover:bg-[#FAF3EB]'
+                        }`}
+                      >
+                        {sec}s
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Warning if duration is too short */}
+                  {activeChapter.photos.length > 0 &&
+                    (activeChapter.durationOverride || 0) < activeChapter.photos.length * 1.5 && (
+                      <div className="text-[10px] text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 font-serif leading-tight">
+                        ⚠️ Thời lượng khá ngắn cho {activeChapter.photos.length} ảnh. Khuyến nghị tối thiểu {Math.ceil(activeChapter.photos.length * 2)}s để khách xem trọn vẹn.
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Global Ending Photo Selection Modal */}
+      {isEndingPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm select-none">
+          <div className="relative w-full max-w-2xl bg-[#FFF9F2] border border-[#C5A16E]/40 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-4 border-b border-[#C5A16E]/20 flex items-center justify-between bg-white/70">
+              <div className="flex items-center gap-2">
+                <BookmarkCheck className="w-5 h-5 text-[#C93442]" />
+                <h3 className="text-sm font-serif font-bold text-[#40322F]">
+                  CHỌN ẢNH KẾT THÚC CHO BỘ PHIM (CHƯƠNG 7)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEndingPickerOpen(false)}
+                className="p-1 rounded-full text-[#40322F]/60 hover:text-[#C93442] hover:bg-[#FAF3EB]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-4">
+              <p className="text-xs font-serif text-[#40322F]/80 italic">
+                Nhấp vào bất kỳ bức ảnh nào từ 7 chương để đặt làm bức ảnh đóng băng vĩnh cửu kết thúc bộ phim:
+              </p>
+
+              {project.chapters.map((ch) => {
+                if (ch.photos.length === 0) return null;
+                return (
+                  <div key={ch.id} className="space-y-1.5">
+                    <div className="text-xs font-serif font-bold text-[#40322F] border-b border-[#C5A16E]/20 pb-0.5">
+                      {ch.vietnameseTitle} ({ch.photos.length} ảnh)
+                    </div>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {ch.photos.map((p) => {
+                        const isCurrent = project.endingPhotoId === p.id;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => {
+                              setEndingPhoto({ endingPhotoId: p.id });
+                              setIsEndingPickerOpen(false);
+                            }}
+                            className={`group relative aspect-square rounded overflow-hidden border cursor-pointer transition-all ${
+                              isCurrent
+                                ? 'border-[#C93442] ring-2 ring-[#C93442] shadow-md'
+                                : 'border-[#C5A16E]/30 hover:border-[#C93442] hover:scale-105'
+                            }`}
+                          >
+                            <img
+                              src={p.thumbnail || p.url}
+                              alt={p.title || 'Photo'}
+                              className="w-full h-full object-cover"
+                            />
+                            {isCurrent && (
+                              <div className="absolute inset-0 bg-[#C93442]/30 flex items-center justify-center">
+                                <div className="bg-[#C93442] text-white p-1 rounded-full shadow">
+                                  <Check className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="absolute bottom-0 inset-x-0 bg-black/50 text-[9px] text-white px-1 py-0.5 truncate">
+                              {p.title || `Ảnh ${p.order + 1}`}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-3 border-t border-[#C5A16E]/20 flex justify-end bg-white/70">
+              <button
+                type="button"
+                onClick={() => setIsEndingPickerOpen(false)}
+                className="px-4 py-1.5 rounded-full border border-[#C5A16E]/30 text-xs font-serif text-[#40322F] hover:bg-[#FAF3EB]"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
