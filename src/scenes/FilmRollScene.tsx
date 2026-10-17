@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useMemo } from 'react';
+import React, { useRef, useLayoutEffect, useMemo, useState } from 'react';
 import { TimelineScene } from '../types/timeline';
 import { PhotoItem } from '../types/project';
 import { masterClock } from '../player/PlaybackClock';
@@ -16,12 +16,72 @@ interface FilmRollSceneProps {
   isDual?: boolean;
 }
 
+interface ViewportSize {
+  width: number;
+  height: number;
+}
+
+const readViewport = (): ViewportSize => ({
+  width: typeof window === 'undefined' ? 1920 : Math.max(320, window.innerWidth),
+  height: typeof window === 'undefined' ? 1080 : Math.max(320, window.innerHeight),
+});
+
+function usePresentationViewport(): ViewportSize {
+  const [viewport, setViewport] = useState<ViewportSize>(readViewport);
+
+  useLayoutEffect(() => {
+    let frameId: number | null = null;
+
+    const updateViewport = () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        const next = readViewport();
+        setViewport((current) =>
+          current.width === next.width && current.height === next.height ? current : next
+        );
+      });
+    };
+
+    window.addEventListener('resize', updateViewport, { passive: true });
+    window.visualViewport?.addEventListener('resize', updateViewport, { passive: true });
+
+    return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+    };
+  }, []);
+
+  return viewport;
+}
+
 const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
   scene,
   isDual = false,
 }) => {
   const photos = scene.photos;
   const config = scene.config || {};
+  const viewport = usePresentationViewport();
+  const compactLayout = viewport.width < 640 || viewport.height < 560;
+
+  const trackMetrics = useMemo(() => {
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(max, Math.max(min, value));
+    const dualHeight = Math.round(
+      clamp(viewport.height * (compactLayout ? 0.235 : 0.31), compactLayout ? 112 : 160, 400)
+    );
+    const singleHeight = Math.round(
+      clamp(Math.min(viewport.height * 0.58, viewport.width * 0.72), 190, 520)
+    );
+
+    return {
+      dualHeight,
+      singleHeight,
+      gap: compactLayout ? 8 : 14,
+      padding: compactLayout ? 4 : 6,
+    };
+  }, [compactLayout, viewport.height, viewport.width]);
 
   const showCenterTitle = config.showCenterTitle !== false;
   const showCenterNames = config.showCenterNames === true;
@@ -56,7 +116,7 @@ const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
       </div>
 
       {isDual ? (
-        <div className="relative z-10 w-full h-full flex flex-col justify-between py-5 md:py-6">
+        <div className="relative z-10 w-full h-full flex flex-col justify-between py-2 sm:py-4 md:py-5">
           {/* Top Film Strip (Right to Left) */}
           <div className="relative w-full flex-1 flex items-center overflow-hidden">
             <ContinuousFilmTrack
@@ -67,15 +127,19 @@ const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
               showFrameNames={showFrameNames}
               showMetadata35mm={showMetadata35mm}
               coupleNames={coupleNames}
+              frameHeight={trackMetrics.dualHeight}
+              gap={trackMetrics.gap}
+              cardPadding={trackMetrics.padding}
+              viewportWidth={viewport.width}
             />
           </div>
 
           {/* Centerpiece Editorial Title & Quote Bridge */}
           {(showCenterTitle || showCenterNames || (showQuote && config.quote)) && (
-            <div className="relative z-20 w-full flex flex-col items-center justify-center my-1 pointer-events-none px-6">
-              <div className="flex flex-col items-center max-w-xl text-center py-2.5 px-8 rounded-xl bg-white/95 border border-[#C5A16E]/30 shadow-md">
+            <div className="relative z-20 w-full flex flex-col items-center justify-center my-0.5 sm:my-1 pointer-events-none px-3 sm:px-6">
+              <div className="flex max-w-[min(92vw,780px)] flex-col items-center rounded-xl border border-[#C5A16E]/30 bg-white/95 px-4 py-2 text-center shadow-md sm:px-8 sm:py-2.5">
                 {showCenterTitle && (
-                  <h2 className="text-base md:text-xl font-serif font-medium text-[#40322F] tracking-wide">
+                  <h2 className="font-serif text-[clamp(1rem,1.25vw,1.6rem)] font-medium tracking-wide text-[#40322F]">
                     {config.textTitle || scene.chapterTitle || 'Những ngày mình đã có nhau'}
                   </h2>
                 )}
@@ -87,7 +151,7 @@ const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
                 )}
 
                 {showQuote && config.quote && (
-                  <p className="text-xs md:text-sm text-[#40322F]/85 font-serif italic tracking-wide mt-1 line-clamp-2">
+                  <p className={`mt-1 line-clamp-2 font-serif text-[clamp(0.7rem,0.7vw,1rem)] italic tracking-wide text-[#40322F]/85 ${viewport.height < 500 ? 'hidden' : ''}`}>
                     "{config.quote}"
                   </p>
                 )}
@@ -105,6 +169,10 @@ const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
               showFrameNames={showFrameNames}
               showMetadata35mm={showMetadata35mm}
               coupleNames={coupleNames}
+              frameHeight={trackMetrics.dualHeight}
+              gap={trackMetrics.gap}
+              cardPadding={trackMetrics.padding}
+              viewportWidth={viewport.width}
             />
           </div>
         </div>
@@ -130,10 +198,13 @@ const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
             direction="rtl"
             speedPxPerSec={config.speed || 52}
             sceneStartTime={scene.startTime}
-            isSingleLarge={true}
             showFrameNames={showFrameNames}
             showMetadata35mm={showMetadata35mm}
             coupleNames={coupleNames}
+            frameHeight={trackMetrics.singleHeight}
+            gap={trackMetrics.gap}
+            cardPadding={trackMetrics.padding}
+            viewportWidth={viewport.width}
           />
 
           {showQuote && config.quote && (
@@ -165,10 +236,13 @@ interface ContinuousFilmTrackProps {
   direction: 'rtl' | 'ltr';
   speedPxPerSec: number;
   sceneStartTime: number;
-  isSingleLarge?: boolean;
   showFrameNames: boolean;
   showMetadata35mm: boolean;
   coupleNames: string;
+  frameHeight: number;
+  gap: number;
+  cardPadding: number;
+  viewportWidth: number;
 }
 
 /**
@@ -181,26 +255,25 @@ const ContinuousFilmTrack: React.FC<ContinuousFilmTrackProps> = ({
   direction,
   speedPxPerSec,
   sceneStartTime,
-  isSingleLarge = false,
   showFrameNames,
   showMetadata35mm,
   coupleNames,
+  frameHeight,
+  gap,
+  cardPadding,
+  viewportWidth,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // Keep the image viewport generous while deriving card width from the
-  // original aspect ratio. `contain` therefore preserves faces without
-  // introducing the large side gutters of a fixed-width frame.
-  const frameHeight = isSingleLarge ? 380 : 248;
-  const gap = 14;
-  const cardPadding = 6;
+  const minCardWidth = viewportWidth < 640 ? Math.max(112, Math.round(viewportWidth * 0.34)) : 180;
+  const maxCardWidth = viewportWidth < 640 ? Math.max(220, Math.round(viewportWidth * 0.86)) : 560;
 
   const itemDimensions: ItemDimension[] = useMemo(() => {
-    return calculateItemDimensions(photos, frameHeight).map((dimension) => ({
+    return calculateItemDimensions(photos, frameHeight, minCardWidth, maxCardWidth).map((dimension) => ({
       ...dimension,
       width: dimension.width + cardPadding * 2,
     }));
-  }, [photos, frameHeight, cardPadding]);
+  }, [photos, frameHeight, minCardWidth, maxCardWidth, cardPadding]);
 
   const { offsets, singleLoopWidth } = useMemo(() => {
     return calculateCumulativeOffsets(itemDimensions, gap);
@@ -211,11 +284,8 @@ const ContinuousFilmTrack: React.FC<ContinuousFilmTrackProps> = ({
   // this avoids eagerly mounting an arbitrary 8000px strip on 1080p screens.
   const loopCount = useMemo(() => {
     if (singleLoopWidth <= 1) return 1;
-    const viewportWidth = typeof window === 'undefined'
-      ? 1920
-      : Math.max(1, window.innerWidth, window.screen?.availWidth || 0);
     return Math.max(2, Math.ceil(viewportWidth / singleLoopWidth) + 1);
-  }, [singleLoopWidth]);
+  }, [singleLoopWidth, viewportWidth]);
 
   // Flatten repeated items
   const renderedItems = useMemo(() => {

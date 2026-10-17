@@ -65,11 +65,13 @@ export function getTrackPosition(
  */
 export function calculateItemDimensions(
   photos: PhotoItem[],
-  frameHeight: number
+  frameHeight: number,
+  minWidth: number = 180,
+  maxWidth: number = 560
 ): ItemDimension[] {
   return photos.map((p) => {
     let width = Math.round(frameHeight * (p.aspectRatio || 1.33));
-    width = Math.max(180, Math.min(width, 560));
+    width = Math.max(minWidth, Math.min(width, maxWidth));
     return { width, height: frameHeight };
   });
 }

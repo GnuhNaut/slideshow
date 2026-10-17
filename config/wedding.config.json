@@ -58,22 +58,24 @@
     "03-proposal": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 5,
+      "durationSeconds": 8,
       "vietnameseTitle": "Khoảnh khắc em nói đồng ý",
-      "subtitle": "Một lời rất khẽ, mở ra lời hứa cùng nhau đi hết cuộc đời."
+      "subtitle": "Một lời rất khẽ, mở ra lời hứa cùng nhau đi hết cuộc đời.",
+      "accentQuote": "Từ hôm nay, mọi ngày mai đều có chúng ta."
     },
     "04-family": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 10,
+      "durationSeconds": 8,
       "cropMode": "contain",
       "vietnameseTitle": "Hai mái nhà, một gia đình",
-      "subtitle": "Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về."
+      "subtitle": "Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về.",
+      "accentQuote": "Tình yêu đưa hai người đến bên nhau, gia đình cho hạnh phúc một nơi để trở về."
     },
     "05-wedding": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 30,
+      "durationSeconds": 50,
       "cropMode": "contain",
       "vietnameseTitle": "Ngày mình chọn nhau",
       "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt."

@@ -245,11 +245,14 @@ function compileChapterScenes(
         // Proportional distribution
         let distributed = 0;
         const heroOverride = chapter.sceneDurationOverrides?.[`${chapter.id}_scene_proposal_hero`];
+        const proportionalHeroDuration = Number((baseHeroDur * scale).toFixed(1));
+        const readableHeroDuration = Math.min(
+          Math.max(1, targetTotal - chunks.length),
+          Math.max(4, proportionalHeroDuration)
+        );
         const heroDuration = typeof heroOverride === 'number' && heroOverride > 0
           ? heroOverride
-          : (chunks.length === 0
-              ? targetTotal
-              : Number((baseHeroDur * scale).toFixed(1)));
+          : (chunks.length === 0 ? targetTotal : readableHeroDuration);
         distributed += heroDuration;
 
         scenes.push({
@@ -379,7 +382,7 @@ function compileChapterScenes(
             ambientLight: 'warm',
             quote:
               i === 0
-                ? chapter.subtitle || 'Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về.'
+                ? chapter.accentQuote || chapter.subtitle || 'Trong vòng tay của hai bên, chúng mình có thêm một nơi để trở về.'
                 : chapter.accentQuote || chapter.subtitle,
           },
           transitionIn: i === 0 ? 'soft_light' : 'dissolve',

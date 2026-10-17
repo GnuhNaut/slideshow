@@ -630,7 +630,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 5,
+      "durationOverride": 8,
       "transitionType": "soft_light",
       "photos": [
         {
@@ -789,6 +789,7 @@ export const filesystemProject: WeddingProject = {
         }
       ],
       "cropMode": "contain",
+      "accentQuote": "Từ hôm nay, mọi ngày mai đều có chúng ta.",
       "showCenterTitle": true,
       "showCenterNames": false,
       "showFrameNames": false,
@@ -809,7 +810,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 10,
+      "durationOverride": 8,
       "transitionType": "soft_light",
       "photos": [
         {
@@ -858,6 +859,7 @@ export const filesystemProject: WeddingProject = {
         }
       ],
       "cropMode": "contain",
+      "accentQuote": "Tình yêu đưa hai người đến bên nhau, gia đình cho hạnh phúc một nơi để trở về.",
       "showCenterTitle": true,
       "showCenterNames": false,
       "showFrameNames": false,
@@ -878,7 +880,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 30,
+      "durationOverride": 50,
       "transitionType": "soft_light",
       "photos": [
         {
