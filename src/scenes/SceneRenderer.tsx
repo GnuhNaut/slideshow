@@ -12,6 +12,7 @@ import { FamilyGalleryScene } from './FamilyGalleryScene';
 import { LivingCollageScene } from './LivingCollageScene';
 import { ThankYouScene } from './ThankYouScene';
 import { FinalFreezeScene } from './FinalFreezeScene';
+import { AmbientHeartsOverlay } from '../components/decor/AmbientHeartsOverlay';
 
 interface SceneRendererProps {
   currentScene: TimelineScene | null;
@@ -140,6 +141,8 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
         incomingSceneNode={incomingNode}
         activeSceneNode={activeNode}
       />
+
+      <AmbientHeartsOverlay />
 
       {preparedNode && (
         <div
