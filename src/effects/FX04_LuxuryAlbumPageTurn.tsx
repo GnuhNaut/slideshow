@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX04Props {
   leftPhoto?: PhotoItem;
@@ -8,6 +9,7 @@ interface FX04Props {
   nextPhoto?: PhotoItem;
   progress: number; // 0.0 to 1.0
   isPlaying: boolean;
+  sceneId?: string;
 }
 
 export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
@@ -15,22 +17,23 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
   rightPhoto,
   nextPhoto,
   progress,
+  sceneId,
 }) => {
   const turningPageRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const applyPageTurn = useCallback((currentProgress: number) => {
     if (!turningPageRef.current) return;
 
     // Flip transition happens between progress 0.6 to 0.95
-    if (progress < 0.6) {
+    if (currentProgress < 0.6) {
       gsap.set(turningPageRef.current, {
         rotationY: 0,
         force3D: true,
       });
       if (shadowRef.current) gsap.set(shadowRef.current, { opacity: 0 });
     } else {
-      const p = Math.min(1, (progress - 0.6) / 0.35);
+      const p = Math.min(1, (currentProgress - 0.6) / 0.35);
       const angle = -p * 180;
       gsap.set(turningPageRef.current, {
         rotationY: angle,
@@ -42,7 +45,9 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
         gsap.set(shadowRef.current, { opacity: shadowOpacity });
       }
     }
-  }, [progress]);
+  }, []);
+
+  useSceneMotion(sceneId || '', applyPageTurn, progress);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#F8F1E7] to-[#F3E9DD] perspective-wide">

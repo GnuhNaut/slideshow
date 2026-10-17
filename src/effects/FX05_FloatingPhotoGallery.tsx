@@ -1,21 +1,24 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX05Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
+  sceneId?: string;
 }
 
 export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
   photos,
   progress,
+  sceneId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  useEffect(() => {
+  const applyFloatingMotion = useCallback((currentProgress: number) => {
     const xScale = Math.min(1, (containerRef.current?.clientWidth || 1280) / 1280);
     // Spatial configuration for up to 4 floating photos
     const configs = [
@@ -28,7 +31,7 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
     cardRefs.current.forEach((card, idx) => {
       if (!card) return;
       const base = configs[idx % configs.length];
-      const drift = Math.sin(progress * Math.PI) * 15;
+      const drift = Math.sin(currentProgress * Math.PI) * 15;
 
       gsap.set(card, {
         x: base.x * xScale + drift * (idx % 2 === 0 ? 1 : -1),
@@ -36,11 +39,13 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
         z: base.z,
         rotationY: base.rotateY,
         rotationZ: base.rotateZ,
-        scale: 1 + progress * 0.04,
+        scale: 1 + currentProgress * 0.04,
         force3D: true,
       });
     });
-  }, [progress]);
+  }, []);
+
+  useSceneMotion(sceneId || '', applyFloatingMotion, progress);
 
   if (!photos || photos.length === 0) {
     return <div className="w-full h-full bg-[#FFF9F2]" />;
@@ -74,9 +79,12 @@ export const FX05_FloatingPhotoGallery: React.FC<FX05Props> = ({
             >
               <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
                 <img
-                  src={photo.url}
+                  src={photo.mediumUrl || photo.displayUrl || photo.url}
                   alt={photo.title || 'Floating Moment'}
                   className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+                  }}
                 />
               </div>
             </div>

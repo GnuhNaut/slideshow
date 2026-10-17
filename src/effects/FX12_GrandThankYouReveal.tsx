@@ -206,10 +206,10 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
           Sự hiện diện và lời chúc phúc của quý vị là món quà vô giá đối với chúng tôi.
         </p>
 
-        <div className="mt-6 md:mt-8 flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/65 border border-[#C5A16E]/35 backdrop-blur-sm">
+        <div className="mt-6 md:mt-8 flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/90 border border-[#C5A16E]/35 shadow-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-[#C93442]" />
           <span className="font-sans text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-[#6D5751]">
-            {weddingDate} • White Palace
+            {weddingDate} • Trống Đồng Palace
           </span>
         </div>
       </div>

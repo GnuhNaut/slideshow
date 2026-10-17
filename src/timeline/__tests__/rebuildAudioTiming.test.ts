@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createInitialWeddingProject } from '../../project/defaultProject';
-import { compileProjectTimeline, calculateChapterAutoDuration } from '../compiler';
-import { audioDirector } from '../../audio/AudioDirector';
+import { compileProjectTimeline } from '../compiler';
+import { AudioDirectorEngine, audioDirector } from '../../audio/AudioDirector';
 import { masterClock } from '../../player/PlaybackClock';
 
 describe('FINAL REBUILD — TIMING & AUDIO DIRECTOR ACCEPTANCE TESTS', () => {
@@ -244,5 +244,117 @@ describe('FINAL REBUILD — TIMING & AUDIO DIRECTOR ACCEPTANCE TESTS', () => {
     fadeSpy.mockRestore();
     masterClock.play();
     masterClock.pause();
+  });
+
+  it('TC-108: Pause and resume preserves the exact soundtrack position', () => {
+    const project = createInitialWeddingProject();
+    const compiled = compileProjectTimeline(project);
+    project.globalSettings.audioMode = 'global';
+    project.globalSettings.loopGlobalAudio = true;
+    project.audioTracks = [{
+      id: 'track_resume',
+      name: 'Continuous soundtrack',
+      url: '/audio/global/resume.mp3',
+      duration: 180,
+      startTime: 0,
+      endTime: 180,
+      volume: 0.85,
+      fadeInDuration: 1,
+      fadeOutDuration: 1,
+      isGlobal: true,
+    }];
+
+    let sourceAssignments = 0;
+    let source = '';
+    const fakeAudio = {
+      currentTime: 0,
+      duration: 180,
+      volume: 1,
+      loop: false,
+      paused: true,
+      preload: 'auto',
+      play: vi.fn(function (this: { paused: boolean }) {
+        this.paused = false;
+        return Promise.resolve();
+      }),
+      pause: vi.fn(function (this: { paused: boolean }) {
+        this.paused = true;
+      }),
+      addEventListener: vi.fn(),
+    } as unknown as HTMLAudioElement;
+
+    Object.defineProperty(fakeAudio, 'src', {
+      configurable: true,
+      get: () => source,
+      set: (value: string) => {
+        source = value;
+        sourceAssignments += 1;
+        fakeAudio.currentTime = 0;
+      },
+    });
+
+    const director = new AudioDirectorEngine();
+    (director as unknown as { channelA: HTMLAudioElement }).channelA = fakeAudio;
+    masterClock.init(compiled.totalDuration, 42);
+    director.setProject(project, compiled);
+
+    director.resume();
+    expect(fakeAudio.currentTime).toBe(42);
+    expect(sourceAssignments).toBe(1);
+
+    fakeAudio.currentTime = 57.25;
+    director.pause();
+    director.resume();
+
+    expect(sourceAssignments).toBe(1);
+    expect(fakeAudio.currentTime).toBe(57.25);
+    director.destroy();
+  });
+
+  it('TC-109: Final hold keeps audio running while the last image stays visible', () => {
+    const project = createInitialWeddingProject();
+    const compiled = compileProjectTimeline(project);
+    project.globalSettings.audioMode = 'global';
+    project.audioTracks = [{
+      id: 'track_final_hold',
+      name: 'Final hold soundtrack',
+      url: '/audio/global/final-hold.mp3',
+      duration: 180,
+      startTime: 0,
+      endTime: 180,
+      volume: 0.85,
+      fadeInDuration: 1,
+      fadeOutDuration: 1,
+      isGlobal: true,
+    }];
+
+    const fakeAudio = {
+      src: '/audio/global/final-hold.mp3',
+      currentTime: 75,
+      duration: 180,
+      volume: 0.85,
+      loop: true,
+      paused: true,
+      preload: 'auto',
+      play: vi.fn(function (this: { paused: boolean }) {
+        this.paused = false;
+        return Promise.resolve();
+      }),
+      pause: vi.fn(function (this: { paused: boolean }) {
+        this.paused = true;
+      }),
+      addEventListener: vi.fn(),
+    } as unknown as HTMLAudioElement;
+
+    const director = new AudioDirectorEngine();
+    (director as unknown as { channelA: HTMLAudioElement }).channelA = fakeAudio;
+    director.setProject(project, compiled);
+    masterClock.init(compiled.totalDuration, compiled.totalDuration);
+    masterClock.enterFinalHold();
+
+    expect(fakeAudio.play).toHaveBeenCalledTimes(1);
+    expect(fakeAudio.pause).not.toHaveBeenCalled();
+    expect(fakeAudio.currentTime).toBe(75);
+    director.destroy();
   });
 });

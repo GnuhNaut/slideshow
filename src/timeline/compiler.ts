@@ -557,6 +557,7 @@ function compileChapterScenes(
             ...d.config,
             textTitle: chapter.vietnameseTitle,
             textSubtitle: chapter.subtitle,
+            showChapterIntro: i === 0,
           },
           transitionIn: d.transitionIn,
           transitionOut: d.transitionOut,

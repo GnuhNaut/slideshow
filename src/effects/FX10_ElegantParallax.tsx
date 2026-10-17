@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
 import { useSceneMotion } from '../motion/useSceneMotion';
@@ -41,10 +41,6 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
 
   // 60 FPS direct RAF motion
   useSceneMotion(sceneId || '', applyParallax, progress);
-
-  useEffect(() => {
-    applyParallax(progress);
-  }, [progress, applyParallax]);
 
   if (!photo || !photo.url) {
     return <div className="w-full h-full bg-[#FFF9F2]" />;

@@ -17,7 +17,15 @@ export function useSceneMotion(
   initialProgress: number = 0
 ) {
   const onTickRef = useRef<SceneMotionCallback>(onTick);
-  onTickRef.current = onTick;
+  const initialProgressRef = useRef(initialProgress);
+
+  useEffect(() => {
+    onTickRef.current = onTick;
+  }, [onTick]);
+
+  useEffect(() => {
+    initialProgressRef.current = initialProgress;
+  }, [initialProgress]);
 
   useEffect(() => {
     // Initial call on mount
@@ -25,7 +33,7 @@ export function useSceneMotion(
     if (state.activeScene?.id === sceneId) {
       onTickRef.current(state.activeSceneProgress, state.activeSceneElapsed, state);
     } else {
-      onTickRef.current(initialProgress, 0, state);
+      onTickRef.current(initialProgressRef.current, 0, state);
     }
 
     // Subscribe to 60 FPS master animation loop
@@ -38,5 +46,5 @@ export function useSceneMotion(
         onTickRef.current(frame.incomingSceneProgress, 0, frame);
       }
     });
-  }, [sceneId, initialProgress]);
+  }, [sceneId]);
 }

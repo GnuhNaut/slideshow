@@ -1,26 +1,29 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX08Props {
   photos: PhotoItem[];
   progress: number;
   isPlaying: boolean;
+  sceneId?: string;
 }
 
 export const FX08_PhotoStackReveal: React.FC<FX08Props> = ({
   photos,
   progress,
+  sceneId,
 }) => {
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const stack = photos?.slice(0, 4) || [];
   const cardCount = stack.length;
 
-  useEffect(() => {
+  const applyStackMotion = useCallback((currentProgress: number) => {
     if (cardCount === 0) return;
     // Current active card index based on progress
-    const activeIndex = Math.min(cardCount - 1, Math.floor(progress * cardCount));
-    const subProgress = (progress * cardCount) % 1;
+    const activeIndex = Math.min(cardCount - 1, Math.floor(currentProgress * cardCount));
+    const subProgress = (currentProgress * cardCount) % 1;
 
     cardsRef.current.forEach((card, idx) => {
       if (!card) return;
@@ -67,7 +70,9 @@ export const FX08_PhotoStackReveal: React.FC<FX08Props> = ({
         });
       }
     });
-  }, [progress, cardCount]);
+  }, [cardCount]);
+
+  useSceneMotion(sceneId || '', applyStackMotion, progress);
 
   if (!photos || photos.length === 0) {
     return <div className="w-full h-full bg-[#FFF9F2]" />;

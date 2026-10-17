@@ -539,7 +539,7 @@ export async function syncGallery() {
     brideName: projConfig.brideName || 'Sao Mai',
     weddingDate: projConfig.weddingDate || '19.10.2026',
     lunarDate: projConfig.lunarDate || '09.09 Bính Ngọ',
-    venueName: projConfig.venueName || 'White Palace Convention Center',
+    venueName: projConfig.venueName || 'Trung tâm tiệc cưới Trống Đồng Palace',
     thankYouMessage:
       projConfig.thankYouMessage ||
       'Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.',

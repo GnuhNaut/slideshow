@@ -1,27 +1,30 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX06Props {
   primaryPhoto?: PhotoItem;
   secondaryPhoto?: PhotoItem;
   progress: number;
   isPlaying: boolean;
+  sceneId?: string;
 }
 
 export const FX06_EditorialSplitReveal: React.FC<FX06Props> = ({
   primaryPhoto,
   secondaryPhoto,
   progress,
+  sceneId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const applySplitMotion = useCallback((currentProgress: number) => {
     // Reveal entrance: 0.0 to 0.3
-    if (progress < 0.3) {
-      const p = progress / 0.3;
+    if (currentProgress < 0.3) {
+      const p = currentProgress / 0.3;
       const ease = gsap.parseEase('power2.out')(p);
       if (leftPanelRef.current) {
         gsap.set(leftPanelRef.current, {
@@ -39,7 +42,7 @@ export const FX06_EditorialSplitReveal: React.FC<FX06Props> = ({
       }
     } else {
       // Steady drift
-      const steadyProgress = (progress - 0.3) / 0.7;
+      const steadyProgress = (currentProgress - 0.3) / 0.7;
       if (leftPanelRef.current) {
         gsap.set(leftPanelRef.current, {
           x: steadyProgress * 15,
@@ -55,7 +58,9 @@ export const FX06_EditorialSplitReveal: React.FC<FX06Props> = ({
         });
       }
     }
-  }, [progress]);
+  }, []);
+
+  useSceneMotion(sceneId || '', applySplitMotion, progress);
 
   return (
     <div
@@ -66,7 +71,8 @@ export const FX06_EditorialSplitReveal: React.FC<FX06Props> = ({
         {primaryPhoto && (
           <div
             ref={leftPanelRef}
-            className="w-[min(44vw,180px)] aspect-[2/3] md:w-[min(38vw,480px)] md:h-[82vh] md:max-h-[820px] md:aspect-auto p-2 md:p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg flex flex-col will-change-transform"
+            className="w-[min(44vw,180px)] aspect-[2/3] md:w-[min(38vw,480px)] md:h-auto md:max-h-[82vh] p-2 md:p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg flex flex-col will-change-transform"
+            style={{ aspectRatio: primaryPhoto.aspectRatio || 0.8 }}
           >
             <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
               <img
@@ -81,7 +87,8 @@ export const FX06_EditorialSplitReveal: React.FC<FX06Props> = ({
         {secondaryPhoto && (
           <div
             ref={rightPanelRef}
-            className="w-[min(44vw,180px)] aspect-[2/3] md:w-[min(38vw,480px)] md:h-[82vh] md:max-h-[820px] md:aspect-auto p-2 md:p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg flex flex-col will-change-transform"
+            className="w-[min(44vw,180px)] aspect-[2/3] md:w-[min(38vw,480px)] md:h-auto md:max-h-[82vh] p-2 md:p-3 bg-white border border-[#E77A93]/35 rounded-sm luxury-shadow-lg flex flex-col will-change-transform"
+            style={{ aspectRatio: secondaryPhoto.aspectRatio || 0.8 }}
           >
             <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE]">
               <img

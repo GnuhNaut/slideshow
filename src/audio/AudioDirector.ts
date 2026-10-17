@@ -18,7 +18,7 @@ export interface AudioPlaybackState {
 
 type AudioStateListener = (state: AudioPlaybackState) => void;
 
-class AudioDirectorEngine {
+export class AudioDirectorEngine {
   private project: WeddingProject | null = null;
   private timeline: CompiledTimeline | null = null;
 
@@ -28,6 +28,11 @@ class AudioDirectorEngine {
   private activeChannel: 'A' | 'B' = 'A';
 
   private currentTrackId: string | null = null;
+  // Keep the logical source separately from HTMLAudioElement.src. Browsers
+  // expand relative URLs to absolute URLs, so comparing `el.src` with the
+  // configured relative URL would report a false mismatch and reload the
+  // media on every resume (which resets currentTime to zero).
+  private currentTrackUrl: string | null = null;
   private currentChapterIndex: number = -1;
   private isCrossfading: boolean = false;
   private crossfadeTimer: number | null = null;
@@ -194,6 +199,11 @@ class AudioDirectorEngine {
       this.resume();
     } else if (status === 'PAUSED') {
       this.pause();
+    } else if (status === 'FINAL_HOLD') {
+      // The visual clock deliberately stops on the last photo, but the
+      // soundtrack belongs to the presentation rather than the clock. Keep
+      // it running until the operator explicitly pauses, exits or restarts.
+      this.continueDuringFinalHold();
     }
   }
 
@@ -241,6 +251,7 @@ class AudioDirectorEngine {
       // Chapter has no music assigned: fade out existing audio to silence
       this.fadeToSilence();
       this.currentTrackId = null;
+      this.currentTrackUrl = null;
       this.emit();
       return;
     }
@@ -251,6 +262,7 @@ class AudioDirectorEngine {
     }
 
     this.currentTrackId = targetTrack.id;
+    this.currentTrackUrl = targetTrack.url;
 
     if (!useCrossfade) {
       this.playTrackImmediate(targetTrack, startOffset);
@@ -382,9 +394,30 @@ class AudioDirectorEngine {
       const el = this.getActiveElement();
       if (!track || !track.url || !el) return;
 
-      if (el.src !== track.url) {
+      const needsSourceLoad =
+        this.currentTrackId !== track.id || this.currentTrackUrl !== track.url || !el.src;
+
+      if (needsSourceLoad) {
         el.src = track.url;
         el.loop = this.project.globalSettings.loopGlobalAudio ?? true;
+        this.currentTrackId = track.id;
+        this.currentTrackUrl = track.url;
+
+        // Loading a source is only valid for a genuinely new track. Align it
+        // once with the movie clock; ordinary pause/resume never writes
+        // currentTime and therefore continues at the exact paused position.
+        const clockTime = masterClock.getCurrentTime();
+        const knownDuration =
+          Number.isFinite(el.duration) && el.duration > 0 ? el.duration : track.duration;
+        try {
+          el.currentTime =
+            (this.project.globalSettings.loopGlobalAudio ?? true) && knownDuration > 0
+              ? clockTime % knownDuration
+              : Math.min(clockTime, Math.max(0, knownDuration || clockTime));
+        } catch {
+          // Metadata may still be loading. The initial zero position is safe;
+          // explicit seeks are handled by the clock's seek subscription.
+        }
       }
       el.volume = this.isMuted ? 0 : this.volume * (track.volume ?? 1);
       el.play().catch(() => {});
@@ -403,6 +436,13 @@ class AudioDirectorEngine {
   public pause() {
     if (this.channelA && !this.channelA.paused) this.channelA.pause();
     if (this.channelB && !this.channelB.paused) this.channelB.pause();
+  }
+
+  private continueDuringFinalHold() {
+    const el = this.getActiveElement();
+    if (!el || !el.src || !el.paused) return;
+
+    el.play().catch(() => {});
   }
 
   public restart() {

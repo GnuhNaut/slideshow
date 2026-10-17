@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
 import { useSceneMotion } from '../motion/useSceneMotion';
@@ -55,10 +55,6 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   // 60 FPS direct RAF motion
   useSceneMotion(sceneId || '', applyMorph, progress);
 
-  useEffect(() => {
-    applyMorph(progress);
-  }, [progress, applyMorph]);
-
   if (!photo || !photo.url) {
     return <div className="w-full h-full bg-[#FFF9F2]" />;
   }
@@ -68,12 +64,7 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
       ref={containerRef}
       className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] perspective-cinema"
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-[-32px] scale-110 bg-center bg-cover opacity-35 blur-2xl"
-        style={{ backgroundImage: `url("${photo.displayUrl || photo.url}")` }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FFF9F2]/45 via-[#FFF9F2]/55 to-[#F3E9DD]/90 pointer-events-none" />
+      <div className="absolute inset-0 bg-radial from-[#E8D9C9]/65 via-[#FFF9F2]/72 to-[#F3E9DD] pointer-events-none" />
 
       {/* Main Hero Card */}
       <div

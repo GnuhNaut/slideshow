@@ -1,26 +1,27 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX02Props {
   photos: PhotoItem[];
   progress: number; // 0.0 to 1.0
   isPlaying: boolean;
+  sceneId?: string;
 }
 
 export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
   photos,
   progress,
+  sceneId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   const count = photos?.length || 0;
-  // Step through photos based on progress
-  const activeFloat = count > 0 ? progress * (count - 1) : 0;
-
-  useEffect(() => {
+  const applyCarousel = useCallback((currentProgress: number) => {
     if (count === 0) return;
+    const activeFloat = currentProgress * (count - 1);
     cardsRef.current.forEach((el, idx) => {
       if (!el) return;
       const diff = idx - activeFloat;
@@ -40,7 +41,9 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
         force3D: true,
       });
     });
-  }, [activeFloat, count]);
+  }, [count]);
+
+  useSceneMotion(sceneId || '', applyCarousel, progress);
 
   if (!photos || photos.length === 0) {
     return <div className="w-full h-full bg-[#FFF9F2]" />;
@@ -70,9 +73,12 @@ export const FX02_ArcCarousel3D: React.FC<FX02Props> = ({
             >
               <div className="w-full h-full overflow-hidden rounded-sm bg-[#F5EDE1] relative">
                 <img
-                  src={photo.url}
+                  src={photo.mediumUrl || photo.displayUrl || photo.url}
                   alt={photo.title || 'Wedding Moment'}
                   className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+                  }}
                 />
               </div>
             </div>

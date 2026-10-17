@@ -46,6 +46,7 @@ export interface TimelineScene {
     showQuote?: boolean;
     coupleNames?: string;
     weddingDate?: string;
+    showChapterIntro?: boolean;
   };
   transitionIn: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';
   transitionOut: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';

@@ -28,6 +28,7 @@ export const FamilyGalleryScene: React.FC<FamilyGallerySceneProps> = ({
         photos={photos}
         progress={progress}
         isPlaying={isPlaying}
+        sceneId={scene.id}
       />
     );
   }
@@ -41,6 +42,7 @@ export const FamilyGalleryScene: React.FC<FamilyGallerySceneProps> = ({
         nextPhoto={photos[1]}
         progress={progress}
         isPlaying={isPlaying}
+        sceneId={scene.id}
       />
       <ChapterStoryOverlay
         scene={scene}
