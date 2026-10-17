@@ -45,6 +45,7 @@ export interface TimelineScene {
     showMetadata35mm?: boolean;
     showQuote?: boolean;
     coupleNames?: string;
+    weddingDate?: string;
   };
   transitionIn: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';
   transitionOut: 'cut' | 'fade' | 'soft_light' | 'film_wipe' | 'dissolve' | 'depth_push' | 'album_flip' | 'film_morph';

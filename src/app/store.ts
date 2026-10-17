@@ -26,6 +26,9 @@ interface WeddingStore {
   updateCurrentTime: (timeSeconds: number) => void;
 }
 
+let detachClockStatusListener: (() => void) | null = null;
+let detachClockTimeListener: (() => void) | null = null;
+
 export const useWeddingStore = create<WeddingStore>((set, get) => {
   const initialProj = filesystemProject;
   const initialTimeline = compileProjectTimeline(initialProj);
@@ -69,8 +72,12 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
         },
       });
 
-      // Attach MasterClock status listener
-      masterClock.onStatusChange((status) => {
+      // StrictMode may initialize the store twice in development. Keep exactly
+      // one subscription of each kind so a single clock tick causes one update.
+      detachClockStatusListener?.();
+      detachClockTimeListener?.();
+
+      detachClockStatusListener = masterClock.onStatusChange((status) => {
         const isPlaying = status === 'PLAYING';
         const isFinished = status === 'FINAL_HOLD';
         set((state) => ({
@@ -83,7 +90,7 @@ export const useWeddingStore = create<WeddingStore>((set, get) => {
       });
 
       // Attach MasterClock throttled UI listener (10Hz)
-      masterClock.onThrottledTime((time) => {
+      detachClockTimeListener = masterClock.onThrottledTime((time) => {
         get().updateCurrentTime(time);
       });
     },

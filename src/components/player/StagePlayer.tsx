@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -18,12 +18,14 @@ import { SceneRenderer } from '../../scenes/SceneRenderer';
 import { usePlaybackController } from '../../player/usePlaybackController';
 import { presentationWakeLock, WakeLockState } from '../../player/PresentationWakeLock';
 import { audioEngine } from '../../audio/AudioEngine';
+import { audioDirector } from '../../audio/AudioDirector';
 
 export const StagePlayer: React.FC = () => {
   const project = useWeddingStore((s) => s.project);
   const playback = useWeddingStore((s) => s.playback);
   const setViewMode = useWeddingStore((s) => s.setViewMode);
   const play = useWeddingStore((s) => s.play);
+  const pause = useWeddingStore((s) => s.pause);
   const togglePlay = useWeddingStore((s) => s.togglePlay);
   const restart = useWeddingStore((s) => s.restart);
   const prevChapter = useWeddingStore((s) => s.prevChapter);
@@ -43,6 +45,7 @@ export const StagePlayer: React.FC = () => {
 
   const hideControlsTimer = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const preloadedChapterTwoImages = useRef<HTMLImageElement[]>([]);
 
   // Subscribe to wake lock state changes
   useEffect(() => {
@@ -53,6 +56,40 @@ export const StagePlayer: React.FC = () => {
     };
   }, []);
 
+  // Warm only the first viewport of each Chapter 2 film track while the
+  // operator is still on the ready gate. Keeping these Image objects alive
+  // avoids a decode/upload spike exactly when the first transition begins.
+  useEffect(() => {
+    const memories = project.chapters.find((chapter) => chapter.chapterIndex === 2);
+    const photos = memories?.photos || [];
+    const splitIndex = Math.ceil(photos.length / 2);
+    const preloadPhotos = [
+      ...photos.slice(0, 6),
+      ...photos.slice(splitIndex, splitIndex + 6),
+    ];
+    const urls = Array.from(
+      new Set(preloadPhotos.map((photo) => photo.mediumUrl || photo.displayUrl || photo.url).filter(Boolean))
+    );
+
+    const timer = window.setTimeout(() => {
+      preloadedChapterTwoImages.current = urls.map((url, index) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.fetchPriority = index < 4 ? 'high' : 'low';
+        img.src = url;
+        if (typeof img.decode === 'function') {
+          void img.decode().catch(() => {});
+        }
+        return img;
+      });
+    }, 80);
+
+    return () => {
+      window.clearTimeout(timer);
+      preloadedChapterTwoImages.current = [];
+    };
+  }, [project]);
+
   const handleMouseMove = () => {
     setShowControls(true);
     if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
@@ -61,9 +98,40 @@ export const StagePlayer: React.FC = () => {
     }, 2800);
   };
 
+  const handleExitPresentation = useCallback(async () => {
+    pause();
+    audioDirector.pause();
+    audioEngine.stop();
+    await presentationWakeLock.release();
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (err) {
+        console.warn('Exit fullscreen error:', err);
+      }
+    }
+    setIsFullscreen(false);
+
+    // A remote-stage URL uses `?mode=stage`. Remove it before returning home;
+    // otherwise App's hash listener immediately forces the player open again.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('mode')) {
+      url.searchParams.delete('mode');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+    setViewMode('home');
+  }, [pause, setViewMode]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+      // Do not start the clock behind the ready gate. Starting presentation
+      // must remain a real user gesture so fullscreen/audio/wake lock unlock.
+      if (!isStarted) {
+        if (e.code === 'Escape') void handleExitPresentation();
+        return;
+      }
 
       switch (e.code) {
         case 'Space':
@@ -97,17 +165,20 @@ export const StagePlayer: React.FC = () => {
           handleMouseMove();
           break;
         case 'Escape':
-          if (!document.fullscreenElement) {
-            presentationWakeLock.release();
-            setViewMode('home');
-          }
+          void handleExitPresentation();
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, nextChapter, prevChapter, toggleMute, restart, setViewMode]);
+  }, [isStarted, togglePlay, nextChapter, prevChapter, toggleMute, restart, handleExitPresentation]);
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+  }, []);
 
   async function toggleFullscreen() {
     try {
@@ -150,21 +221,9 @@ export const StagePlayer: React.FC = () => {
       .catch((err) => console.warn('Wake Lock request warning:', err));
 
     // 4. Reset clock to 0 and begin master playback
+    pause();
     seek(0);
     play();
-  };
-
-  const handleExitPresentation = async () => {
-    audioEngine.stop();
-    await presentationWakeLock.release();
-    if (document.fullscreenElement) {
-      try {
-        await document.exitFullscreen();
-      } catch (err) {
-        console.warn('Exit fullscreen error:', err);
-      }
-    }
-    setViewMode('home');
   };
 
   const formatTime = (timeInSec: number) => {

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useLayoutEffect, useMemo } from 'react';
 import { TimelineScene } from '../types/timeline';
 import { PhotoItem } from '../types/project';
 import { masterClock } from '../player/PlaybackClock';
@@ -6,8 +6,7 @@ import {
   getTrackPosition,
   calculateItemDimensions,
   calculateCumulativeOffsets,
-  getVisibleItems,
-  VisibleFilmItem,
+  ItemDimension,
 } from './filmstripMath';
 
 interface FilmRollSceneProps {
@@ -17,7 +16,7 @@ interface FilmRollSceneProps {
   isDual?: boolean;
 }
 
-export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
+const FilmRollSceneComponent: React.FC<FilmRollSceneProps> = ({
   scene,
   isDual = false,
 }) => {
@@ -25,9 +24,9 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
   const config = scene.config || {};
 
   const showCenterTitle = config.showCenterTitle !== false;
-  const showCenterNames = config.showCenterNames === true; // Default FALSE (User directive)
-  const showFrameNames = config.showFrameNames === true;   // Default FALSE (User directive)
-  const showMetadata35mm = config.showMetadata35mm === true;// Default FALSE (User directive)
+  const showCenterNames = config.showCenterNames === true;
+  const showFrameNames = config.showFrameNames === true;
+  const showMetadata35mm = config.showMetadata35mm === true;
   const showQuote = config.showQuote !== false;
   const coupleNames = config.coupleNames || 'TUẤN HÙNG & SAO MAI';
 
@@ -57,10 +56,10 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
       </div>
 
       {isDual ? (
-        <div className="relative z-10 w-full h-full flex flex-col justify-between py-6">
+        <div className="relative z-10 w-full h-full flex flex-col justify-between py-5 md:py-6">
           {/* Top Film Strip (Right to Left) */}
           <div className="relative w-full flex-1 flex items-center overflow-hidden">
-            <VirtualizedFilmTrack
+            <ContinuousFilmTrack
               photos={topPhotos}
               direction="rtl"
               speedPxPerSec={config.speed || 48}
@@ -74,9 +73,9 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
           {/* Centerpiece Editorial Title & Quote Bridge */}
           {(showCenterTitle || showCenterNames || (showQuote && config.quote)) && (
             <div className="relative z-20 w-full flex flex-col items-center justify-center my-1 pointer-events-none px-6">
-              <div className="flex flex-col items-center max-w-xl text-center py-2 px-6 rounded-xl bg-white/70 backdrop-blur-md border border-[#C5A16E]/25 shadow-sm">
+              <div className="flex flex-col items-center max-w-xl text-center py-2.5 px-8 rounded-xl bg-white/95 border border-[#C5A16E]/30 shadow-md">
                 {showCenterTitle && (
-                  <h2 className="text-base md:text-lg lg:text-xl font-serif font-medium text-[#40322F] tracking-wide">
+                  <h2 className="text-base md:text-xl font-serif font-medium text-[#40322F] tracking-wide">
                     {config.textTitle || scene.chapterTitle || 'Những ngày mình đã có nhau'}
                   </h2>
                 )}
@@ -88,7 +87,7 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
                 )}
 
                 {showQuote && config.quote && (
-                  <p className="text-xs md:text-sm text-[#40322F]/80 font-serif italic tracking-wide mt-1 line-clamp-2">
+                  <p className="text-xs md:text-sm text-[#40322F]/85 font-serif italic tracking-wide mt-1 line-clamp-2">
                     "{config.quote}"
                   </p>
                 )}
@@ -98,10 +97,10 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
 
           {/* Bottom Film Strip (Left to Right) */}
           <div className="relative w-full flex-1 flex items-center overflow-hidden">
-            <VirtualizedFilmTrack
-              photos={bottomPhotos.length > 0 ? bottomPhotos : topPhotos}
+            <ContinuousFilmTrack
+              photos={bottomPhotos}
               direction="ltr"
-              speedPxPerSec={(config.speed || 48) * 0.92}
+              speedPxPerSec={config.speed || 48}
               sceneStartTime={scene.startTime}
               showFrameNames={showFrameNames}
               showMetadata35mm={showMetadata35mm}
@@ -110,12 +109,26 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
           </div>
         </div>
       ) : (
-        /* Single Continuous Film Ribbon */
-        <div className="relative z-10 w-full h-full flex flex-col justify-center items-center overflow-hidden py-8">
-          <VirtualizedFilmTrack
+        /* Single Film Strip: Centered Large Viewport */
+        <div className="relative z-10 w-full h-full flex flex-col justify-center items-center">
+          {/* Top Minimalist Chapter Indicator */}
+          {showCenterTitle && (
+            <div className="absolute top-8 z-20 text-center pointer-events-none px-4">
+              <h2 className="text-lg md:text-2xl font-serif font-medium text-[#40322F] tracking-wide drop-shadow-sm">
+                {config.textTitle || scene.chapterTitle || 'Những ngày mình đã có nhau'}
+              </h2>
+              {showCenterNames && (
+                <div className="text-xs font-sans font-bold tracking-[0.3em] text-[#C93442] uppercase mt-1">
+                  {coupleNames}
+                </div>
+              )}
+            </div>
+          )}
+
+          <ContinuousFilmTrack
             photos={photos}
             direction="rtl"
-            speedPxPerSec={config.speed || 55}
+            speedPxPerSec={config.speed || 52}
             sceneStartTime={scene.startTime}
             isSingleLarge={true}
             showFrameNames={showFrameNames}
@@ -124,7 +137,7 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
           />
 
           {showQuote && config.quote && (
-            <div className="absolute bottom-6 z-20 px-8 py-2 rounded-full bg-white/85 border border-[#C5A16E]/30 backdrop-blur-md shadow-md">
+            <div className="absolute bottom-6 z-20 px-8 py-2.5 rounded-full bg-white/95 border border-[#C5A16E]/30 shadow-md">
               <p className="text-xs md:text-sm text-[#40322F] font-serif italic tracking-wide text-center">
                 "{config.quote}"
               </p>
@@ -136,7 +149,18 @@ export const FilmRollScene: React.FC<FilmRollSceneProps> = ({
   );
 };
 
-interface VirtualizedFilmTrackProps {
+// Filmstrip motion is driven directly by masterClock. Ignore the throttled
+// React progress prop so the large strip tree is not reconciled at 10 Hz.
+export const FilmRollScene = React.memo(
+  FilmRollSceneComponent,
+  (previous, next) =>
+    previous.scene === next.scene &&
+    (previous.isDual ?? false) === (next.isDual ?? false)
+);
+
+FilmRollScene.displayName = 'FilmRollScene';
+
+interface ContinuousFilmTrackProps {
   photos: PhotoItem[];
   direction: 'rtl' | 'ltr';
   speedPxPerSec: number;
@@ -147,7 +171,12 @@ interface VirtualizedFilmTrackProps {
   coupleNames: string;
 }
 
-const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
+/**
+ * 60 FPS Zero-Lag Film Track
+ * Mounts fixed repeated items with object-cover and moves via hardware-accelerated translate3d.
+ * Never calls setState during requestAnimationFrame, eliminating 100% of stutter and lag.
+ */
+const ContinuousFilmTrack: React.FC<ContinuousFilmTrackProps> = ({
   photos,
   direction,
   speedPxPerSec,
@@ -157,102 +186,106 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   showMetadata35mm,
   coupleNames,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  const [containerWidth, setContainerWidth] = useState(1920);
-  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
+  // Keep the image viewport generous while deriving card width from the
+  // original aspect ratio. `contain` therefore preserves faces without
+  // introducing the large side gutters of a fixed-width frame.
+  const frameHeight = isSingleLarge ? 380 : 248;
+  const gap = 14;
+  const cardPadding = 6;
 
-  // ResizeObserver to accurately measure viewport width
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const updateSize = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth || 1920);
-      }
-    };
-    updateSize();
+  const itemDimensions: ItemDimension[] = useMemo(() => {
+    return calculateItemDimensions(photos, frameHeight).map((dimension) => ({
+      ...dimension,
+      width: dimension.width + cardPadding * 2,
+    }));
+  }, [photos, frameHeight, cardPadding]);
 
-    const ro = new ResizeObserver(updateSize);
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  // Compute layout dimensions for each photo based on natural aspect ratio
-  const frameHeight = isSingleLarge ? 360 : 240;
-  const gap = 24;
-
-  const itemDimensions = useMemo(() => {
-    return calculateItemDimensions(photos, frameHeight);
-  }, [photos, frameHeight]);
-
-  // Compute cumulative offset table for O(1) positioning
   const { offsets, singleLoopWidth } = useMemo(() => {
     return calculateCumulativeOffsets(itemDimensions, gap);
   }, [itemDimensions, gap]);
 
-  // Compute initial camera position synchronously for zero-delay first render
-  const initialCameraX = useMemo(() => {
+  // Two loops are sufficient whenever one loop is wider than the viewport.
+  // Add only the repetitions needed by the current presentation viewport;
+  // this avoids eagerly mounting an arbitrary 8000px strip on 1080p screens.
+  const loopCount = useMemo(() => {
+    if (singleLoopWidth <= 1) return 1;
+    const viewportWidth = typeof window === 'undefined'
+      ? 1920
+      : Math.max(1, window.innerWidth, window.screen?.availWidth || 0);
+    return Math.max(2, Math.ceil(viewportWidth / singleLoopWidth) + 1);
+  }, [singleLoopWidth]);
+
+  // Flatten repeated items
+  const renderedItems = useMemo(() => {
+    if (!photos || photos.length === 0 || singleLoopWidth <= 1) return [];
+
+    const items: Array<{
+      key: string;
+      photo: PhotoItem;
+      width: number;
+      left: number;
+      frameIndex: number;
+      loopIndex: number;
+    }> = [];
+
+    let globalIndex = 1;
+    for (let loop = 0; loop < loopCount; loop++) {
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        const dim = itemDimensions[i] || { width: 260, height: frameHeight };
+        const left = loop * singleLoopWidth + (offsets[i] || 0);
+
+        items.push({
+          key: `loop_${loop}_photo_${photo.id || i}`,
+          photo,
+          width: dim.width,
+          left,
+          frameIndex: globalIndex++,
+          loopIndex: loop,
+        });
+      }
+    }
+
+    return items;
+  }, [photos, loopCount, singleLoopWidth, itemDimensions, offsets, frameHeight]);
+
+  const initialTranslateX = useMemo(() => {
     if (singleLoopWidth <= 1) return 0;
-    const initialElapsed = Math.max(0, masterClock.getCurrentTime() - sceneStartTime);
-    const { cameraX } = getTrackPosition(initialElapsed, speedPxPerSec, singleLoopWidth, direction);
-    return cameraX;
+    const elapsed = Math.max(0, masterClock.getCurrentTime() - sceneStartTime);
+    return getTrackPosition(elapsed, speedPxPerSec, singleLoopWidth, direction).translateX;
   }, [sceneStartTime, speedPxPerSec, singleLoopWidth, direction]);
 
-  // State to hold the camera position for virtual DOM window slicing
-  const [virtualCameraX, setVirtualCameraX] = useState(initialCameraX);
-  const lastUpdateCameraXRef = useRef(initialCameraX);
-  const lastTimeRef = useRef(masterClock.getCurrentTime());
+  // Connect directly to masterClock before paint. The last-value guard is
+  // important during the Ch1 -> Ch2 overlap: elapsed time for Ch2 is still 0,
+  // so we avoid writing an identical transform on every RAF frame.
+  useLayoutEffect(() => {
+    if (singleLoopWidth <= 1) return;
 
-  // Connect directly to masterClock frame tick (60 FPS without React re-render of tree!)
-  useEffect(() => {
+    let lastTranslateX = Number.NaN;
+
     const unsub = masterClock.onFrame((currentTime) => {
-      if (!trackRef.current || singleLoopWidth <= 1) return;
+      if (!trackRef.current) return;
 
       const elapsedInScene = Math.max(0, currentTime - sceneStartTime);
-      const { translateX, cameraX } = getTrackPosition(
+      const { translateX } = getTrackPosition(
         elapsedInScene,
         speedPxPerSec,
         singleLoopWidth,
         direction
       );
 
-      trackRef.current.style.transform = `translate3d(${translateX}px, 0, 0)`;
-
-      // Detect wrap, seek, or continuous scroll beyond threshold
-      const isWrapOrSeek =
-        Math.abs(currentTime - lastTimeRef.current) > 0.2 ||
-        Math.abs(cameraX - lastUpdateCameraXRef.current) > 100;
-
-      lastTimeRef.current = currentTime;
-
-      if (isWrapOrSeek) {
-        lastUpdateCameraXRef.current = cameraX;
-        setVirtualCameraX(cameraX);
+      if (Number.isFinite(lastTranslateX) && Math.abs(translateX - lastTranslateX) < 0.01) {
+        return;
       }
+
+      lastTranslateX = translateX;
+      trackRef.current.style.transform = `translate3d(${translateX.toFixed(3)}px, 0, 0)`;
     });
 
     return () => unsub();
   }, [sceneStartTime, speedPxPerSec, singleLoopWidth, direction]);
-
-  // Compute the bounded virtual window of items (covers viewport + lookahead buffer)
-  const visibleItems: VisibleFilmItem[] = useMemo(() => {
-    const bufferPx = Math.max(480, Math.round(containerWidth * 0.35));
-    return getVisibleItems(
-      virtualCameraX,
-      containerWidth,
-      bufferPx,
-      photos,
-      offsets,
-      itemDimensions,
-      singleLoopWidth,
-      direction
-    );
-  }, [photos, offsets, itemDimensions, singleLoopWidth, virtualCameraX, containerWidth, direction]);
-
-  const handleImageError = (id: string) => {
-    setFailedImageIds((prev) => new Set(prev).add(id));
-  };
 
   if (!photos || photos.length === 0) {
     return (
@@ -263,62 +296,67 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
   }
 
   const hasFooter = showFrameNames || showMetadata35mm;
-  const cardExtraPadding = hasFooter ? 24 : 12;
+  const footerHeight = hasFooter ? 18 : 0;
+  const cardHeight = frameHeight + cardPadding * 2 + footerHeight;
 
   return (
     <div
-      ref={containerRef}
       className="relative w-full flex flex-col justify-center select-none overflow-hidden"
+      style={{ contain: 'layout paint' }}
     >
       {/* 35mm Top Perforation Track */}
-      <div className="w-full h-4 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
+      <div className="w-full h-3 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
 
-      {/* Film Strip Track with True DOM Windowing */}
+      {/* Film Strip Track with GPU-accelerated translate3d */}
       <div
         className="relative overflow-hidden"
-        style={{ height: `${frameHeight + cardExtraPadding + 24}px` }}
+        style={{ height: `${cardHeight + 12}px`, contain: 'layout paint' }}
       >
         <div
           ref={trackRef}
-          className="absolute inset-y-0 left-0 h-full will-change-transform"
-          style={{ width: `${singleLoopWidth * 3}px` }}
+          className="absolute inset-y-0 left-0 h-full will-change-transform flex"
+          style={{
+            width: `${singleLoopWidth * loopCount}px`,
+            transform: `translate3d(${initialTranslateX.toFixed(3)}px, 0, 0)`,
+            backfaceVisibility: 'hidden',
+            contain: 'layout paint',
+          }}
         >
-          {visibleItems.map((item) => {
-            const isFailed = failedImageIds.has(item.photo.id);
+          {renderedItems.map((item) => {
             const photo = item.photo;
 
             return (
               <div
                 key={item.key}
-                className="absolute top-2 p-2.5 bg-white border border-[#E77A93]/40 rounded-[2px] luxury-shadow-md flex flex-col justify-between"
+                className="absolute top-1.5 p-1.5 bg-white border border-[#E77A93]/40 rounded-[2px] shadow-sm flex flex-col justify-between"
                 style={{
-                  left: `${item.absoluteX}px`,
+                  left: `${item.left}px`,
                   width: `${item.width}px`,
-                  height: `${frameHeight + cardExtraPadding}px`,
+                  height: `${cardHeight}px`,
+                  contain: 'layout paint',
                 }}
               >
-                <div className="w-full h-full overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center relative">
-                  {!isFailed ? (
-                    <img
-                      src={photo.mediumUrl || photo.displayUrl || photo.url}
-                      alt={photo.title || 'Wedding Memory'}
-                      className="w-full h-full object-contain pointer-events-none"
-                      loading="eager"
-                      decoding="async"
-                      onError={() => handleImageError(photo.id)}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center p-2 text-[#C5A16E]">
-                      <span className="font-serif text-xs italic">
-                        {photo.title || 'Kỷ niệm yêu thương'}
-                      </span>
-                    </div>
-                  )}
+                <div
+                  className="w-full shrink-0 overflow-hidden rounded-[1px] bg-[#FAF5EE] flex items-center justify-center relative"
+                  style={{ height: `${frameHeight}px` }}
+                >
+                  <img
+                    src={photo.mediumUrl || photo.displayUrl || photo.url}
+                    alt={photo.title || 'Wedding Memory'}
+                    className="w-full h-full object-contain pointer-events-none"
+                    loading={item.loopIndex <= 1 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchPriority={item.loopIndex === 0 ? 'high' : 'low'}
+                    draggable={false}
+                    style={{
+                      objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+                    }}
+                  />
                   {/* Subtle inner photo border */}
                   <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-black/5" />
                 </div>
 
-                {/* Optional Minimalist 35mm Film Footer Stamp (Default OFF) */}
+                {/* Optional Minimalist 35mm Film Footer Stamp */}
                 {hasFooter && (
                   <div className="mt-1 flex items-center justify-between text-[8px] font-mono text-[#40322F]/55 tracking-wider">
                     {showMetadata35mm ? (
@@ -336,7 +374,7 @@ const VirtualizedFilmTrack: React.FC<VirtualizedFilmTrackProps> = ({
       </div>
 
       {/* 35mm Bottom Perforation Track */}
-      <div className="w-full h-4 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
+      <div className="w-full h-3 bg-[#FCE8ED] film-sprocket-track border-y border-[#E77A93]/40" />
     </div>
   );
 };

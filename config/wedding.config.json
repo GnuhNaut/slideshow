@@ -9,8 +9,8 @@
     "lunarDate": "09.09 Bính Ngọ",
     "venueName": "White Palace Convention Center",
     "thankYouMessage": "Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.",
-    "openingPhoto": "01-intro/001.jpg",
-    "endingPhoto": "07-final/001.jpg"
+    "openingPhoto": "01-intro/QUEN1362.webp",
+    "endingPhoto": "07-final/002_QUEN1723.webp"
   },
   "display": {
     "aspectRatio": "16:9",
@@ -19,7 +19,7 @@
   },
   "audio": {
     "mode": "global",
-    "globalFile": "global/background.mp3",
+    "globalFile": "global/audio.mp3",
     "globalVolume": 0.85,
     "loopGlobal": true,
     "crossfadeSeconds": 0.8,
@@ -88,7 +88,10 @@
     "07-final": {
       "enabled": true,
       "mode": "custom",
-      "durationSeconds": 2
+      "durationSeconds": 2,
+      "vietnameseTitle": "Ngày mình chọn nhau",
+      "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt.",
+      "accentQuote": "19.10.2026"
     }
   },
   "photoOverrides": {}

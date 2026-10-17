@@ -41,22 +41,18 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
 
       switch (tId) {
         case 'FILM_PORTAL_OPENING': {
-          // Ch 1 -> 2: Intro typography recedes into depth as 35mm film portal sweeps across
-          const ease = gsap.parseEase('power2.inOut')(p);
+          // Ch 1 -> 2 intentionally uses an opacity-only dissolve. Applying a
+          // 3D transform to the complete two-track filmstrip promotes dozens of
+          // photographs into one oversized GPU layer and causes a visible hitch.
+          const ease = gsap.parseEase('power1.inOut')(p);
           if (outgoingRef.current) {
             gsap.set(outgoingRef.current, {
-              scale: 1 - ease * 0.12,
-              opacity: Math.max(0, 1 - ease * 1.3),
-              z: -ease * 240,
-              force3D: true,
+              opacity: Math.max(0, 1 - ease * 1.35),
             });
           }
           if (incomingRef.current) {
             gsap.set(incomingRef.current, {
-              scale: 0.88 + ease * 0.12,
-              opacity: Math.min(1, ease * 1.6),
-              z: (1 - ease) * 160,
-              force3D: true,
+              opacity: Math.max(0, Math.min(1, (ease - 0.08) / 0.92)),
             });
           }
           break;
@@ -254,12 +250,21 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
   }
 
   // Active transition for all other 3D transitions
+  const isLightweightFilmOpening = transitionId === 'FILM_PORTAL_OPENING';
+
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#FFF9F2] perspective-cinema">
+    <div
+      className={`relative w-full h-full overflow-hidden bg-[#FFF9F2] ${
+        isLightweightFilmOpening ? '' : 'perspective-cinema'
+      }`}
+    >
       {/* Outgoing Scene */}
       <div
         ref={outgoingRef}
-        className="absolute inset-0 w-full h-full preserve-3d will-change-transform z-10 pointer-events-none"
+        className={`absolute inset-0 w-full h-full z-10 pointer-events-none ${
+          isLightweightFilmOpening ? '' : 'preserve-3d will-change-transform'
+        }`}
+        style={isLightweightFilmOpening ? { willChange: 'opacity' } : undefined}
       >
         {outgoingSceneNode || activeSceneNode}
       </div>
@@ -267,7 +272,10 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
       {/* Incoming Scene */}
       <div
         ref={incomingRef}
-        className="absolute inset-0 w-full h-full preserve-3d will-change-transform z-20 pointer-events-none"
+        className={`absolute inset-0 w-full h-full z-20 pointer-events-none ${
+          isLightweightFilmOpening ? '' : 'preserve-3d will-change-transform'
+        }`}
+        style={isLightweightFilmOpening ? { willChange: 'opacity' } : undefined}
       >
         {incomingSceneNode}
       </div>

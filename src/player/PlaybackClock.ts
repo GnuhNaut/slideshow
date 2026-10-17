@@ -12,6 +12,7 @@ export interface ClockState {
 type FrameListener = (time: number, state: ClockState) => void;
 type StatusListener = (status: PlaybackStatus) => void;
 type ThrottledTimeListener = (time: number, totalDuration: number) => void;
+type SeekListener = (time: number) => void;
 
 class MasterPlaybackClock {
   private currentTime: number = 0;
@@ -25,6 +26,7 @@ class MasterPlaybackClock {
   private frameListeners: Set<FrameListener> = new Set();
   private statusListeners: Set<StatusListener> = new Set();
   private throttledListeners: Set<ThrottledTimeListener> = new Set();
+  private seekListeners: Set<SeekListener> = new Set();
 
   private lastThrottleTime: number = 0;
   private throttleIntervalMs: number = 100; // 10Hz updates for UI timecode
@@ -108,6 +110,7 @@ class MasterPlaybackClock {
     // Immediately notify frame listeners
     this.emitFrame();
     this.emitThrottled();
+    this.emitSeek();
   }
 
   public setSpeed(speed: number) {
@@ -148,6 +151,15 @@ class MasterPlaybackClock {
     listener(this.status);
     return () => {
       this.statusListeners.delete(listener);
+    };
+  }
+
+  // Subscribe to explicit timeline jumps so audio and other time-based systems
+  // stay aligned no matter whether the seek came from the HUD, hotkeys or remote.
+  public onSeek(listener: SeekListener): () => void {
+    this.seekListeners.add(listener);
+    return () => {
+      this.seekListeners.delete(listener);
     };
   }
 
@@ -233,6 +245,16 @@ class MasterPlaybackClock {
     });
   }
 
+  private emitSeek() {
+    this.seekListeners.forEach((listener) => {
+      try {
+        listener(this.currentTime);
+      } catch (err) {
+        console.error('Seek listener error:', err);
+      }
+    });
+  }
+
   public getState(): ClockState {
     return {
       currentTime: this.currentTime,
@@ -247,6 +269,7 @@ class MasterPlaybackClock {
     this.frameListeners.clear();
     this.statusListeners.clear();
     this.throttledListeners.clear();
+    this.seekListeners.clear();
   }
 }
 

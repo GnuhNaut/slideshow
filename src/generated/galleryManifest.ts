@@ -15,7 +15,7 @@ export const filesystemProject: WeddingProject = {
   "venueName": "White Palace Convention Center",
   "thankYouMessage": "Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.",
   "openingPhotoId": "photo_ch1_intro_QUEN1362_webp",
-  "endingPhotoId": "photo_ch7_forever_QUEN1723_webp",
+  "endingPhotoId": "photo_ch7_forever_002_QUEN1723_webp",
   "chapters": [
     {
       "id": "ch1_intro",
@@ -1405,8 +1405,8 @@ export const filesystemProject: WeddingProject = {
       "chapterIndex": 7,
       "folderName": "07-final",
       "title": "Kết Thúc",
-      "vietnameseTitle": "Chương VII: Khép Lại & Mãi Mãi",
-      "subtitle": "",
+      "vietnameseTitle": "Ngày mình chọn nhau",
+      "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt.",
       "description": "",
       "enabled": true,
       "mode": "custom",
@@ -1416,16 +1416,16 @@ export const filesystemProject: WeddingProject = {
       "transitionType": "soft_light",
       "photos": [
         {
-          "id": "photo_ch7_forever_QUEN1723_webp",
+          "id": "photo_ch7_forever_001_QUEN1719_webp",
           "chapterId": "ch7_forever",
-          "title": "QUEN1723",
-          "url": "/gallery/_optimized/07-final_QUEN1723_display.webp",
-          "thumbnail": "/gallery/_optimized/07-final_QUEN1723_thumb.webp",
-          "mediumUrl": "/gallery/_optimized/07-final_QUEN1723_medium.webp",
-          "displayUrl": "/gallery/_optimized/07-final_QUEN1723_display.webp",
-          "originalUrl": "/gallery/07-final/QUEN1723.webp",
-          "originalWidth": 5273,
-          "originalHeight": 7909,
+          "title": "001_QUEN1719",
+          "url": "/gallery/_optimized/07-final_001_QUEN1719_display.webp",
+          "thumbnail": "/gallery/_optimized/07-final_001_QUEN1719_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/07-final_001_QUEN1719_medium.webp",
+          "displayUrl": "/gallery/_optimized/07-final_001_QUEN1719_display.webp",
+          "originalUrl": "/gallery/07-final/001_QUEN1719.webp",
+          "originalWidth": 5374,
+          "originalHeight": 8061,
           "aspectRatio": 0.6667,
           "cropMode": "contain",
           "focalPoint": {
@@ -1435,10 +1435,55 @@ export const filesystemProject: WeddingProject = {
           "isHero": false,
           "order": 0,
           "createdAt": 0,
-          "relativePath": "07-final/QUEN1723.webp"
+          "relativePath": "07-final/001_QUEN1719.webp"
+        },
+        {
+          "id": "photo_ch7_forever_002_QUEN1723_webp",
+          "chapterId": "ch7_forever",
+          "title": "002_QUEN1723",
+          "url": "/gallery/_optimized/07-final_002_QUEN1723_display.webp",
+          "thumbnail": "/gallery/_optimized/07-final_002_QUEN1723_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/07-final_002_QUEN1723_medium.webp",
+          "displayUrl": "/gallery/_optimized/07-final_002_QUEN1723_display.webp",
+          "originalUrl": "/gallery/07-final/002_QUEN1723.webp",
+          "originalWidth": 5273,
+          "originalHeight": 7909,
+          "aspectRatio": 0.6667,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 1,
+          "createdAt": 0,
+          "relativePath": "07-final/002_QUEN1723.webp"
+        },
+        {
+          "id": "photo_ch7_forever_003_QUEN1770_webp",
+          "chapterId": "ch7_forever",
+          "title": "003_QUEN1770",
+          "url": "/gallery/_optimized/07-final_003_QUEN1770_display.webp",
+          "thumbnail": "/gallery/_optimized/07-final_003_QUEN1770_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/07-final_003_QUEN1770_medium.webp",
+          "displayUrl": "/gallery/_optimized/07-final_003_QUEN1770_display.webp",
+          "originalUrl": "/gallery/07-final/003_QUEN1770.webp",
+          "originalWidth": 5464,
+          "originalHeight": 8192,
+          "aspectRatio": 0.667,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 2,
+          "createdAt": 0,
+          "relativePath": "07-final/003_QUEN1770.webp"
         }
       ],
       "cropMode": "contain",
+      "accentQuote": "19.10.2026",
       "showCenterTitle": true,
       "showCenterNames": false,
       "showFrameNames": false,
@@ -1478,5 +1523,5 @@ export const filesystemProject: WeddingProject = {
   "createdAt": 1792151963046,
   "updatedAt": 1792151963046
 };
-export const totalPhotosFound: number = 57;
+export const totalPhotosFound: number = 59;
 export const totalAudioFound: number = 1;

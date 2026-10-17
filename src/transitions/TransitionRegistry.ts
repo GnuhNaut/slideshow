@@ -1,7 +1,7 @@
 // Registry of cinematic chapter transitions and their durations
 
 export type ChapterTransitionId =
-  | 'FILM_PORTAL_OPENING'           // Ch 1 -> 2 (1.2s): Intro typography recedes as 35mm film portal streaks across
+  | 'FILM_PORTAL_OPENING'           // Ch 1 -> 2 (1.2s): lightweight ivory dissolve into the filmstrip
   | 'TRUE_FILM_TO_HERO_MORPH'        // Ch 2 -> 3 (1.3s): Proposal photo detaches from filmstrip and zooms to center
   | 'PREMIUM_3D_ALBUM_TURN'          // Ch 3 -> 4 (1.1s): True 3D album page flip with hinge at left edge
   | 'GALLERY_SPACE_TRANSFORMATION'   // Ch 4 -> 5 (1.2s): Family album recedes into 3D Z-space, wedding photos surge forward

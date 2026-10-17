@@ -14,6 +14,7 @@ export const ThankYouScene: React.FC<ThankYouSceneProps> = ({ scene, progress, i
       photos={scene.photos}
       progress={progress}
       isPlaying={isPlaying}
+      scene={scene}
     />
   );
 };

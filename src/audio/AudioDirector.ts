@@ -1,7 +1,7 @@
 // AudioDirector: Dual-Mode Cinematic Wedding Audio Engine
 // Manages Global Soundtrack vs Per-Chapter Dedicated Tracks with Seamless Crossfading
 
-import { WeddingProject, AudioTrack, ChapterConfig } from '../types/project';
+import { WeddingProject, AudioTrack } from '../types/project';
 import { CompiledTimeline } from '../types/timeline';
 import { masterClock, PlaybackStatus } from '../player/PlaybackClock';
 import { audioEngine } from './AudioEngine';
@@ -38,6 +38,7 @@ class AudioDirectorEngine {
 
   private unsubClockStatus: (() => void) | null = null;
   private unsubClockFrame: (() => void) | null = null;
+  private unsubClockSeek: (() => void) | null = null;
 
   constructor() {
     this.initChannels();
@@ -68,6 +69,10 @@ class AudioDirectorEngine {
 
     this.unsubClockFrame = masterClock.onFrame((currentTime) => {
       this.handleFrameTick(currentTime);
+    });
+
+    this.unsubClockSeek = masterClock.onSeek((currentTime) => {
+      this.seek(currentTime);
     });
   }
 
@@ -432,6 +437,7 @@ class AudioDirectorEngine {
   public destroy() {
     if (this.unsubClockStatus) this.unsubClockStatus();
     if (this.unsubClockFrame) this.unsubClockFrame();
+    if (this.unsubClockSeek) this.unsubClockSeek();
     if (this.channelA) {
       this.channelA.pause();
       this.channelA.src = '';

@@ -595,6 +595,8 @@ function compileChapterScenes(
           textTitle: chapter.vietnameseTitle,
           textSubtitle: chapter.subtitle || 'Cảm ơn gia đình, bạn bè đã cùng làm nên ngày vui trọn vẹn.',
           quote: project.thankYouMessage,
+          coupleNames: `${project.groomName} & ${project.brideName}`,
+          weddingDate: project.weddingDate,
           ambientLight: 'warm',
         },
         transitionIn: 'soft_light',
@@ -614,25 +616,45 @@ function compileChapterScenes(
         ? overrideDur
         : (isCustom ? Math.max(1.0, customDuration) : autoDuration);
 
-      // GLOBAL ENDING PHOTO LOOKUP:
-      // Searches across ALL chapters in the project, so picking a photo from Chapter 5, 2, etc. works seamlessly!
+      // CHAPTER 7 TRIPTYCH PHOTO LOOKUP:
+      // Uses endingPhotoId if configured, or 3 photos from chapter 07-final, or selects 3 matching photos from chapter 5
       const allProjectPhotos = project.chapters.flatMap((c) => c.photos || []);
-      const finalPhoto =
-        (project.endingPhotoId ? allProjectPhotos.find((p) => p.id === project.endingPhotoId) : null) ||
-        photos[0] ||
-        allProjectPhotos[allProjectPhotos.length - 1] || {
-          id: 'default_ending',
-          chapterId: chapter.id,
-          title: 'Our Forever',
-          url: '',
-          originalWidth: 1920,
-          originalHeight: 1080,
-          aspectRatio: 16 / 9,
-          cropMode: 'cover' as const,
-          focalPoint: { x: 50, y: 50 },
-          order: 0,
-          createdAt: Date.now(),
-        };
+      const configuredEndingPhoto = project.endingPhotoId
+        ? allProjectPhotos.find((p) => p.id === project.endingPhotoId)
+        : null;
+
+      const endingPhotos: PhotoItem[] = [];
+      if (configuredEndingPhoto) {
+        endingPhotos.push(configuredEndingPhoto);
+        for (const p of photos) {
+          if (endingPhotos.length >= 3) break;
+          if (!endingPhotos.some((x) => x.id === p.id)) {
+            endingPhotos.push(p);
+          }
+        }
+        for (const p of allProjectPhotos) {
+          if (endingPhotos.length >= 3) break;
+          if (!endingPhotos.some((x) => x.id === p.id)) {
+            endingPhotos.push(p);
+          }
+        }
+      } else if (photos.length >= 3) {
+        endingPhotos.push(...photos.slice(0, 3));
+      } else if (photos.length > 0) {
+        endingPhotos.push(...photos);
+        const weddingPhotos = project.chapters.find((c) => c.chapterIndex === 5)?.photos || [];
+        for (const wp of weddingPhotos) {
+          if (endingPhotos.length >= 3) break;
+          if (!endingPhotos.some((p) => p.id === wp.id)) {
+            endingPhotos.push(wp);
+          }
+        }
+      } else {
+        const weddingPhotos = project.chapters.find((c) => c.chapterIndex === 5)?.photos || allProjectPhotos;
+        endingPhotos.push(...weddingPhotos.slice(0, 3));
+      }
+
+      const finalHero = configuredEndingPhoto || endingPhotos[0] || null;
 
       scenes.push({
         id: `${chapter.id}_scene_final_freeze`,
@@ -643,12 +665,14 @@ function compileChapterScenes(
         startTime: cursor,
         duration,
         endTime: cursor + duration,
-        photos: [finalPhoto],
-        heroPhoto: finalPhoto,
+        photos: endingPhotos,
+        heroPhoto: finalHero,
         config: {
-          textTitle: `${project.groomName} & ${project.brideName}`,
-          textSubtitle: `${project.weddingDate} • ${project.lunarDate}`,
-          quote: chapter.accentQuote || 'Hạnh phúc đong đầy theo năm tháng',
+          textTitle: chapter.vietnameseTitle || 'Ngày mình chọn nhau',
+          textSubtitle: chapter.subtitle || 'Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt.',
+          quote: chapter.accentQuote || project.weddingDate || '19.10.2026',
+          coupleNames: `${project.groomName} & ${project.brideName}`,
+          weddingDate: project.weddingDate || '19.10.2026',
           ambientLight: 'gold',
         },
         transitionIn: 'soft_light',

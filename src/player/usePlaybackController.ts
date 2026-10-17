@@ -5,7 +5,7 @@ import { audioDirector } from '../audio/AudioDirector';
 import { remoteChannel } from './remoteChannel';
 import { masterClock } from './PlaybackClock';
 
-export function usePlaybackController(isStageMode: boolean = false) {
+export function usePlaybackController(_isStageMode: boolean = false) {
   const isPlaying = useWeddingStore((s) => s.playback.isPlaying);
   const currentTime = useWeddingStore((s) => s.playback.currentTime);
   const isFinished = useWeddingStore((s) => s.playback.isFinished);
@@ -54,8 +54,6 @@ export function usePlaybackController(isStageMode: boolean = false) {
           break;
         case 'SEEK':
           store.seek(msg.time);
-          audioDirector.seek(msg.time);
-          audioEngine.seek(msg.time);
           break;
         case 'SEEK_CHAPTER':
           store.seekToChapter(msg.chapterId);
@@ -68,7 +66,6 @@ export function usePlaybackController(isStageMode: boolean = false) {
           break;
         case 'RESTART':
           store.restart();
-          audioDirector.restart();
           break;
         case 'SET_VOLUME':
           store.setVolume(msg.volume);

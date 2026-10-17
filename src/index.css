@@ -111,10 +111,6 @@ html, body {
   background-repeat: repeat-x;
 }
 
-.scene-photo-fit img {
-  object-fit: contain !important;
-}
-
 /* Subtle Film Grain */
 .film-grain {
   position: absolute;

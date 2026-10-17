@@ -68,16 +68,13 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   const transState = computeTransitionState(scenes, currentTime);
   const activeScene = transState.activeScene || currentScene;
   const upcomingScene = transState.upcomingScene;
-  const hasNarration = Boolean(activeScene && activeScene.chapterIndex !== 2 && activeScene.chapterIndex !== 7);
-  const heading = hasNarration && activeScene
-    ? activeScene.config.textTitle || activeScene.chapterTitle
-    : undefined;
-  const narration = hasNarration && activeScene ? activeScene.config.textSubtitle : undefined;
 
   React.useEffect(() => {
     if (!upcomingScene?.photos.length) return;
-    upcomingScene.photos.slice(0, 2).forEach((photo) => {
-      const imageUrl = photo.displayUrl || photo.url;
+    const preloadCount =
+      upcomingScene.type === 'film_roll' || upcomingScene.type === 'dual_film_roll' ? 8 : 2;
+    upcomingScene.photos.slice(0, preloadCount).forEach((photo) => {
+      const imageUrl = photo.mediumUrl || photo.displayUrl || photo.url;
       if (!imageUrl) return;
       const img = new Image();
       img.src = imageUrl;
@@ -118,62 +115,43 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
   }
 
   // Pre-warm incoming scene during lookahead phase (300-400ms before transition boundary T)
+  // Filmstrips are pre-decoded as images instead of mounting their entire DOM
+  // tree twice (hidden here, then again inside the compositor).
+  const upcomingIsFilmstrip =
+    transState.upcomingScene?.type === 'film_roll' ||
+    transState.upcomingScene?.type === 'dual_film_roll';
   const preparedNode =
-    transState.isPrepared && !transState.isTransitioning && transState.upcomingScene
+    transState.isPrepared &&
+    !transState.isTransitioning &&
+    transState.upcomingScene &&
+    !upcomingIsFilmstrip
       ? renderSceneContent(transState.upcomingScene, 0, false)
       : null;
 
   return (
-    <div className="scene-photo-fit relative flex h-full w-full flex-col overflow-hidden select-none bg-[#FFF9F2] md:flex-row">
-      {heading && (
-        <aside className="order-2 flex min-h-[27vh] max-h-[34vh] w-full shrink-0 flex-col justify-center overflow-y-auto border-t border-[#E7C9C5] bg-[#F7ECE8] px-7 py-5 md:order-1 md:min-h-0 md:max-h-none md:w-[31%] md:max-w-[460px] md:min-w-[300px] md:border-r md:border-t-0 md:px-10 md:py-10">
-          <div className="mb-4 flex items-center gap-3 md:mb-7">
-            <span className="h-px w-8 bg-[#C93442]" />
-            <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9B222E]">
-              Tuấn Hùng &amp; Sao Mai
-            </span>
-          </div>
-          <h2 className="max-w-[14ch] font-serif text-[2rem] font-medium leading-[1.08] text-[#40322F] md:text-[2.6rem]">
-            {heading}
-          </h2>
-          {narration && (
-            <p className="mt-4 max-w-[34ch] font-serif text-sm leading-relaxed text-[#6D5751] md:mt-6 md:text-base">
-              {narration}
-            </p>
-          )}
-          <div className="mt-5 hidden items-center gap-3 md:mt-9 md:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#C93442]" />
-            <span className="font-sans text-[9px] font-medium uppercase tracking-[0.18em] text-[#8E716C]">
-              19.10.2026
-            </span>
-          </div>
-        </aside>
+    <div className="scene-photo-fit relative h-full w-full overflow-hidden select-none bg-[#FFF9F2]">
+      <SceneCompositor
+        isTransitioning={transState.isTransitioning}
+        transitionId={transState.transitionId}
+        transitionProgress={transState.transitionProgress}
+        outgoingScene={transState.outgoingScene}
+        outgoingSceneProgress={transState.outgoingSceneProgress}
+        outgoingSceneNode={outgoingNode}
+        incomingSceneNode={incomingNode}
+        activeSceneNode={activeNode}
+      />
+
+      {preparedNode && (
+        <div
+          className="pointer-events-none absolute inset-0 -z-50 overflow-hidden opacity-0"
+          style={{ visibility: 'hidden' }}
+          aria-hidden="true"
+        >
+          {preparedNode}
+        </div>
       )}
 
-      <div className={`relative order-1 min-h-0 min-w-0 flex-1 overflow-hidden md:order-2 ${heading ? 'h-[66vh] md:h-full' : 'h-full'}`}>
-        <SceneCompositor
-          isTransitioning={transState.isTransitioning}
-          transitionId={transState.transitionId}
-          transitionProgress={transState.transitionProgress}
-          outgoingScene={transState.outgoingScene}
-          outgoingSceneProgress={transState.outgoingSceneProgress}
-          outgoingSceneNode={outgoingNode}
-          incomingSceneNode={incomingNode}
-          activeSceneNode={activeNode}
-        />
-
-        {preparedNode && (
-          <div
-            className="pointer-events-none absolute inset-0 -z-50 overflow-hidden opacity-0"
-            style={{ visibility: 'hidden' }}
-            aria-hidden="true"
-          >
-            {preparedNode}
-          </div>
-        )}
-
-        {enableGrain && <div className="film-grain" />}
-      </div>
+      {enableGrain && <div className="film-grain" />}
     </div>
   );
 };

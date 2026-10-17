@@ -76,7 +76,10 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
               <img
                 src={leftPhoto.displayUrl || leftPhoto.url}
                 alt={leftPhoto.title || 'Family'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition: `${leftPhoto.focalPoint?.x ?? 50}% ${leftPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
             )}
           </div>
@@ -89,13 +92,19 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
               <img
                 src={nextPhoto.displayUrl || nextPhoto.url}
                 alt={nextPhoto.title || 'Next moment'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition: `${nextPhoto.focalPoint?.x ?? 50}% ${nextPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
             ) : rightPhoto ? (
               <img
                 src={rightPhoto.displayUrl || rightPhoto.url}
                 alt={rightPhoto.title || 'Family right'}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition: `${rightPhoto.focalPoint?.x ?? 50}% ${rightPhoto.focalPoint?.y ?? 50}%`,
+                }}
               />
             ) : null}
           </div>
@@ -113,7 +122,10 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
                 <img
                   src={rightPhoto.displayUrl || rightPhoto.url}
                   alt={rightPhoto.title || 'Family right'}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${rightPhoto.focalPoint?.x ?? 50}% ${rightPhoto.focalPoint?.y ?? 50}%`,
+                  }}
                 />
               )}
             </div>
@@ -134,7 +146,10 @@ export const FX04_LuxuryAlbumPageTurn: React.FC<FX04Props> = ({
                 <img
                   src={nextPhoto.displayUrl || nextPhoto.url}
                   alt={nextPhoto.title || 'Next moment back'}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${nextPhoto.focalPoint?.x ?? 50}% ${nextPhoto.focalPoint?.y ?? 50}%`,
+                  }}
                 />
               )}
             </div>

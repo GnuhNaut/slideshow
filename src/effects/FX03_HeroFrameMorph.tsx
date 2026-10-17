@@ -84,7 +84,10 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
           <img
             src={photo.displayUrl || photo.url}
             alt={photo.title || 'Proposal Hero'}
-            className="w-full h-full object-contain mx-auto"
+            className="w-full h-full object-cover mx-auto"
+            style={{
+              objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+            }}
           />
           <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
         </div>

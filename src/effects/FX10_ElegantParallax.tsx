@@ -67,7 +67,10 @@ export const FX10_ElegantParallax: React.FC<FX10Props> = ({
           <img
             src={photo.displayUrl || photo.url}
             alt={photo.title || 'Parallax Hero'}
-            className="w-full h-full object-contain mx-auto"
+            className="w-full h-full object-cover mx-auto"
+            style={{
+              objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,
+            }}
           />
         </div>
       </div>

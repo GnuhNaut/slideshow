@@ -23,6 +23,18 @@ describe('MasterPlaybackClock V2', () => {
     expect(masterClock.getCurrentTime()).toBe(0);
   });
 
+  it('notifies seek listeners with the clamped time and supports unsubscribe', () => {
+    const listener = vi.fn();
+    const unsubscribe = masterClock.onSeek(listener);
+
+    masterClock.seek(150);
+    expect(listener).toHaveBeenLastCalledWith(100);
+
+    unsubscribe();
+    masterClock.seek(25);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('should enter FINAL_HOLD cleanly and notify listeners', () => {
     let statusReceived = '';
     const unsub = masterClock.onStatusChange((status) => {
