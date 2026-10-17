@@ -1495,7 +1495,7 @@ export const filesystemProject: WeddingProject = {
       "chapterIndex": 7,
       "folderName": "07-final",
       "title": "Kết Thúc",
-      "vietnameseTitle": "Ngày mình chọn nhau",
+      "vietnameseTitle": "Và cuối cùng chúng mình đã về chung một nhà!",
       "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt.",
       "description": "",
       "enabled": true,
