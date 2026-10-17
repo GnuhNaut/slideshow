@@ -44,7 +44,7 @@ export const FamilyGalleryScene: React.FC<FamilyGallerySceneProps> = ({
       />
       <ChapterStoryOverlay
         scene={scene}
-        chapterLabel="CHƯƠNG IV • VỀ CHUNG MỘT NHÀ"
+        chapterLabel="• VỀ CHUNG MỘT NHÀ"
         variant="banner"
       />
     </div>

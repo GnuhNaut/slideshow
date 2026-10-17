@@ -630,7 +630,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 10,
+      "durationOverride": 12,
       "transitionType": "soft_light",
       "photos": [
         {
@@ -873,7 +873,7 @@ export const filesystemProject: WeddingProject = {
       "chapterIndex": 5,
       "folderName": "05-wedding",
       "title": "Ảnh Cưới",
-      "vietnameseTitle": "Ngày mình chọn nhau",
+      "vietnameseTitle": "Và cuối cùng chúng mình đã về chung một nhà!",
       "subtitle": "Giữa muôn ánh nhìn, chúng mình chỉ thấy bàn tay đang nắm chặt.",
       "description": "",
       "enabled": true,
@@ -883,6 +883,94 @@ export const filesystemProject: WeddingProject = {
       "durationOverride": 90,
       "transitionType": "soft_light",
       "photos": [
+        {
+          "id": "photo_ch5_wedding_1_webp",
+          "chapterId": "ch5_wedding",
+          "title": "1",
+          "url": "/gallery/_optimized/05-wedding_1_display.webp",
+          "thumbnail": "/gallery/_optimized/05-wedding_1_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/05-wedding_1_medium.webp",
+          "displayUrl": "/gallery/_optimized/05-wedding_1_display.webp",
+          "originalUrl": "/gallery/05-wedding/1.webp",
+          "originalWidth": 1122,
+          "originalHeight": 1402,
+          "aspectRatio": 0.8003,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 0,
+          "createdAt": 0,
+          "relativePath": "05-wedding/1.webp"
+        },
+        {
+          "id": "photo_ch5_wedding_2_webp",
+          "chapterId": "ch5_wedding",
+          "title": "2",
+          "url": "/gallery/_optimized/05-wedding_2_display.webp",
+          "thumbnail": "/gallery/_optimized/05-wedding_2_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/05-wedding_2_medium.webp",
+          "displayUrl": "/gallery/_optimized/05-wedding_2_display.webp",
+          "originalUrl": "/gallery/05-wedding/2.webp",
+          "originalWidth": 1036,
+          "originalHeight": 1518,
+          "aspectRatio": 0.6825,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 1,
+          "createdAt": 0,
+          "relativePath": "05-wedding/2.webp"
+        },
+        {
+          "id": "photo_ch5_wedding_3_webp",
+          "chapterId": "ch5_wedding",
+          "title": "3",
+          "url": "/gallery/_optimized/05-wedding_3_display.webp",
+          "thumbnail": "/gallery/_optimized/05-wedding_3_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/05-wedding_3_medium.webp",
+          "displayUrl": "/gallery/_optimized/05-wedding_3_display.webp",
+          "originalUrl": "/gallery/05-wedding/3.webp",
+          "originalWidth": 1070,
+          "originalHeight": 1470,
+          "aspectRatio": 0.7279,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 2,
+          "createdAt": 0,
+          "relativePath": "05-wedding/3.webp"
+        },
+        {
+          "id": "photo_ch5_wedding_4_webp",
+          "chapterId": "ch5_wedding",
+          "title": "4",
+          "url": "/gallery/_optimized/05-wedding_4_display.webp",
+          "thumbnail": "/gallery/_optimized/05-wedding_4_thumb.webp",
+          "mediumUrl": "/gallery/_optimized/05-wedding_4_medium.webp",
+          "displayUrl": "/gallery/_optimized/05-wedding_4_display.webp",
+          "originalUrl": "/gallery/05-wedding/4.webp",
+          "originalWidth": 1122,
+          "originalHeight": 1402,
+          "aspectRatio": 0.8003,
+          "cropMode": "contain",
+          "focalPoint": {
+            "x": 50,
+            "y": 50
+          },
+          "isHero": false,
+          "order": 3,
+          "createdAt": 0,
+          "relativePath": "05-wedding/4.webp"
+        },
         {
           "id": "photo_ch5_wedding_QUEN1348_webp",
           "chapterId": "ch5_wedding",
@@ -901,7 +989,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 0,
+          "order": 4,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1348.webp"
         },
@@ -923,7 +1011,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 1,
+          "order": 5,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1354.webp"
         },
@@ -945,7 +1033,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 2,
+          "order": 6,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1362.webp"
         },
@@ -967,7 +1055,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 3,
+          "order": 7,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1366.webp"
         },
@@ -989,7 +1077,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 4,
+          "order": 8,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1377.webp"
         },
@@ -1011,7 +1099,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 5,
+          "order": 9,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1414.webp"
         },
@@ -1033,7 +1121,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 6,
+          "order": 10,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1427.webp"
         },
@@ -1055,7 +1143,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 7,
+          "order": 11,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1473.webp"
         },
@@ -1077,7 +1165,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 8,
+          "order": 12,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1479.webp"
         },
@@ -1099,7 +1187,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 9,
+          "order": 13,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1488.webp"
         },
@@ -1121,7 +1209,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 10,
+          "order": 14,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1543.webp"
         },
@@ -1143,7 +1231,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 11,
+          "order": 15,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1554.webp"
         },
@@ -1165,7 +1253,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 12,
+          "order": 16,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1576.webp"
         },
@@ -1187,7 +1275,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 13,
+          "order": 17,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1583.webp"
         },
@@ -1209,7 +1297,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 14,
+          "order": 18,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1652.webp"
         },
@@ -1231,7 +1319,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 15,
+          "order": 19,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1657.webp"
         },
@@ -1253,7 +1341,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 16,
+          "order": 20,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1687.webp"
         },
@@ -1275,7 +1363,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 17,
+          "order": 21,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1719.webp"
         },
@@ -1297,7 +1385,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 18,
+          "order": 22,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1723.webp"
         },
@@ -1319,7 +1407,7 @@ export const filesystemProject: WeddingProject = {
             "y": 50
           },
           "isHero": false,
-          "order": 19,
+          "order": 23,
           "createdAt": 0,
           "relativePath": "05-wedding/QUEN1770.webp"
         }
@@ -1525,5 +1613,5 @@ export const filesystemProject: WeddingProject = {
   "createdAt": 1792151963046,
   "updatedAt": 1792151963046
 };
-export const totalPhotosFound: number = 59;
+export const totalPhotosFound: number = 63;
 export const totalAudioFound: number = 1;

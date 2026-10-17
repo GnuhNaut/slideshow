@@ -22,7 +22,7 @@ export const FilmToHeroScene: React.FC<FilmToHeroSceneProps> = ({ scene, progres
       />
       <ChapterStoryOverlay
         scene={scene}
-        chapterLabel="CHƯƠNG III • LỜI HẸN ƯỚC"
+        chapterLabel="• LỜI HẸN ƯỚC"
         variant="side"
       />
     </div>
