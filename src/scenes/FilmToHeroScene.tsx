@@ -19,6 +19,7 @@ export const FilmToHeroScene: React.FC<FilmToHeroSceneProps> = ({ scene, progres
         progress={progress}
         isPlaying={isPlaying}
         sceneId={scene.id}
+        placement="right"
       />
       <ChapterStoryOverlay
         scene={scene}

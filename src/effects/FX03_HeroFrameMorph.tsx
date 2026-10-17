@@ -8,12 +8,14 @@ interface FX03Props {
   progress: number; // 0.0 to 1.0
   isPlaying: boolean;
   sceneId?: string;
+  placement?: 'center' | 'right';
 }
 
 export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   photo,
   progress,
   sceneId,
+  placement = 'center',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -46,6 +48,9 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
       const normP = (p - 0.85) / 0.15;
       gsap.set(frameRef.current, {
         scale: 1.03 - normP * 0.02,
+        rotationY: 0,
+        rotationX: 0,
+        z: 0,
         opacity: 1 - normP * 0.2,
         force3D: true,
       });
@@ -62,19 +67,28 @@ export const FX03_HeroFrameMorph: React.FC<FX03Props> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] perspective-cinema"
+      className={`relative w-full h-full flex overflow-hidden bg-gradient-to-b from-[#FFF9F2] via-[#FDF8F3] to-[#F3E9DD] perspective-cinema ${
+        placement === 'right'
+          ? 'items-start justify-center pt-[5vh] sm:items-center sm:justify-end sm:pt-0 sm:pr-[8vw]'
+          : 'items-center justify-center'
+      }`}
     >
       <div className="absolute inset-0 bg-radial from-[#E8D9C9]/65 via-[#FFF9F2]/72 to-[#F3E9DD] pointer-events-none" />
 
       {/* Main Hero Card */}
       <div
         ref={frameRef}
-        className="relative z-10 w-[82vw] aspect-[2/3] md:aspect-auto md:w-[min(42vw,68vh)] max-w-[700px] max-h-[88vh] md:h-[88vh] md:max-h-[920px] p-3 md:p-4 bg-white/95 rounded-sm border border-[#E77A93]/45 shadow-[0_28px_90px_-28px_rgba(64,50,47,0.42)] preserve-3d will-change-transform flex flex-col"
+        className={`relative z-10 max-w-[700px] p-3 md:p-4 bg-white/95 rounded-sm border border-[#E77A93]/45 shadow-[0_28px_90px_-28px_rgba(64,50,47,0.42)] preserve-3d will-change-transform flex flex-col ${
+          placement === 'right'
+            ? 'w-[min(76vw,42vh)] h-[56vh] sm:w-[min(42vw,62vh)] sm:h-[82vh]'
+            : 'w-[82vw] aspect-[2/3] md:aspect-auto md:w-[min(42vw,68vh)] max-h-[88vh] md:h-[88vh] md:max-h-[920px]'
+        }`}
       >
         <div className="w-full h-full overflow-hidden rounded-sm bg-[#FAF5EE] relative flex items-center justify-center">
           <img
             src={photo.displayUrl || photo.url}
             alt={photo.title || 'Proposal Hero'}
+            decoding="async"
             className="w-full h-full object-cover mx-auto"
             style={{
               objectPosition: `${photo.focalPoint?.x ?? 50}% ${photo.focalPoint?.y ?? 50}%`,

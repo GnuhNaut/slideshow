@@ -1,9 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useWeddingStore } from './app/store';
 import { ProjectHome } from './pages/ProjectHome';
 import { StagePlayer } from './components/player/StagePlayer';
 
+function readViewModeFromUrl(): 'home' | 'player' {
+  const hash = window.location.hash.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  return hash === '#stage' || hash === '#player' || params.get('mode') === 'stage'
+    ? 'player'
+    : 'home';
+}
+
 export const App: React.FC = () => {
+  const routeInitialized = useRef(false);
   const viewMode = useWeddingStore((s) => s.viewMode);
   const setViewMode = useWeddingStore((s) => s.setViewMode);
   const initStore = useWeddingStore((s) => s.initStore);
@@ -13,13 +22,7 @@ export const App: React.FC = () => {
     void initStore();
 
     const handleHash = () => {
-      const hash = window.location.hash.toLowerCase();
-      const params = new URLSearchParams(window.location.search);
-      if (hash === '#stage' || hash === '#player' || params.get('mode') === 'stage') {
-        setViewMode('player');
-      } else {
-        setViewMode('home');
-      }
+      setViewMode(readViewModeFromUrl());
     };
 
     handleHash();
@@ -29,6 +32,11 @@ export const App: React.FC = () => {
 
   // Keep hash synced with viewMode
   useEffect(() => {
+    // Apply the initial URL before writing the store's default home route.
+    if (!routeInitialized.current) {
+      if (viewMode !== readViewModeFromUrl()) return;
+      routeInitialized.current = true;
+    }
     if (viewMode === 'player' && window.location.hash !== '#stage') {
       window.location.hash = '#stage';
     } else if (viewMode === 'home' && window.location.hash !== '#home') {

@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useLayoutEffect, useSyncExternalStore } from 'react';
 import { TimelineScene } from '../types/timeline';
 import { useWeddingStore } from '../app/store';
-import { computeTransitionState } from '../transitions/TransitionDirector';
 import { SceneCompositor } from '../transitions/SceneCompositor';
 import { motionRuntime } from '../motion/MotionRuntime';
 import { IntroScene } from './IntroScene';
@@ -15,9 +14,6 @@ import { FinalFreezeScene } from './FinalFreezeScene';
 import { AmbientHeartsOverlay } from '../components/decor/AmbientHeartsOverlay';
 
 interface SceneRendererProps {
-  currentScene: TimelineScene | null;
-  currentTime: number;
-  isPlaying: boolean;
   enableGrain?: boolean;
   scenes?: TimelineScene[];
 }
@@ -49,43 +45,35 @@ function renderSceneContent(scene: TimelineScene, progress: number, isPlaying: b
   }
 }
 
-export const SceneRenderer: React.FC<SceneRendererProps> = ({
-  currentScene,
-  currentTime,
-  isPlaying,
+// Scene identity is stable through preparation, overlap and active playback.
+const SceneContent = React.memo(({ scene }: { scene: TimelineScene }) => {
+  const frame = motionRuntime.getState();
+  const progress = scene.duration > 0
+    ? Math.max(0, Math.min(1, (frame.currentTime - scene.startTime) / scene.duration))
+    : 0;
+  return renderSceneContent(scene, progress, frame.isPlaying);
+});
+
+const renderScene = (scene: TimelineScene) => <SceneContent scene={scene} />;
+
+export const SceneRenderer = React.memo(function SceneRenderer({
   enableGrain = true,
   scenes: propsScenes,
-}) => {
+}: SceneRendererProps) {
   const storeScenes = useWeddingStore((s) => s.timeline.scenes);
+  const performanceMode = useWeddingStore((s) => s.project.globalSettings.performanceMode);
   const scenes = propsScenes || storeScenes;
+  const layout = useSyncExternalStore(
+    motionRuntime.subscribeLayout,
+    motionRuntime.getLayoutState,
+    motionRuntime.getLayoutState
+  );
 
-  // Sync scenes to motionRuntime for high-speed 60 FPS coordinate calculations
-  React.useEffect(() => {
-    if (scenes && scenes.length > 0) {
-      motionRuntime.setScenes(scenes);
-    }
+  useLayoutEffect(() => {
+    motionRuntime.setScenes(scenes);
   }, [scenes]);
 
-  const transState = computeTransitionState(scenes, currentTime);
-  const activeScene = transState.activeScene || currentScene;
-  const upcomingScene = transState.upcomingScene;
-
-  React.useEffect(() => {
-    if (!upcomingScene?.photos.length) return;
-    const preloadCount =
-      upcomingScene.type === 'film_roll' || upcomingScene.type === 'dual_film_roll' ? 8 : 2;
-    upcomingScene.photos.slice(0, preloadCount).forEach((photo) => {
-      const imageUrl = photo.mediumUrl || photo.displayUrl || photo.url;
-      if (!imageUrl) return;
-      const img = new Image();
-      img.src = imageUrl;
-      if (typeof img.decode === 'function') {
-        img.decode().catch(() => {});
-      }
-    });
-  }, [upcomingScene]);
-
-  if (!currentScene && (!scenes || scenes.length === 0)) {
+  if (!layout.activeScene) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
         Đang chuẩn bị thước phim cưới điện ảnh...
@@ -93,68 +81,12 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({
     );
   }
 
-  if (!activeScene) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#FFF9F2] text-[#C5A16E] font-serif">
-        Đang chuẩn bị thước phim...
-      </div>
-    );
-  }
-
-  const activeProgress = transState.sceneProgress;
-  const activeNode = renderSceneContent(activeScene, activeProgress, isPlaying);
-
-  let outgoingNode: React.ReactNode = undefined;
-  let incomingNode: React.ReactNode = undefined;
-
-  if (transState.isTransitioning && transState.outgoingScene && transState.incomingScene) {
-    // Only instantiate heavy outgoing React node for non-curtain transitions; curtain uses CurtainSurface
-    if (transState.transitionId !== 'GRAND_WEDDING_CURTAIN_REVEAL') {
-      outgoingNode = renderSceneContent(transState.outgoingScene, transState.outgoingSceneProgress, false);
-    }
-    incomingNode = renderSceneContent(transState.incomingScene, transState.incomingSceneProgress, isPlaying);
-  }
-
-  // Pre-warm incoming scene during lookahead phase (300-400ms before transition boundary T)
-  // Filmstrips are pre-decoded as images instead of mounting their entire DOM
-  // tree twice (hidden here, then again inside the compositor).
-  const upcomingIsFilmstrip =
-    transState.upcomingScene?.type === 'film_roll' ||
-    transState.upcomingScene?.type === 'dual_film_roll';
-  const preparedNode =
-    transState.isPrepared &&
-    !transState.isTransitioning &&
-    transState.upcomingScene &&
-    !upcomingIsFilmstrip
-      ? renderSceneContent(transState.upcomingScene, 0, false)
-      : null;
-
+  const highPerformance = performanceMode === 'high_performance';
   return (
     <div className="scene-photo-fit relative h-full w-full overflow-hidden select-none bg-[#FFF9F2]">
-      <SceneCompositor
-        isTransitioning={transState.isTransitioning}
-        transitionId={transState.transitionId}
-        transitionProgress={transState.transitionProgress}
-        outgoingScene={transState.outgoingScene}
-        outgoingSceneProgress={transState.outgoingSceneProgress}
-        outgoingSceneNode={outgoingNode}
-        incomingSceneNode={incomingNode}
-        activeSceneNode={activeNode}
-      />
-
-      <AmbientHeartsOverlay />
-
-      {preparedNode && (
-        <div
-          className="pointer-events-none absolute inset-0 -z-50 overflow-hidden opacity-0"
-          style={{ visibility: 'hidden' }}
-          aria-hidden="true"
-        >
-          {preparedNode}
-        </div>
-      )}
-
-      {enableGrain && <div className="film-grain" />}
+      <SceneCompositor layout={layout} renderScene={renderScene} />
+      {!highPerformance && <AmbientHeartsOverlay />}
+      {enableGrain && !highPerformance && <div className="film-grain" />}
     </div>
   );
-};
+});

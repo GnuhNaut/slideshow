@@ -1,30 +1,17 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
-import { ChapterTransitionId } from './TransitionRegistry';
-import { motionRuntime, MotionFrameState } from '../motion/MotionRuntime';
+import { motionRuntime, MotionFrameState, SceneLayoutState } from '../motion/MotionRuntime';
 import { TimelineScene } from '../types/timeline';
 import { CurtainSurface } from './CurtainSurface';
 
 interface SceneCompositorProps {
-  isTransitioning: boolean;
-  transitionId: ChapterTransitionId;
-  transitionProgress?: number;
-  outgoingScene?: TimelineScene | null;
-  outgoingSceneProgress?: number;
-  outgoingSceneNode?: React.ReactNode;
-  incomingSceneNode?: React.ReactNode;
-  activeSceneNode: React.ReactNode;
+  layout: SceneLayoutState;
+  renderScene: (scene: TimelineScene) => React.ReactNode;
 }
 
-export const SceneCompositor: React.FC<SceneCompositorProps> = ({
-  isTransitioning,
-  transitionId,
-  outgoingScene,
-  outgoingSceneProgress,
-  outgoingSceneNode,
-  incomingSceneNode,
-  activeSceneNode,
-}) => {
+export const SceneCompositor: React.FC<SceneCompositorProps> = ({ layout, renderScene }) => {
+  const { activeScene, upcomingScene, isTransitioning, transitionId } = layout;
+  const layerRefs = useRef(new Map<string, HTMLDivElement>());
   const outgoingRef = useRef<HTMLDivElement>(null);
   const incomingRef = useRef<HTMLDivElement>(null);
   const leftCurtainRef = useRef<HTMLDivElement>(null);
@@ -32,7 +19,15 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
 
   // High-performance 60 FPS Motion Loop directly from MotionRuntime
   // Applies GSAP 3D transforms on every single frame without React re-render lag!
-  useEffect(() => {
+  useLayoutEffect(() => {
+    outgoingRef.current = activeScene ? layerRefs.current.get(activeScene.id) || null : null;
+    incomingRef.current = upcomingScene ? layerRefs.current.get(upcomingScene.id) || null : null;
+    layerRefs.current.forEach((element, id) => {
+      gsap.set(element, {
+        clearProps: 'transform,transformOrigin',
+        opacity: id === activeScene?.id ? 1 : 0,
+      });
+    });
     const applyTransitionTransforms = (state: MotionFrameState) => {
       if (!state.isTransitioning) return;
 
@@ -203,82 +198,53 @@ export const SceneCompositor: React.FC<SceneCompositorProps> = ({
 
     const unsub = motionRuntime.subscribe(applyTransitionTransforms);
     return () => unsub();
-  }, [isTransitioning, transitionId]);
+  }, [activeScene, upcomingScene, isTransitioning, transitionId]);
 
-  // If not currently transitioning, render just the active scene
-  if (!isTransitioning || !incomingSceneNode) {
-    return <div className="w-full h-full relative">{activeSceneNode}</div>;
-  }
-
-  // Ch 5 -> 6: True 3D Grand Wedding Curtain Reveal using lightweight CurtainSurface
-  if (transitionId === 'GRAND_WEDDING_CURTAIN_REVEAL') {
-    return (
-      <div className="relative w-full h-full overflow-hidden bg-[#FFF9F2] perspective-cinema">
-        {/* Incoming Scene (Grand Thank You Stage centered underneath) */}
-        <div
-          ref={incomingRef}
-          className="absolute inset-0 w-full h-full preserve-3d will-change-transform z-10 pointer-events-none"
-        >
-          {incomingSceneNode}
-        </div>
-
-        {/* Left Curtain Half parting to the left */}
-        <div
-          ref={leftCurtainRef}
-          className="absolute inset-y-0 left-0 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-r border-[#C5A16E]/40"
-        >
-          <CurtainSurface
-            scene={outgoingScene}
-            progress={outgoingSceneProgress}
-            side="left"
-          />
-        </div>
-
-        {/* Right Curtain Half parting to the right */}
-        <div
-          ref={rightCurtainRef}
-          className="absolute inset-y-0 left-1/2 w-1/2 overflow-hidden preserve-3d will-change-transform z-20 pointer-events-none shadow-2xl border-l border-[#C5A16E]/40"
-        >
-          <CurtainSurface
-            scene={outgoingScene}
-            progress={outgoingSceneProgress}
-            side="right"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Active transition for all other 3D transitions
-  const isLightweightFilmOpening = transitionId === 'FILM_PORTAL_OPENING';
+  const curtain = isTransitioning && transitionId === 'GRAND_WEDDING_CURTAIN_REVEAL';
+  const lightweight = transitionId === 'FILM_PORTAL_OPENING';
+  const mountedScenes = [activeScene, upcomingScene].filter(
+    (scene): scene is TimelineScene => !!scene && !(curtain && scene === activeScene)
+  );
+  const frame = motionRuntime.getState();
 
   return (
-    <div
-      className={`relative w-full h-full overflow-hidden bg-[#FFF9F2] ${
-        isLightweightFilmOpening ? '' : 'perspective-cinema'
-      }`}
-    >
-      {/* Outgoing Scene */}
-      <div
-        ref={outgoingRef}
-        className={`absolute inset-0 w-full h-full z-10 pointer-events-none ${
-          isLightweightFilmOpening ? '' : 'preserve-3d will-change-transform'
-        }`}
-        style={isLightweightFilmOpening ? { willChange: 'opacity' } : undefined}
-      >
-        {outgoingSceneNode || activeSceneNode}
-      </div>
-
-      {/* Incoming Scene */}
-      <div
-        ref={incomingRef}
-        className={`absolute inset-0 w-full h-full z-20 pointer-events-none ${
-          isLightweightFilmOpening ? '' : 'preserve-3d will-change-transform'
-        }`}
-        style={isLightweightFilmOpening ? { willChange: 'opacity' } : undefined}
-      >
-        {incomingSceneNode}
-      </div>
+    <div className={`relative w-full h-full overflow-hidden bg-[#FFF9F2] ${
+      isTransitioning && !lightweight ? 'perspective-cinema' : ''
+    }`}>
+      {mountedScenes.map((scene) => {
+        const incoming = scene === upcomingScene;
+        const prepared = incoming && !isTransitioning;
+        return (
+          <div
+            key={scene.id}
+            ref={(element) => {
+              if (element) layerRefs.current.set(scene.id, element);
+              else layerRefs.current.delete(scene.id);
+            }}
+            data-scene-layer={scene.id}
+            aria-hidden={prepared || (isTransitioning && !incoming)}
+            className={`absolute inset-0 w-full h-full pointer-events-none ${
+              incoming ? 'z-20' : 'z-10'
+            } ${isTransitioning && !lightweight ? 'preserve-3d will-change-transform' : ''}`}
+            style={{
+              visibility: prepared ? 'hidden' : 'visible',
+              willChange: isTransitioning && lightweight ? 'opacity' : undefined,
+            }}
+          >
+            {renderScene(scene)}
+          </div>
+        );
+      })}
+      {curtain && (
+        <React.Fragment key="curtains">
+          <div ref={leftCurtainRef} className="absolute inset-y-0 left-0 w-1/2 overflow-hidden preserve-3d will-change-transform z-30 pointer-events-none shadow-2xl border-r border-[#C5A16E]/40">
+            <CurtainSurface scene={activeScene} progress={frame.outgoingSceneProgress} side="left" />
+          </div>
+          <div ref={rightCurtainRef} className="absolute inset-y-0 left-1/2 w-1/2 overflow-hidden preserve-3d will-change-transform z-30 pointer-events-none shadow-2xl border-l border-[#C5A16E]/40">
+            <CurtainSurface scene={activeScene} progress={frame.outgoingSceneProgress} side="right" />
+          </div>
+        </React.Fragment>
+      )}
     </div>
   );
 };

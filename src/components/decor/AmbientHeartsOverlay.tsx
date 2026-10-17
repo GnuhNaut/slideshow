@@ -90,13 +90,11 @@ function applyHeartFrame(
   const horizontal =
     layout.drift * (progress - 0.5) + Math.sin(progress * Math.PI * 2 + index) * 1.8;
   const rotation = layout.rotation + Math.sin(progress * Math.PI * 2) * 9;
-  const edgeBlur = Math.pow(Math.abs(progress * 2 - 1), 1.5) * 4.5;
 
   element.style.opacity = opacity.toFixed(3);
   element.style.transform =
     `translate3d(${horizontal.toFixed(2)}vw, ${vertical.toFixed(2)}vh, 0) ` +
     `translate(-50%, 50%) scale(${scale.toFixed(3)}) rotate(${rotation.toFixed(2)}deg)`;
-  element.style.filter = `blur(${(layout.baseBlur + edgeBlur).toFixed(2)}px)`;
 }
 
 function updateHearts(
@@ -117,6 +115,7 @@ function updateHearts(
       element.style.width = `${layout.size}px`;
       element.style.height = `${layout.size}px`;
       element.style.color = layout.color;
+      element.style.filter = `blur(${layout.baseBlur.toFixed(2)}px)`;
     });
   }
 
@@ -158,7 +157,7 @@ const AmbientHeartsOverlayComponent: React.FC = () => {
           data-ambient-heart={index}
           className={`absolute -bottom-[8vh] opacity-0 ${index >= 4 ? 'hidden sm:block' : ''}`}
           style={{
-            willChange: 'transform, opacity, filter',
+            willChange: 'transform, opacity',
             transformOrigin: 'center',
           }}
         >

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { motionRuntime } from '../MotionRuntime';
 import { masterClock } from '../../player/PlaybackClock';
 import { TimelineScene } from '../../types/timeline';
@@ -73,5 +73,38 @@ describe('MotionRuntime - 60 FPS Motion Coordination Engine', () => {
     expect(state.activeScene?.id).toBe('scene_memories');
     expect(state.activeSceneProgress).toBeCloseTo(0.25, 2);
     expect(state.isTransitioning).toBe(false);
+  });
+
+  it('keeps the React layout snapshot stable during ordinary animation frames', () => {
+    const layout = motionRuntime.getLayoutState();
+    const onLayout = vi.fn();
+    const unsubscribe = motionRuntime.subscribeLayout(onLayout);
+    try {
+      for (let frame = 1; frame <= 120; frame++) masterClock.seek(frame / 60);
+      expect(motionRuntime.getLayoutState()).toBe(layout);
+      expect(onLayout).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('notifies React at preparation, overlap and activation, including backwards seeks', () => {
+    const onLayout = vi.fn();
+    const unsubscribe = motionRuntime.subscribeLayout(onLayout);
+    try {
+      masterClock.seek(8.2);
+      expect(motionRuntime.getLayoutState().upcomingScene).toBe(mockScenes[1]);
+      expect(motionRuntime.getLayoutState().isTransitioning).toBe(false);
+      masterClock.seek(9.0);
+      expect(motionRuntime.getLayoutState().isTransitioning).toBe(true);
+      masterClock.seek(10.0);
+      expect(motionRuntime.getLayoutState().activeScene).toBe(mockScenes[1]);
+      expect(motionRuntime.getLayoutState().upcomingScene).toBeNull();
+      masterClock.seek(1.0);
+      expect(motionRuntime.getLayoutState().activeScene).toBe(mockScenes[0]);
+      expect(onLayout).toHaveBeenCalledTimes(4);
+    } finally {
+      unsubscribe();
+    }
   });
 });

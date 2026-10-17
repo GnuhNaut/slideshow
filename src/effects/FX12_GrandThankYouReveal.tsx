@@ -1,8 +1,8 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { PhotoItem } from '../types/project';
 import { TimelineScene } from '../types/timeline';
-import { motionRuntime } from '../motion/MotionRuntime';
+import { useSceneMotion } from '../motion/useSceneMotion';
 
 interface FX12Props {
   photos: PhotoItem[];
@@ -85,26 +85,7 @@ export const FX12_GrandThankYouReveal: React.FC<FX12Props> = ({
     }
   }, []);
 
-  useEffect(() => {
-    applyTransforms(progress);
-  }, [applyTransforms, progress]);
-
-  // High-frequency 60 FPS motion loop
-  useEffect(() => {
-    const unsub = motionRuntime.subscribe((state) => {
-      let currentP: number | null = null;
-      if (state.activeScene?.type === 'thank_you') {
-        currentP = state.activeSceneProgress;
-      } else if (state.incomingScene?.type === 'thank_you') {
-        currentP = state.incomingSceneProgress;
-      } else if (state.outgoingScene?.type === 'thank_you') {
-        currentP = state.outgoingSceneProgress;
-      }
-      if (currentP !== null) applyTransforms(currentP);
-    });
-
-    return () => unsub();
-  }, [applyTransforms]);
+  useSceneMotion(scene?.id || '', applyTransforms, progress);
 
   const leftPhoto = photos[0];
   const rightPhoto = photos[1] || photos[0];

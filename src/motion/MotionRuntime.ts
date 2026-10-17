@@ -28,11 +28,26 @@ export interface MotionFrameState {
 
 export type MotionTickListener = (state: MotionFrameState) => void;
 
+// React only needs a new snapshot when the set of mounted scenes changes.
+export interface SceneLayoutState {
+  activeScene: TimelineScene | null;
+  upcomingScene: TimelineScene | null;
+  isTransitioning: boolean;
+  transitionId: ChapterTransitionId;
+}
+
 class MotionRuntimeEngine {
   private scenes: TimelineScene[] = [];
   private listeners: Set<MotionTickListener> = new Set();
   private currentState: MotionFrameState;
   private unsubClock: (() => void) | null = null;
+  private layoutListeners = new Set<() => void>();
+  private layoutState: SceneLayoutState = {
+    activeScene: null,
+    upcomingScene: null,
+    isTransitioning: false,
+    transitionId: 'DEFAULT_DISSOLVE',
+  };
 
   constructor() {
     this.currentState = this.computeState(0, masterClock.getState());
@@ -52,6 +67,13 @@ class MotionRuntimeEngine {
   public getState(): MotionFrameState {
     return this.currentState;
   }
+
+  public getLayoutState = (): SceneLayoutState => this.layoutState;
+
+  public subscribeLayout = (listener: () => void): (() => void) => {
+    this.layoutListeners.add(listener);
+    return () => { this.layoutListeners.delete(listener); };
+  };
 
   public subscribe(listener: MotionTickListener): () => void {
     this.listeners.add(listener);
@@ -124,6 +146,22 @@ class MotionRuntimeEngine {
   }
 
   private emit() {
+    const frame = this.currentState;
+    const layout = this.layoutState;
+    if (
+      layout.activeScene !== frame.activeScene ||
+      layout.upcomingScene !== frame.upcomingScene ||
+      layout.isTransitioning !== frame.isTransitioning ||
+      layout.transitionId !== frame.transitionId
+    ) {
+      this.layoutState = {
+        activeScene: frame.activeScene,
+        upcomingScene: frame.upcomingScene,
+        isTransitioning: frame.isTransitioning,
+        transitionId: frame.transitionId,
+      };
+      this.layoutListeners.forEach((listener) => listener());
+    }
     this.listeners.forEach((listener) => {
       try {
         listener(this.currentState);
@@ -139,6 +177,7 @@ class MotionRuntimeEngine {
       this.unsubClock = null;
     }
     this.listeners.clear();
+    this.layoutListeners.clear();
   }
 }
 

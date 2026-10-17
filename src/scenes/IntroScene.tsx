@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import gsap from 'gsap';
 import { TimelineScene } from '../types/timeline';
 import { useSceneMotion } from '../motion/useSceneMotion';
@@ -17,36 +17,29 @@ export const IntroScene: React.FC<IntroSceneProps> = ({ scene, progress }) => {
   // 60 FPS Direct Motion Hook
   useSceneMotion(
     scene.id,
-    (p) => {
+    (p, elapsed) => {
+      const textEase = gsap.parseEase('power3.out')(Math.min(1, elapsed / 1.6));
+      const photoEase = gsap.parseEase('power3.out')(Math.min(1, Math.max(0, elapsed - 0.4) / 1.8));
       if (heroCardRef.current) {
-        heroCardRef.current.style.transform = `scale(${1 + p * 0.025}) rotateY(${Math.sin(p * Math.PI) * 2.5}deg)`;
+        gsap.set(heroCardRef.current, {
+          opacity: photoEase,
+          scale: 0.92 + photoEase * 0.08 + p * 0.025,
+          y: (1 - photoEase) * 20,
+          rotationY: (1 - photoEase) * -6 + Math.sin(p * Math.PI) * 2.5,
+          force3D: true,
+        });
       }
       if (textColRef.current) {
-        textColRef.current.style.transform = `translateY(${-p * 10}px)`;
+        gsap.set(textColRef.current, {
+          opacity: textEase,
+          x: (1 - textEase) * -30,
+          y: -p * 10,
+          force3D: true,
+        });
       }
     },
     progress
   );
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline();
-      tl.fromTo(
-        textColRef.current,
-        { opacity: 0, x: -30 },
-        { opacity: 1, x: 0, duration: 1.6, ease: 'power3.out' }
-      );
-      tl.fromTo(
-        heroCardRef.current,
-        { opacity: 0, scale: 0.92, y: 20, rotationY: -6 },
-        { opacity: 1, scale: 1, y: 0, rotationY: 0, duration: 1.8, ease: 'power3.out' },
-        '-=1.2'
-      );
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
 
   const heroPhoto = scene.heroPhoto || scene.photos[0];
   const title = scene.config.textTitle || scene.chapterTitle || 'Ngày chúng mình bắt đầu';

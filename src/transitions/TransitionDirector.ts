@@ -1,7 +1,14 @@
 import { TimelineScene } from '../types/timeline';
 import { getTransitionBetween, ChapterTransitionId } from './TransitionRegistry';
 
-export const TRANSITION_LOOKAHEAD_WINDOW = 0.4; // 400ms pre-mount and warm-up window
+export const TRANSITION_LOOKAHEAD_WINDOW = 0.7; // Decode incoming photos before the overlap begins.
+
+export function getSceneTransitionDuration(from: TimelineScene, to: TimelineScene): number {
+  const duration = from.chapterIndex === to.chapterIndex
+    ? 0.8
+    : getTransitionBetween(from.chapterIndex, to.chapterIndex).duration;
+  return Math.min(duration, from.duration * 0.4);
+}
 
 export interface TransitionState {
   isTransitioning: boolean;
@@ -71,7 +78,7 @@ export function computeTransitionState(
           toChapter: nextScene.chapterIndex,
         };
 
-    const transDuration = Math.min(transitionSpec.duration, currentScene.duration * 0.4);
+    const transDuration = getSceneTransitionDuration(currentScene, nextScene);
     const transStartTime = currentScene.endTime - transDuration;
     const lookaheadStartTime = Math.max(currentScene.startTime, transStartTime - TRANSITION_LOOKAHEAD_WINDOW);
 

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { motionRuntime, MotionFrameState } from './MotionRuntime';
+import { getSceneMotionTiming } from './sceneTiming';
 
 export type SceneMotionCallback = (
   progress: number,
@@ -18,33 +19,31 @@ export function useSceneMotion(
 ) {
   const onTickRef = useRef<SceneMotionCallback>(onTick);
   const initialProgressRef = useRef(initialProgress);
+  const scenes = motionRuntime.getScenes();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     onTickRef.current = onTick;
   }, [onTick]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     initialProgressRef.current = initialProgress;
   }, [initialProgress]);
 
-  useEffect(() => {
-    // Initial call on mount
-    const state = motionRuntime.getState();
-    if (state.activeScene?.id === sceneId) {
-      onTickRef.current(state.activeSceneProgress, state.activeSceneElapsed, state);
-    } else {
-      onTickRef.current(initialProgressRef.current, 0, state);
-    }
-
-    // Subscribe to 60 FPS master animation loop
+  useLayoutEffect(() => {
+    // Subscribe before paint, including an immediate frame on mount/seek.
+    let lastProgress = Number.NaN;
+    let lastElapsed = Number.NaN;
+    const index = scenes.findIndex((scene) => scene.id === sceneId);
+    const scene = scenes[index];
     return motionRuntime.subscribe((frame) => {
-      if (frame.activeScene?.id === sceneId) {
-        onTickRef.current(frame.activeSceneProgress, frame.activeSceneElapsed, frame);
-      } else if (frame.outgoingScene?.id === sceneId) {
-        onTickRef.current(frame.outgoingSceneProgress, 0, frame);
-      } else if (frame.incomingScene?.id === sceneId) {
-        onTickRef.current(frame.incomingSceneProgress, 0, frame);
-      }
+      const { progress, elapsed } = scene
+        ? getSceneMotionTiming(scene, scenes[index - 1], frame.currentTime)
+        : { progress: initialProgressRef.current, elapsed: 0 };
+
+      if (progress === lastProgress && elapsed === lastElapsed) return;
+      lastProgress = progress;
+      lastElapsed = elapsed;
+      onTickRef.current(progress, elapsed, frame);
     });
-  }, [sceneId]);
+  }, [sceneId, scenes]);
 }

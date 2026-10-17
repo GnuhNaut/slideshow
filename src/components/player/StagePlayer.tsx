@@ -47,6 +47,10 @@ export const StagePlayer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const preloadedChapterTwoImages = useRef<HTMLImageElement[]>([]);
 
+  useEffect(() => () => {
+    if (hideControlsTimer.current !== null) window.clearTimeout(hideControlsTimer.current);
+  }, []);
+
   // Subscribe to wake lock state changes
   useEffect(() => {
     const unsub = presentationWakeLock.subscribe(setWakeLockState);
@@ -333,9 +337,6 @@ export const StagePlayer: React.FC = () => {
 
       {/* ================= MAIN SCENE RENDERER ================= */}
       <SceneRenderer
-        currentScene={playback.currentScene}
-        currentTime={playback.currentTime}
-        isPlaying={playback.isPlaying}
         enableGrain={project.globalSettings.enableFilmGrain}
       />
 
