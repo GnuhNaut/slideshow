@@ -13,7 +13,7 @@ export const filesystemProject: WeddingProject = {
   "weddingDate": "19.10.2026",
   "lunarDate": "09.09 Bính Ngọ",
   "venueName": "White Palace Convention Center",
-  "thankYouMessage": "Xin chân thành cảm ơn gia đình, người thân và bạn bè đã đồng hành và chia sẻ niềm hạnh phúc cùng chúng tôi.",
+  "thankYouMessage": "Chúng con xin chân thành cảm ơn sự hiện diện, những lời chúc phúc và tình yêu thương của ông bà, bố mẹ, họ hàng hai bên, quý vị quan khách cùng anh chị em, bạn bè trong buổi tiệc hôm nay. Sự có mặt của mọi người đã khiến ngày trọng đại của chúng con trở nên thật ý nghĩa và trọn vẹn. Chúng con xin cảm ơn tất cả mọi người rất nhiều!",
   "openingPhotoId": "photo_ch1_intro_QUEN1362_webp",
   "endingPhotoId": "photo_ch7_forever_002_QUEN1723_webp",
   "chapters": [
@@ -630,7 +630,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 8,
+      "durationOverride": 10,
       "transitionType": "soft_light",
       "photos": [
         {
@@ -880,7 +880,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 50,
+      "durationOverride": 90,
       "transitionType": "soft_light",
       "photos": [
         {
@@ -1345,7 +1345,7 @@ export const filesystemProject: WeddingProject = {
       "mode": "custom",
       "effectMode": "custom",
       "speed": 48,
-      "durationOverride": 10,
+      "durationOverride": 20,
       "transitionType": "soft_light",
       "photos": [
         {
